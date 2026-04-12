@@ -113,4 +113,3 @@ Your feedback is what will turn this MVP into a professional industry standard.
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
