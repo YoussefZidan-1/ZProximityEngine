@@ -9,7 +9,7 @@
 
 `ZProximity` is a specialized motion engine designed to bridge the gap between complex mathematical physics and beautiful UI design. It allows developers to create organic, reactive animations (scale, blur, rotation, weight, etc.) that respond to user proximity with a single prop.
 
-[**✨ View Live Playground**]([YOUR_PLAYGROUND_URL_HERE]) | [**📦 Coming Soon to NPM**](#)
+[**✨ View Live Playground**]([https://z-proximity-engine.vercel.app/]) | [**📦 Coming Soon to NPM**](#)
 
 ---
 
