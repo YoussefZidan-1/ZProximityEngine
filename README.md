@@ -87,7 +87,26 @@ Your feedback is what will turn this MVP into a professional industry standard.
 **Yousef Zedan**
 *Exploring the intersection of Art, Music, and Code.*
 
-[Your Portfolio/LinkedIn Link] | [Your Twitter/X Link]
+<p align="center">
+  <a href="https://yzportfolio.vercel.app" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/internet--v1.png" alt="Portfolio" height="50" width="50" />
+  </a>
+  <a href="mailto:zedstudios.devs@gmail.com" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/gmail-new.png" alt="Gmail" height="50" width="50" />
+  </a>
+  <a href="https://linkedin.com/in/yousef-zedan-6a275a400" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/linkedin.png" alt="LinkedIn" height="50" width="50" />
+  </a>
+  <a href="https://wa.me/201130765715" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/whatsapp--v1.png" alt="WhatsApp" height="50" width="50" />
+  </a>
+  <a href="https://x.com/YousefZeda59629" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/twitterx--v2.png" alt="X" height="50" width="50" />
+  </a>
+  <a href="https://www.instagram.com/yousef__zedan1/" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/instagram-new--v1.png" alt="Instagram" height="50" width="50" />
+  </a>
+</p>
 
 ---
 
@@ -95,5 +114,3 @@ Your feedback is what will turn this MVP into a professional industry standard.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 ```
-
-**Good luck, Yousef! Go post that playground! 🚀**
