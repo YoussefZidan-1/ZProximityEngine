@@ -28,7 +28,7 @@ const App = () => {
   });
 
   const [settings, setSettings] = useState({
-    text: "Beyon\nThe\nVoid",
+    text: "Beyond\nThe\nVoid",
     elementCount: 12,
     splitBy: "line",
     fontSize: 5,
