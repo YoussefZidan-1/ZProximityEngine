@@ -217,7 +217,7 @@ const App = () => {
         backgroundColor: "#020202",
         minHeight: "100vh",
         color: "#e0e0e0",
-        fontFamily: "'Bricolage Grotesque', sans-serif",
+        fontFamily: "'Georama', sans-serif",
         padding: "40px 20px",
         display: "flex",
         flexDirection: "column",
