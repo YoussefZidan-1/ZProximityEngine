@@ -51,7 +51,6 @@ const App = () => {
 
   const [copied, setCopied] = useState(false);
 
-  // مصفوفة بكل الـ Eases الجديدة للعرض في القوائم
   const easeOptions = [
     "smooth",
     "heavy",
