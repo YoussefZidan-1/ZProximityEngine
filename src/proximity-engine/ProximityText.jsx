@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from "react";
-import { Proximity } from "./Proximity";
+import { Proximity, useProximityConfig } from "./Proximity";
 
 export const ProximityText = ({
   text,
@@ -13,10 +13,13 @@ export const ProximityText = ({
   clipFix = "0.2em",
   ...proximityProps
 }) => {
+  const globalConfig = useProximityConfig();
+  const actualFontFamily = fontFamily || globalConfig.defaultFont;
+
   const containerStyle = useMemo(() => {
     const base = { 
       display: "flex", 
-      fontFamily: fontFamily || "inherit",
+      fontFamily: actualFontFamily,
       lineHeight: lineHeight,
       letterSpacing: `${letterSpacing}em`,
       textAlign: "center",
@@ -25,7 +28,7 @@ export const ProximityText = ({
     if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
     if (splitBy === "line") return { ...base, display: "block" };
     return { ...base, flexWrap: "wrap" };
-  }, [splitBy, fontFamily, lineHeight, letterSpacing, wordSpacing]);
+  }, [splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
 
   const renderedContent = useMemo(() => {
     const itemStyle = {
@@ -69,7 +72,7 @@ export const ProximityText = ({
       );
     });
 
-  }, [text, splitBy, textClassName, clipFix]);
+  },[text, splitBy, textClassName, clipFix]);
 
   return (
     <Proximity selector=".prox-part" className={className} {...proximityProps}>

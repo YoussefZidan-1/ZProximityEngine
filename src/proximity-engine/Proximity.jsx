@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, createContext, useContext } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -12,27 +12,20 @@ const PRESET_DEFAULTS = {
 };
 
 const EASE_MAP = {
-  // Smooth & Classic
   smooth: "power1.inOut",
   heavy: "power4.out",
   sharp: "expo.out",
   fluid: "circ.inOut",
-  
-  // Fun & Energetic
   bouncy: "back.out(1.7)",
   elastic: "elastic.out(1, 0.3)",
   jello: "elastic.out(1.5, 0.2)",
   bounce: "bounce.out",
   swing: "back.inOut(3)",
-  
-  // Technical & Weird
   vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
   robot: "steps(8)",
   ghost: "slow(0.6, 0.8, false)",
   expo: "expo.inOut",
   circus: "back.out(4)",
-  
-  // New Additions
   glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
   slowmo: "slow(0.7, 0.7, false)"
 };
@@ -64,6 +57,20 @@ const calculatePresetValues = (presetString, intensity, userConfig = {}, isReset
   return result;
 };
 
+const ProximityContext = createContext({
+  defaultFont: "'Bricolage Grotesque', sans-serif",
+});
+
+export const ProximityProvider = ({ children, config }) => {
+  return (
+    <ProximityContext.Provider value={{ ...config }}>
+      {children}
+    </ProximityContext.Provider>
+  );
+};
+
+export const useProximityConfig = () => useContext(ProximityContext);
+
 export const Proximity = ({
   children,
   selector = ".prox-item",
@@ -75,6 +82,7 @@ export const Proximity = ({
   falloff = 2.4,
   duration = 0.2,
   resetDuration = 0.4,
+  global = false,
   className = "",
   style = {},
   ...props
@@ -86,6 +94,7 @@ export const Proximity = ({
     if (!container) return;
 
     const items = container.querySelectorAll(selector);
+    const states = Array.from(items).map(() => ({ isOutside: true }));
     let centers = [];
     let animationFrameId;
 
@@ -115,15 +124,20 @@ export const Proximity = ({
       if (Object.keys(initialProps).length > 0) gsap.set(items, initialProps);
     };
 
-    // تأخير بسيط لضمان أن المتصفح انتهى من ترتيب الحروف
-    setTimeout(updateCenters, 50);
+    if (document.fonts) {
+      document.fonts.ready.then(updateCenters);
+    } else {
+      setTimeout(updateCenters, 100);
+    }
+    
     setInitialState();
 
     window.addEventListener("resize", updateCenters);
 
     const actualSpread = reach * 10000;
+    const maxDistance = reach * 200;
 
-    const handleMouseMove = (e) => {
+    const handlePointerMove = (e) => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       animationFrameId = requestAnimationFrame(() => {
         const mouseX = e.pageX;
@@ -136,6 +150,22 @@ export const Proximity = ({
           const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
           const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
           const distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
+
+          if (distance > maxDistance) {
+            if (!states[i].isOutside) {
+              const resetProps = onReset ? onReset() : (preset ? calculatePresetValues(preset, 0, config, true) : {});
+              gsap.to(item, {
+                ...resetProps,
+                "--prox-intensity": 0,
+                duration: config.resetDuration ?? resetDuration,
+                overwrite: true,
+                ease: EASE_MAP[config.resetEase] || config.resetEase || "power2.out",
+              });
+              states[i].isOutside = true;
+            }
+            return;
+          }
+
           const intensity = Math.exp(-(Math.pow(distance, falloff)) / actualSpread);
 
           setters[i].intensity(intensity.toFixed(3));
@@ -148,38 +178,56 @@ export const Proximity = ({
           gsap.to(item, {
             ...animationProps,
             duration: config.duration ?? duration,
-            overwrite: "auto",
+            overwrite: true,
             ease: targetEase,
           });
+          
+          states[i].isOutside = false;
         });
       });
     };
 
-    const handleMouseLeave = () => {
+    const handlePointerLeave = () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       const resetProps = onReset ? onReset() : (preset ? calculatePresetValues(preset, 0, config, true) : {});
-      gsap.to(items, {
-        ...resetProps,
-        "--prox-intensity": 0,
-        duration: config.resetDuration ?? resetDuration,
-        overwrite: "auto",
-        ease: EASE_MAP[config.resetEase] || config.resetEase || "power2.out",
+      
+      const activeItems = [];
+      items.forEach((item, i) => {
+        if (!states[i].isOutside) {
+          activeItems.push(item);
+          states[i].isOutside = true;
+        }
       });
+
+      if (activeItems.length > 0) {
+        gsap.to(activeItems, {
+          ...resetProps,
+          "--prox-intensity": 0,
+          duration: config.resetDuration ?? resetDuration,
+          overwrite: true,
+          ease: EASE_MAP[config.resetEase] || config.resetEase || "power2.out",
+        });
+      }
     };
 
-    container.addEventListener("mousemove", handleMouseMove);
-    container.addEventListener("mouseleave", handleMouseLeave);
+    const targetElement = global ? window : container;
+    targetElement.addEventListener("pointermove", handlePointerMove);
+    targetElement.addEventListener("pointerleave", handlePointerLeave);
+    targetElement.addEventListener("pointerup", handlePointerLeave);
+    targetElement.addEventListener("pointercancel", handlePointerLeave);
 
     return () => {
       window.removeEventListener("resize", updateCenters);
-      container.removeEventListener("mousemove", handleMouseMove);
-      container.removeEventListener("mouseleave", handleMouseLeave);
-      gsap.killTweensOf(items); // مسح أي أنيميشن معلق
+      targetElement.removeEventListener("pointermove", handlePointerMove);
+      targetElement.removeEventListener("pointerleave", handlePointerLeave);
+      targetElement.removeEventListener("pointerup", handlePointerLeave);
+      targetElement.removeEventListener("pointercancel", handlePointerLeave);
+      gsap.killTweensOf(items); 
     };
-  }, [selector, preset, reach, falloff, duration, resetDuration, JSON.stringify(config)]);
+  }, [selector, preset, reach, falloff, duration, resetDuration, global, JSON.stringify(config)]);
 
   return (
-    <div ref={containerRef} className={className} style={{ position: 'relative', ...style }} {...props}>
+    <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...props}>
       {children}
     </div>
   );
