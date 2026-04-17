@@ -48,7 +48,8 @@ function App() {
       preset="scale-blur-rotate"
       config={{
         ease: "elastic",
-        duration: 0.2
+        duration: 2,
+        resetDuration: 2
       }}
       style={{ fontSize: '5rem', fontWeight: '800' }}
     />
