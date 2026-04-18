@@ -4,11 +4,11 @@ import { useGSAP } from "@gsap/react";
 
 const PRESET_DEFAULTS = {
   scale: [1, 1.5],
-  y: [0, -30],
+  y:[0, -30],
   opacity: [0.2, 1],
   blur: [8, 0],
   rotate: [0, 90],
-  weight: [100, 900],
+  weight:[100, 900],
 };
 
 const EASE_MAP = {
@@ -95,7 +95,7 @@ export const Proximity = ({
 
     const items = container.querySelectorAll(selector);
     const states = Array.from(items).map(() => ({ isOutside: true }));
-    let centers = [];
+    let centers =[];
     let animationFrameId;
 
     const setters = Array.from(items).map(item => ({
@@ -191,7 +191,7 @@ export const Proximity = ({
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       const resetProps = onReset ? onReset() : (preset ? calculatePresetValues(preset, 0, config, true) : {});
       
-      const activeItems = [];
+      const activeItems =[];
       items.forEach((item, i) => {
         if (!states[i].isOutside) {
           activeItems.push(item);
@@ -210,11 +210,21 @@ export const Proximity = ({
       }
     };
 
+    const handleTouchMove = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY });
+      }
+    };
+
     const targetElement = global ? window : container;
     targetElement.addEventListener("pointermove", handlePointerMove);
     targetElement.addEventListener("pointerleave", handlePointerLeave);
     targetElement.addEventListener("pointerup", handlePointerLeave);
     targetElement.addEventListener("pointercancel", handlePointerLeave);
+    targetElement.addEventListener("touchmove", handleTouchMove, { passive: true });
+    targetElement.addEventListener("touchstart", handleTouchMove, { passive: true });
+    targetElement.addEventListener("touchend", handlePointerLeave);
+    targetElement.addEventListener("touchcancel", handlePointerLeave);
 
     return () => {
       window.removeEventListener("resize", updateCenters);
@@ -222,9 +232,13 @@ export const Proximity = ({
       targetElement.removeEventListener("pointerleave", handlePointerLeave);
       targetElement.removeEventListener("pointerup", handlePointerLeave);
       targetElement.removeEventListener("pointercancel", handlePointerLeave);
+      targetElement.removeEventListener("touchmove", handleTouchMove);
+      targetElement.removeEventListener("touchstart", handleTouchMove);
+      targetElement.removeEventListener("touchend", handlePointerLeave);
+      targetElement.removeEventListener("touchcancel", handlePointerLeave);
       gsap.killTweensOf(items); 
     };
-  }, [selector, preset, reach, falloff, duration, resetDuration, global, JSON.stringify(config)]);
+  },[selector, preset, reach, falloff, duration, resetDuration, global, JSON.stringify(config)]);
 
   return (
     <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...props}>
