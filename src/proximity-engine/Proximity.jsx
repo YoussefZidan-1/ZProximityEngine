@@ -30,6 +30,14 @@ const EASE_MAP = {
   slowmo: "slow(0.7, 0.7, false)"
 };
 
+const debounce = (func, wait) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 const calculatePresetValues = (presetString, intensity, userConfig = {}, isReset = false) => {
   const props = presetString.split("-");
   const result = {};
@@ -150,6 +158,8 @@ export const Proximity = ({
         };
       });
     };
+    
+    const debouncedUpdateCenters = debounce(updateCenters, 200);
 
     const setInitialState = () => {
       let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
@@ -269,7 +279,7 @@ export const Proximity = ({
     targetElement.addEventListener("touchcancel", handlePointerLeave);
 
     return () => {
-      window.removeEventListener("resize", updateCenters);
+      window.removeEventListener("resize", debouncedUpdateCenters);
       targetElement.removeEventListener("pointermove", handlePointerMove);
       targetElement.removeEventListener("pointerleave", handlePointerLeave);
       targetElement.removeEventListener("pointerup", handlePointerLeave);
