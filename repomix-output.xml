@@ -1,0 +1,1654 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **/*.svg
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+eslint.config.js
+index.html
+LICENSE
+package.json
+README.md
+src/App.jsx
+src/index.css
+src/main.jsx
+src/proximity-engine/Proximity.jsx
+src/proximity-engine/ProximityContext.jsx
+src/proximity-engine/ProximityText.jsx
+vite.config.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="eslint.config.js">
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+])
+</file>
+
+<file path="LICENSE">
+MIT License
+
+Copyright (c) 2026 Yousef Zedan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</file>
+
+<file path="package.json">
+{
+  "name": "test-proximity",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.14.2",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "vite": "^8.0.4"
+  }
+}
+</file>
+
+<file path="src/index.css">
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+</file>
+
+<file path="src/main.jsx">
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+</file>
+
+<file path="vite.config.js">
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+</file>
+
+<file path=".gitignore">
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</file>
+
+<file path="index.html">
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ZProximity Engine</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,100..900;1,100..900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=IBM+Plex+Sans+Arabic:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            html {scroll-behavior: smooth;}
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.jsx"></script>
+    </body>
+</html>
+</file>
+
+<file path="src/proximity-engine/ProximityText.jsx">
+import { Fragment, useMemo } from "react";
+import { Proximity, useProximityConfig } from "./Proximity";
+
+export const ProximityText = ({
+  text,
+  splitBy = "letter",
+  className = "",
+  textClassName = "",
+  fontFamily,
+  lineHeight = 1.2,
+  letterSpacing = 0,
+  wordSpacing = 0.25,
+  clipFix = "0.2em",
+  ...proximityProps
+}) => {
+  const globalConfig = useProximityConfig();
+  const actualFontFamily = fontFamily || globalConfig.defaultFont;
+
+  const containerStyle = useMemo(() => {
+    const base = { 
+      display: "flex", 
+      fontFamily: actualFontFamily,
+      lineHeight: lineHeight,
+      letterSpacing: `${letterSpacing}em`,
+      textAlign: "center",
+      justifyContent: "center"
+    };
+    if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
+    if (splitBy === "line") return { ...base, display: "block" };
+    return { ...base, flexWrap: "wrap" };
+  }, [splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
+
+  const renderedContent = useMemo(() => {
+    const itemStyle = {
+      display: "inline-block",
+      userSelect: "none",
+      willChange: "transform, filter, opacity",
+      padding: clipFix,
+      margin: clipFix ? `-${clipFix}` : "0",
+    };
+
+    const formattedText = text;
+
+    if (splitBy === "word") {
+      return formattedText.split("\n").map((line, lineIdx) => (
+        <Fragment key={lineIdx}>
+          {line.split(" ").map((word, i) => (
+            <span key={i} className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
+          ))}
+          {lineIdx < formattedText.split("\n").length - 1 && <div style={{ width: "100%" }} />}
+        </Fragment>
+      ));
+    }
+
+    if (splitBy === "line") {
+      return formattedText.split("\n").map((line, i) => (
+        <Fragment key={i}>
+          <span className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
+          {i < formattedText.split("\n").length - 1 && <br />}
+        </Fragment>
+      ));
+    }
+
+    return [...formattedText].map((char, i) => {
+      if (char === "\n") {
+        return <div key={i} style={{ width: "100%", height: 0 }} />;
+      }
+      return (
+        <span key={i} className={`prox-part ${textClassName}`} style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}>
+          {char}
+        </span>
+      );
+    });
+
+  },[text, splitBy, textClassName, clipFix]);
+
+  return (
+    <Proximity selector=".prox-part" className={className} {...proximityProps}>
+      <span aria-label={text} style={containerStyle}>
+        {renderedContent}
+      </span>
+    </Proximity>
+  );
+};
+</file>
+
+<file path="src/App.jsx">
+import React, { useState, useMemo } from "react";
+import { ProximityText } from "./proximity-engine/ProximityText";
+import { Proximity } from "./proximity-engine/Proximity";
+import {
+  Type,
+  Maximize,
+  Move,
+  Layers,
+  Copy,
+  Check,
+  MousePointer2,
+  Sparkles,
+  Eye,
+  EyeOff,
+  LayoutGrid,
+  CaseUpper,
+} from "lucide-react";
+
+const App = () => {
+  const [mode, setMode] = useState("text");
+  const [activePresets, setActivePresets] = useState({
+    scale: false,
+    y: true,
+    opacity: true,
+    blur: true,
+    rotate: false,
+    weight: false,
+  });
+
+  const [settings, setSettings] = useState({
+    text: "Beyond\nThe\nVoid",
+    elementCount: 12,
+    splitBy: "line",
+    fontSize: 5,
+    lineHeight: 1.1,
+    letterSpacing: 0,
+    wordSpacing: 0.25,
+    reach: 1,
+    falloff: 2.4,
+    duration: 2,
+    resetDuration: 2,
+    ease: "elastic",
+    resetEase: "elastic",
+    scale: [1, 1.2],
+    y: [0, -30],
+    opacity: [0, 1],
+    blur: [20, 0],
+    rotate: [0, 15],
+    weight: [100, 800],
+  });
+
+  const [copied, setCopied] = useState(false);
+
+  const easeOptions = [
+    "smooth",
+    "heavy",
+    "sharp",
+    "fluid",
+    "bouncy",
+    "elastic",
+    "jello",
+    "bounce",
+    "swing",
+    "vibrate",
+    "robot",
+    "ghost",
+    "expo",
+    "circus",
+    "glitch",
+    "slowmo",
+  ];
+
+  const generatedPresetString = useMemo(() => {
+    return Object.keys(activePresets)
+      .filter((key) => activePresets[key])
+      .join("-");
+  }, [activePresets]);
+
+  const config = useMemo(
+    () => ({
+      scale: settings.scale,
+      y: settings.y,
+      opacity: settings.opacity,
+      blur: settings.blur,
+      rotate: settings.rotate,
+      weight: settings.weight,
+      ease: settings.ease,
+      resetEase: settings.resetEase,
+      duration: settings.duration,
+      resetDuration: settings.resetDuration,
+    }),
+    [settings],
+  );
+
+  const togglePreset = (key) =>
+    setActivePresets((prev) => ({ ...prev, [key]: !prev[key] }));
+  const updateRange = (key, index, val) => {
+    const newRange = [...settings[key]];
+    newRange[index] = val;
+    setSettings({ ...settings, [key]: newRange });
+  };
+
+  const copyCode = () => {
+    const code =
+      mode === "text"
+        ? `<ProximityText text="${settings.text}" lineHeight={${settings.lineHeight}} letterSpacing={${settings.letterSpacing}} wordSpacing={${settings.wordSpacing}} preset="${generatedPresetString}" config={${JSON.stringify(config, null, 2)}} />`
+        : `<Proximity preset="${generatedPresetString}" config={${JSON.stringify(config, null, 2)}}>{/* Elements */}</Proximity>`;
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const PresetCard = ({ id, label, icon: Icon, min, max, step = 1 }) => (
+    <div
+      style={{
+        backgroundColor: activePresets[id] ? "#111" : "#080808",
+        border: `1px solid ${activePresets[id] ? "#333" : "#1a1a1a"}`,
+        borderRadius: "16px",
+        padding: "15px",
+        transition: "0.3s",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: activePresets[id] ? "15px" : "0",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            color: activePresets[id] ? "#fff" : "#444",
+          }}
+        >
+          <Icon size={16} />
+          <span
+            style={{
+              fontSize: "12px",
+              fontWeight: "bold",
+              textTransform: "uppercase",
+            }}
+          >
+            {label}
+          </span>
+        </div>
+        <button
+          onClick={() => togglePreset(id)}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: activePresets[id] ? "#10b981" : "#444",
+          }}
+        >
+          {activePresets[id] ? <Eye size={18} /> : <EyeOff size={18} />}
+        </button>
+      </div>
+      {activePresets[id] && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "9px",
+                color: "#555",
+                marginBottom: "4px",
+              }}
+            >
+              <span>BASE</span> <span>{settings[id][0]}</span>
+            </div>
+            <input
+              type="range"
+              min={min}
+              max={max}
+              step={step}
+              value={settings[id][0]}
+              onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
+              style={{ width: "100%", accentColor: "#555" }}
+            />
+          </div>
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "9px",
+                color: "#aaa",
+                marginBottom: "4px",
+              }}
+            >
+              <span>FINAL</span> <span>{settings[id][1]}</span>
+            </div>
+            <input
+              type="range"
+              min={min}
+              max={max}
+              step={step}
+              value={settings[id][1]}
+              onChange={(e) => updateRange(id, 1, parseFloat(e.target.value))}
+              style={{ width: "100%", accentColor: "#fff" }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        backgroundColor: "#020202",
+        minHeight: "100vh",
+        color: "#e0e0e0",
+        fontFamily: "'Georama', sans-serif",
+        padding: "40px 20px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      <link
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@200..800&display=swap"
+        rel="stylesheet"
+      />
+
+      {/* Mode Toggle */}
+      <div
+        style={{
+          display: "flex",
+          backgroundColor: "#0c0c0c",
+          padding: "4px",
+          borderRadius: "12px",
+          border: "1px solid #1a1a1a",
+          marginBottom: "30px",
+        }}
+      >
+        <button
+          onClick={() => setMode("text")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 20px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: "bold",
+            backgroundColor: mode === "text" ? "#fff" : "transparent",
+            color: mode === "text" ? "#000" : "#666",
+            transition: "0.3s",
+          }}
+        >
+          <CaseUpper size={16} /> TEXT
+        </button>
+        <button
+          onClick={() => setMode("elements")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 20px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: "bold",
+            backgroundColor: mode === "elements" ? "#fff" : "transparent",
+            color: mode === "elements" ? "#000" : "#666",
+            transition: "0.3s",
+          }}
+        >
+          <LayoutGrid size={16} /> ELS
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "30px",
+          opacity: 0.5,
+        }}
+      >
+        <Sparkles size={16} />
+        <span style={{ fontSize: "10px", letterSpacing: "4px" }}>
+          ZPROXIMITY ENGINE
+        </span>
+      </div>
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1000px",
+          height: "650px",
+          backgroundColor: "#070707",
+          borderRadius: "24px",
+          border: "1px solid #151515",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          marginBottom: "30px",
+          boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "20px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "10px",
+            color: "#333",
+          }}
+        >
+          <MousePointer2 size={12} />{" "}
+          {generatedPresetString || "NO PRESETS ACTIVE"}
+        </div>
+
+        {mode === "text" ? (
+          <ProximityText
+            key={
+              settings.text +
+              settings.splitBy +
+              generatedPresetString +
+              settings.fontSize +
+              settings.lineHeight +
+              settings.letterSpacing +
+              settings.wordSpacing +
+              JSON.stringify(config)
+            }
+            text={settings.text.split("\\n").join("\n")}
+            splitBy={settings.splitBy}
+            lineHeight={settings.lineHeight}
+            letterSpacing={settings.letterSpacing}
+            wordSpacing={settings.wordSpacing}
+            preset={generatedPresetString}
+            reach={settings.reach}
+            falloff={settings.falloff}
+            config={config}
+            style={{
+              fontSize: `${settings.fontSize}rem`,
+              fontWeight: "800",
+              textAlign: "center",
+            }}
+          />
+        ) : (
+          <Proximity
+            key={
+              "elements" +
+              settings.elementCount +
+              generatedPresetString +
+              settings.duration +
+              JSON.stringify(config)
+            }
+            selector=".dock-icon"
+            preset={generatedPresetString}
+            reach={settings.reach}
+            falloff={settings.falloff}
+            config={config}
+            style={{
+              display: "flex",
+              gap: "15px",
+              alignItems: "flex-end",
+              padding: "20px",
+            }}
+          >
+            {Array.from({ length: settings.elementCount }).map((_, i) => (
+              <div
+                key={i}
+                className="dock-icon"
+                style={{
+                  width: "50px",
+                  height: "50px",
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  flexShrink: 0,
+                }}
+              />
+            ))}
+          </Proximity>
+        )}
+      </div>
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1000px",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "20px",
+        }}
+      >
+        {/* CORE STRUCTURE */}
+        <div
+          style={{
+            backgroundColor: "#0c0c0c",
+            borderRadius: "20px",
+            padding: "25px",
+            border: "1px solid #1a1a1a",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              color: "#666",
+              fontSize: "12px",
+              marginBottom: "20px",
+            }}
+          >
+            <Type size={16} /> CORE STRUCTURE
+          </div>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "15px" }}
+          >
+            {mode === "text" ? (
+              <>
+                <input
+                  type="text"
+                  value={settings.text}
+                  onChange={(e) =>
+                    setSettings({ ...settings, text: e.target.value })
+                  }
+                  style={{
+                    backgroundColor: "#151515",
+                    border: "1px solid #222",
+                    color: "#fff",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    fontFamily: "inherit",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "11px",
+                    color: "#666",
+                  }}
+                >
+                  <span>FONT SIZE</span> <span>{settings.fontSize}rem</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="15"
+                  step="0.5"
+                  value={settings.fontSize}
+                  onChange={(e) =>
+                    setSettings({ ...settings, fontSize: e.target.value })
+                  }
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "11px",
+                    color: "#666",
+                  }}
+                >
+                  <span>LINE HEIGHT</span> <span>{settings.lineHeight}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3"
+                  step="0.1"
+                  value={settings.lineHeight}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      lineHeight: parseFloat(e.target.value),
+                    })
+                  }
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "11px",
+                    color: "#666",
+                  }}
+                >
+                  <span>LETTER GAP</span>{" "}
+                  <span>{settings.letterSpacing}em</span>
+                </div>
+                <input
+                  type="range"
+                  min="-0.1"
+                  max="1"
+                  step="0.01"
+                  value={settings.letterSpacing}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      letterSpacing: parseFloat(e.target.value),
+                    })
+                  }
+                />
+                <div style={{ display: "flex", gap: "5px" }}>
+                  {["letter", "word", "line"].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSettings({ ...settings, splitBy: s })}
+                      style={{
+                        flex: 1,
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #222",
+                        fontSize: "10px",
+                        fontWeight: "bold",
+                        backgroundColor:
+                          settings.splitBy === s ? "#fff" : "transparent",
+                        color: settings.splitBy === s ? "#000" : "#444",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {s.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "11px",
+                    color: "#666",
+                  }}
+                >
+                  <span>ELEMENT COUNT</span>{" "}
+                  <span>{settings.elementCount}</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="30"
+                  step="1"
+                  value={settings.elementCount}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      elementCount: parseInt(e.target.value),
+                    })
+                  }
+                />
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* GLOBAL MOTION */}
+        <div
+          style={{
+            backgroundColor: "#0c0c0c",
+            borderRadius: "20px",
+            padding: "25px",
+            border: "1px solid #1a1a1a",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              color: "#666",
+              fontSize: "12px",
+              marginBottom: "20px",
+            }}
+          >
+            <Maximize size={16} /> GLOBAL MOTION
+          </div>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "11px",
+              }}
+            >
+              <span>REACH</span> <span>{settings.reach}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="50"
+              step="0.1"
+              value={settings.reach}
+              onChange={(e) =>
+                setSettings({ ...settings, reach: parseFloat(e.target.value) })
+              }
+            />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "11px",
+              }}
+            >
+              <span>DURATION</span> <span>{settings.duration}s</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="0.1"
+              value={settings.duration}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  duration: parseFloat(e.target.value),
+                })
+              }
+            />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "11px",
+              }}
+            >
+              <span>RESET DUR</span> <span>{settings.resetDuration}s</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="0.1"
+              value={settings.resetDuration}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  resetDuration: parseFloat(e.target.value),
+                })
+              }
+            />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "10px",
+                marginTop: "5px",
+              }}
+            >
+              <select
+                value={settings.ease}
+                onChange={(e) =>
+                  setSettings({ ...settings, ease: e.target.value })
+                }
+                style={{
+                  backgroundColor: "#151515",
+                  border: "1px solid #222",
+                  color: "#fff",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  fontFamily: "inherit",
+                  fontSize: "10px",
+                }}
+              >
+                {easeOptions.map((e) => (
+                  <option key={e} value={e}>
+                    {e}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={settings.resetEase}
+                onChange={(e) =>
+                  setSettings({ ...settings, resetEase: e.target.value })
+                }
+                style={{
+                  backgroundColor: "#151515",
+                  border: "1px solid #222",
+                  color: "#fff",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  fontFamily: "inherit",
+                  fontSize: "10px",
+                }}
+              >
+                {easeOptions.map((e) => (
+                  <option key={e} value={e}>
+                    {e} (Res)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* PRESET CARDS */}
+        <div
+          style={{
+            gridColumn: "1 / -1",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "15px",
+          }}
+        >
+          <PresetCard
+            id="scale"
+            label="Scale"
+            icon={Maximize}
+            min="0.1"
+            max="4"
+            step="0.1"
+          />
+          <PresetCard
+            id="y"
+            label="Y Offset"
+            icon={Move}
+            min="-200"
+            max="200"
+          />
+          <PresetCard
+            id="opacity"
+            label="Opacity"
+            icon={Eye}
+            min="0"
+            max="1"
+            step="0.1"
+          />
+          <PresetCard id="blur" label="Blur" icon={Layers} min="0" max="50" />
+          <PresetCard
+            id="rotate"
+            label="Rotate"
+            icon={Maximize}
+            min="-360"
+            max="360"
+          />
+          <PresetCard
+            id="weight"
+            label="Weight"
+            icon={Type}
+            min="100"
+            max="900"
+            step="100"
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={copyCode}
+        style={{
+          marginTop: "50px",
+          padding: "16px 40px",
+          borderRadius: "100px",
+          border: "none",
+          backgroundColor: copied ? "#10b981" : "#fff",
+          color: copied ? "#fff" : "#000",
+          fontWeight: "900",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          transition: "0.4s",
+          transform: `scale(${copied ? 1.05 : 1})`,
+          boxShadow: "0 20px 40px rgba(255,255,255,0.1)",
+        }}
+      >
+        {copied ? <Check size={20} /> : <Copy size={20} />}
+        {copied ? "COPIED!" : "COPY ENGINE CODE"}
+      </button>
+    </div>
+  );
+};
+
+export default App;
+</file>
+
+<file path="src/proximity-engine/Proximity.jsx">
+import { useRef, createContext, useContext } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+const PRESET_DEFAULTS = {
+  scale: [1, 1.5],
+  y:[0, -30],
+  opacity:[0.2, 1],
+  blur: [8, 0],
+  rotate:[0, 90],
+  weight:[100, 900],
+};
+
+const EASE_MAP = {
+  smooth: "power1.inOut",
+  heavy: "power4.out",
+  sharp: "expo.out",
+  fluid: "circ.inOut",
+  bouncy: "back.out(1.7)",
+  elastic: "elastic.out(1, 0.3)",
+  jello: "elastic.out(1.5, 0.2)",
+  bounce: "bounce.out",
+  swing: "back.inOut(3)",
+  vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
+  robot: "steps(8)",
+  ghost: "slow(0.6, 0.8, false)",
+  expo: "expo.inOut",
+  circus: "back.out(4)",
+  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
+  slowmo: "slow(0.7, 0.7, false)"
+};
+
+const calculatePresetValues = (presetString, intensity, userConfig = {}, isReset = false) => {
+  const props = presetString.split("-");
+  const result = {};
+
+  props.forEach((prop) => {
+    const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
+    if (!bounds) return;
+
+    const [base, max] = bounds;
+    const currentValue = isReset ? base : base + (max - base) * intensity;
+
+    if (prop === "blur") {
+      result.filter = `blur(${currentValue}px)`;
+    } else if (prop === "weight") {
+      const weightVal = Math.round(currentValue);
+      result.fontWeight = weightVal;
+      result.fontVariationSettings = `'wght' ${weightVal}`;
+    } else if (prop === "rotate") {
+      result.rotation = currentValue;
+    } else {
+      result[prop] = currentValue;
+    }
+  });
+
+  return result;
+};
+
+const ProximityContext = createContext({
+  defaultFont: "'Bricolage Grotesque', sans-serif",
+});
+
+export const ProximityProvider = ({ children, config }) => {
+  return (
+    <ProximityContext.Provider value={{ ...config }}>
+      {children}
+    </ProximityContext.Provider>
+  );
+};
+
+export const useProximityConfig = () => useContext(ProximityContext);
+
+export const Proximity = ({
+  children,
+  selector = ".prox-item",
+  config = {},
+  preset = "",
+  reach = 2,
+  falloff = 2.4,
+  duration = 0.2,
+  resetDuration = 0.4,
+  global = false,
+  onCalculate,
+  onReset,
+  ease,
+  resetEase,
+  scale,
+  y,
+  opacity,
+  blur,
+  rotate,
+  weight,
+  ignoreSelectors =[], 
+  className = "",
+  style = {},
+  ...restProps
+}) => {
+  const containerRef = useRef(null);
+
+  const activeReach = config.reach ?? reach;
+  const activeFalloff = config.falloff ?? falloff;
+  const activeDuration = config.duration ?? duration;
+  const activeResetDuration = config.resetDuration ?? resetDuration;
+  const activeGlobal = config.global ?? global;
+  const activePreset = config.preset ?? preset;
+  const activeOnCalculate = config.onCalculate ?? onCalculate;
+  const activeOnReset = config.onReset ?? onReset;
+
+  const rawEase = config.ease ?? ease ?? "power1.out";
+  const targetEase = EASE_MAP[rawEase] || rawEase;
+
+  const rawResetEase = config.resetEase ?? resetEase ?? "power2.out";
+  const targetResetEase = EASE_MAP[rawResetEase] || rawResetEase;
+
+  const mergedBounds = {
+    scale: config.scale ?? scale,
+    y: config.y ?? y,
+    opacity: config.opacity ?? opacity,
+    blur: config.blur ?? blur,
+    rotate: config.rotate ?? rotate,
+    weight: config.weight ?? weight,
+  };
+
+  useGSAP(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const items = container.querySelectorAll(selector);
+    const states = Array.from(items).map(() => ({ isOutside: true }));
+    let centers =[];
+    let animationFrameId;
+
+    const setters = Array.from(items).map(item => ({
+      intensity: gsap.quickSetter(item, "--prox-intensity"),
+      dx: gsap.quickSetter(item, "--prox-dx", "px"),
+      dy: gsap.quickSetter(item, "--prox-dy", "px")
+    }));
+
+    const updateCenters = () => {
+      centers = Array.from(items).map((item) => {
+        const rect = item.getBoundingClientRect();
+        return {
+          left: rect.left + window.scrollX,
+          right: rect.right + window.scrollX,
+          top: rect.top + window.scrollY,
+          bottom: rect.bottom + window.scrollY,
+          x: rect.left + window.scrollX + rect.width / 2,
+          y: rect.top + window.scrollY + rect.height / 2,
+        };
+      });
+    };
+
+    const setInitialState = () => {
+      let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+      initialProps.willChange = "transform, filter, opacity, font-variation-settings";
+      if (Object.keys(initialProps).length > 0) gsap.set(items, initialProps);
+    };
+
+    if (document.fonts) {
+      document.fonts.ready.then(updateCenters);
+    } else {
+      setTimeout(updateCenters, 100);
+    }
+    
+    setInitialState();
+
+    window.addEventListener("resize", updateCenters);
+
+    const actualSpread = activeReach * 10000;
+    const maxDistance = activeReach * 200;
+
+    const handlePointerMove = (e) => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = requestAnimationFrame(() => {
+        const mouseX = e.pageX;
+        const mouseY = e.pageY;
+
+        
+        const isBlocked = ignoreSelectors.length > 0 && ignoreSelectors.some((sel) => e.target?.closest?.(sel));
+
+        items.forEach((item, i) => {
+          const bounds = centers[i];
+          if (!bounds) return;
+          
+          let distance;
+
+          
+          if (isBlocked) {
+            distance = Infinity;
+          } else {
+            const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
+            const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
+            distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
+          }
+
+          if (distance > maxDistance) {
+            if (!states[i].isOutside) {
+              const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+              gsap.to(item, {
+                ...resetProps,
+                "--prox-intensity": 0,
+                duration: activeResetDuration,
+                overwrite: true,
+                ease: targetResetEase,
+              });
+              states[i].isOutside = true;
+            }
+            return;
+          }
+
+          const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
+
+          setters[i].intensity(intensity.toFixed(3));
+          setters[i].dx(mouseX - bounds.x);
+          setters[i].dy(mouseY - bounds.y);
+
+          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
+
+          gsap.to(item, {
+            ...animationProps,
+            duration: activeDuration,
+            overwrite: true,
+            ease: targetEase,
+          });
+          
+          states[i].isOutside = false;
+        });
+      });
+    };
+
+    const handlePointerLeave = () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+      
+      const activeItems =[];
+      items.forEach((item, i) => {
+        if (!states[i].isOutside) {
+          activeItems.push(item);
+          states[i].isOutside = true;
+        }
+      });
+
+      if (activeItems.length > 0) {
+        gsap.to(activeItems, {
+          ...resetProps,
+          "--prox-intensity": 0,
+          duration: activeResetDuration,
+          overwrite: true,
+          ease: targetResetEase,
+        });
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY, target: e.target });
+      }
+    };
+
+    const targetElement = activeGlobal ? window : container;
+    targetElement.addEventListener("pointermove", handlePointerMove);
+    targetElement.addEventListener("pointerleave", handlePointerLeave);
+    targetElement.addEventListener("pointerup", handlePointerLeave);
+    targetElement.addEventListener("pointercancel", handlePointerLeave);
+    targetElement.addEventListener("touchmove", handleTouchMove, { passive: true });
+    targetElement.addEventListener("touchstart", handleTouchMove, { passive: true });
+    targetElement.addEventListener("touchend", handlePointerLeave);
+    targetElement.addEventListener("touchcancel", handlePointerLeave);
+
+    return () => {
+      window.removeEventListener("resize", updateCenters);
+      targetElement.removeEventListener("pointermove", handlePointerMove);
+      targetElement.removeEventListener("pointerleave", handlePointerLeave);
+      targetElement.removeEventListener("pointerup", handlePointerLeave);
+      targetElement.removeEventListener("pointercancel", handlePointerLeave);
+      targetElement.removeEventListener("touchmove", handleTouchMove);
+      targetElement.removeEventListener("touchstart", handleTouchMove);
+      targetElement.removeEventListener("touchend", handlePointerLeave);
+      targetElement.removeEventListener("touchcancel", handlePointerLeave);
+      gsap.killTweensOf(items); 
+    };
+  },[
+    selector, 
+    activePreset, 
+    activeReach, 
+    activeFalloff, 
+    activeDuration, 
+    activeResetDuration, 
+    activeGlobal, 
+    JSON.stringify(mergedBounds), 
+    ignoreSelectors.join(','),
+    targetEase,
+    targetResetEase
+  ]);
+
+  return (
+    <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...restProps}>
+      {children}
+    </div>
+  );
+};
+</file>
+
+<file path="src/proximity-engine/ProximityContext.jsx">
+import { createContext, useContext } from "react";
+
+const ProximityContext = createContext({
+  defaultFont: "'Georama', sans-serif",
+});
+
+export const ProximityProvider = ({ children, config }) => {
+  return (
+    <ProximityContext.Provider value={{ ...config }}>
+      {children}
+    </ProximityContext.Provider>
+  );
+};
+
+export const useProximityConfig = () => useContext(ProximityContext);
+</file>
+
+<file path="README.md">
+# 🚀 ZProximity Engine
+
+**A high-performance React engine for proximity-based interactive motion design.**
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-MVP-orange.svg)
+![React](https://img.shields.io/badge/built%20with-React-61dafb.svg)
+![GSAP](https://img.shields.io/badge/powered%20by-GSAP-ff0000.svg)
+
+`ZProximity` is a specialized motion engine designed to bridge the gap between complex mathematical physics and beautiful UI design. It allows developers to create organic, reactive animations (scale, blur, rotation, weight, etc.) that respond to user proximity with a single prop.
+
+[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) | [**📦 Coming Soon to NPM**](#)
+
+---
+
+## 🎨 The Concept
+
+Most proximity effects require heavy math, manual event listeners, and complex cleanup logic. `ZProximity` abstracts this complexity into a declarative React API. 
+
+By utilizing **Exponential Decay** math and **GSAP's `quickSetter`** for high-performance DOM updates, the engine ensures buttery-smooth 60fps animations even with large numbers of interactive elements.
+
+> **"Don't just animate. React."**
+
+---
+
+## ✨ Key Features
+
+- **🚀 High Performance:** Built on GSAP, optimized with `quickSetter` to minimize layout thrashing.
+- **🎭 Preset System:** Rapidly apply styles like `scale-blur-rotate` or `blur-scale-weight-rotate-y` without writing custom logic write the preset name with the order you like.
+- **🔓 The "Escape Hatch":** Full control via `onCalculate` and `onReset` callbacks for advanced users who want to map proximity to custom logic (e.g., audio frequencies or scroll position).
+- **🛠️ Visual Playground:** A built-in editor to tweak parameters in real-time and export your configuration instantly.
+- **🔡 Intelligent Text Splitting:** Built-in support for splitting text into characters, words, or lines for granular control.
+
+---
+
+## 🚀 Quick Start (Preview)
+
+*Note: Currently available as part of the Playground source code. NPM package is in development.*
+
+```jsx
+import { ProximityText } from "./proximity-engine/ProximityText";
+import { Proximity } from "./proximity-engine/Proximity";
+
+function App() {
+  return (
+    <ProximityText 
+      text="Beyond the Void"
+      preset="scale-blur-rotate"
+      config={{
+        ease: "elastic",
+        duration: 2,
+        resetDuration: 2
+      }}
+      style={{ fontSize: '5rem', fontWeight: '800' }}
+    />
+  );
+}
+```
+
+---
+
+## 🛠 Roadmap
+
+We are currently in the **MVP (Minimum Viable Product)** stage. Here is what we are building next:
+
+- [ ] **TypeScript Support** (Full type safety for all configs and props) 🛡️
+- [ ] **Touch & Mobile Mode** (Optimized interaction for touch devices) 📱
+- [ ] **Scroll-Proximity** (Trigger animations based on scroll depth) 📜
+- [ ] **Reduced Motion Support** (Respecting user accessibility settings) ♿
+- [ ] **NPM Release** (Official package deployment) 📦
+
+---
+
+## 🤝 Contributing
+
+I am building this in public! If you are a math enthusiast, a GSAP wizard, or a React expert, I would love your help.
+
+1. **Star this repo** if you find it useful! ⭐
+2. **Open an Issue** to report bugs or suggest features.
+3. **Submit a Pull Request** to help improve the engine.
+
+Your feedback is what will turn this MVP into a professional industry standard.
+
+---
+
+## 👨‍💻 Author
+
+**Yousef Zedan**
+*Exploring the intersection of Art, Music, and Code.*
+
+<p align="center">
+  <a href="https://yzportfolio.vercel.app" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/internet--v1.png" alt="Portfolio" height="50" width="50" />
+  </a>
+  <a href="mailto:zedstudios.devs@gmail.com" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/gmail-new.png" alt="Gmail" height="50" width="50" />
+  </a>
+  <a href="https://linkedin.com/in/yousef-zedan-6a275a400" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/linkedin.png" alt="LinkedIn" height="50" width="50" />
+  </a>
+  <a href="https://wa.me/201130765715" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/whatsapp--v1.png" alt="WhatsApp" height="50" width="50" />
+  </a>
+  <a href="https://x.com/YousefZeda59629" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/twitterx--v2.png" alt="X" height="50" width="50" />
+  </a>
+  <a href="https://www.instagram.com/yousef__zedan1/" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/instagram-new--v1.png" alt="Instagram" height="50" width="50" />
+  </a>
+</p>
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+</file>
+
+</files>
