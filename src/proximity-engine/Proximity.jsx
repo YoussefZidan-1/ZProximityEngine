@@ -131,178 +131,189 @@ export const Proximity = ({
   };
 
   useGSAP(() => {
-    const container = containerRef.current;
-    if (!container) return;
+      const container = containerRef.current;
+      if (!container) return;
+    
+      let items = [];
+      let states = [];
+      let centers = [];
+      let setters =[];
+      let animationFrameId;
+      const updateCenters = () => {
+        centers = items.map((item) => {
+          const rect = item.getBoundingClientRect();
+          return {
+            left: rect.left + window.scrollX,
+            right: rect.right + window.scrollX,
+            top: rect.top + window.scrollY,
+            bottom: rect.bottom + window.scrollY,
+            x: rect.left + window.scrollX + rect.width / 2,
+            y: rect.top + window.scrollY + rect.height / 2,
+          };
+        });
+      };
+  
+      const debouncedUpdateCenters = debounce(updateCenters, 200);
+  
+      const setInitialState = () => {
+        let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+        initialProps.willChange = "transform, filter, opacity, font-variation-settings";
+        if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
+      };
+  
+      const initItems = () => {
+        if (items.length > 0) gsap.killTweensOf(items);
+  
+        items = Array.from(container.querySelectorAll(selector));
+        states = items.map(() => ({ isOutside: true }));
+        setters = items.map(item => ({
+          intensity: gsap.quickSetter(item, "--prox-intensity"),
+          dx: gsap.quickSetter(item, "--prox-dx", "px"),
+          dy: gsap.quickSetter(item, "--prox-dy", "px")
+        }));
+  
+        updateCenters();
+        setInitialState();
+      };
+  
+      if (document.fonts) {
+        document.fonts.ready.then(initItems);
+      } else {
+        setTimeout(initItems, 100);
+      }
 
-    const items = container.querySelectorAll(selector);
-    const states = Array.from(items).map(() => ({ isOutside: true }));
-    let centers =[];
-    let animationFrameId;
-
-    const setters = Array.from(items).map(item => ({
-      intensity: gsap.quickSetter(item, "--prox-intensity"),
-      dx: gsap.quickSetter(item, "--prox-dx", "px"),
-      dy: gsap.quickSetter(item, "--prox-dy", "px")
-    }));
-
-    const updateCenters = () => {
-      centers = Array.from(items).map((item) => {
-        const rect = item.getBoundingClientRect();
-        return {
-          left: rect.left + window.scrollX,
-          right: rect.right + window.scrollX,
-          top: rect.top + window.scrollY,
-          bottom: rect.bottom + window.scrollY,
-          x: rect.left + window.scrollX + rect.width / 2,
-          y: rect.top + window.scrollY + rect.height / 2,
-        };
+      const observer = new MutationObserver(() => {
+        initItems();
       });
-    };
-    
-    const debouncedUpdateCenters = debounce(updateCenters, 200);
-
-    const setInitialState = () => {
-      let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-      initialProps.willChange = "transform, filter, opacity, font-variation-settings";
-      if (Object.keys(initialProps).length > 0) gsap.set(items, initialProps);
-    };
-
-    if (document.fonts) {
-      document.fonts.ready.then(updateCenters);
-    } else {
-      setTimeout(updateCenters, 100);
-    }
-    
-    setInitialState();
-
-    window.addEventListener("resize", debouncedUpdateCenters);
-
-    const actualSpread = activeReach * 10000;
-    const maxDistance = activeReach * 200;
-
-    const handlePointerMove = (e) => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      animationFrameId = requestAnimationFrame(() => {
-        const mouseX = e.pageX;
-        const mouseY = e.pageY;
-
-        
-        const isBlocked = ignoreSelectors.length > 0 && ignoreSelectors.some((sel) => e.target?.closest?.(sel));
-
-        items.forEach((item, i) => {
-          const bounds = centers[i];
-          if (!bounds) return;
-          
-          let distance;
-
-          
-          if (isBlocked) {
-            distance = Infinity;
-          } else {
-            const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
-            const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
-            distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
-          }
-
-          if (distance > maxDistance) {
-            if (!states[i].isOutside) {
-              const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-              gsap.to(item, {
-                ...resetProps,
-                "--prox-intensity": 0,
-                duration: activeResetDuration,
-                overwrite: true,
-                ease: targetResetEase,
-              });
-              states[i].isOutside = true;
+      observer.observe(container, { childList: true, subtree: true });
+  
+      window.addEventListener("resize", debouncedUpdateCenters);
+  
+      const actualSpread = activeReach * 10000;
+      const maxDistance = activeReach * 200;
+  
+      const handlePointerMove = (e) => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = requestAnimationFrame(() => {
+          const mouseX = e.pageX;
+          const mouseY = e.pageY;
+  
+          const isBlocked = ignoreSelectors.length > 0 && ignoreSelectors.some((sel) => e.target?.closest?.(sel));
+  
+          items.forEach((item, i) => {
+            const bounds = centers[i];
+            if (!bounds) return;
+            
+            let distance;
+  
+            if (isBlocked) {
+              distance = Infinity;
+            } else {
+              const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
+              const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
+              distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
             }
-            return;
-          }
-
-          const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
-
-          setters[i].intensity(intensity.toFixed(3));
-          setters[i].dx(mouseX - bounds.x);
-          setters[i].dy(mouseY - bounds.y);
-
-          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
-
-          gsap.to(item, {
-            ...animationProps,
-            duration: activeDuration,
-            overwrite: true,
-            ease: targetEase,
+  
+            if (distance > maxDistance) {
+              if (!states[i].isOutside) {
+                const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+                gsap.to(item, {
+                  ...resetProps,
+                  "--prox-intensity": 0,
+                  duration: activeResetDuration,
+                  overwrite: true,
+                  ease: targetResetEase,
+                });
+                states[i].isOutside = true;
+              }
+              return;
+            }
+  
+            const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
+  
+            setters[i].intensity(intensity.toFixed(3));
+            setters[i].dx(mouseX - bounds.x);
+            setters[i].dy(mouseY - bounds.y);
+  
+            const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
+  
+            gsap.to(item, {
+              ...animationProps,
+              duration: activeDuration,
+              overwrite: true,
+              ease: targetEase,
+            });
+            
+            states[i].isOutside = false;
           });
-          
-          states[i].isOutside = false;
         });
-      });
-    };
-
-    const handlePointerLeave = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-      
-      const activeItems =[];
-      items.forEach((item, i) => {
-        if (!states[i].isOutside) {
-          activeItems.push(item);
-          states[i].isOutside = true;
+      };
+  
+      const handlePointerLeave = () => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+        
+        const activeItems =[];
+        items.forEach((item, i) => {
+          if (!states[i].isOutside) {
+            activeItems.push(item);
+            states[i].isOutside = true;
+          }
+        });
+  
+        if (activeItems.length > 0) {
+          gsap.to(activeItems, {
+            ...resetProps,
+            "--prox-intensity": 0,
+            duration: activeResetDuration,
+            overwrite: true,
+            ease: targetResetEase,
+          });
         }
-      });
-
-      if (activeItems.length > 0) {
-        gsap.to(activeItems, {
-          ...resetProps,
-          "--prox-intensity": 0,
-          duration: activeResetDuration,
-          overwrite: true,
-          ease: targetResetEase,
-        });
-      }
-    };
-
-    const handleTouchMove = (e) => {
-      if (e.touches && e.touches.length > 0) {
-        handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY, target: e.target });
-      }
-    };
-
-    const targetElement = activeGlobal ? window : container;
-    targetElement.addEventListener("pointermove", handlePointerMove);
-    targetElement.addEventListener("pointerleave", handlePointerLeave);
-    targetElement.addEventListener("pointerup", handlePointerLeave);
-    targetElement.addEventListener("pointercancel", handlePointerLeave);
-    targetElement.addEventListener("touchmove", handleTouchMove, { passive: true });
-    targetElement.addEventListener("touchstart", handleTouchMove, { passive: true });
-    targetElement.addEventListener("touchend", handlePointerLeave);
-    targetElement.addEventListener("touchcancel", handlePointerLeave);
-
-    return () => {
-      window.removeEventListener("resize", debouncedUpdateCenters);
-      targetElement.removeEventListener("pointermove", handlePointerMove);
-      targetElement.removeEventListener("pointerleave", handlePointerLeave);
-      targetElement.removeEventListener("pointerup", handlePointerLeave);
-      targetElement.removeEventListener("pointercancel", handlePointerLeave);
-      targetElement.removeEventListener("touchmove", handleTouchMove);
-      targetElement.removeEventListener("touchstart", handleTouchMove);
-      targetElement.removeEventListener("touchend", handlePointerLeave);
-      targetElement.removeEventListener("touchcancel", handlePointerLeave);
-      gsap.killTweensOf(items); 
-    };
-  },[
-    selector, 
-    activePreset, 
-    activeReach, 
-    activeFalloff, 
-    activeDuration, 
-    activeResetDuration, 
-    activeGlobal, 
-    JSON.stringify(mergedBounds), 
-    ignoreSelectors.join(','),
-    targetEase,
-    targetResetEase
-  ]);
+      };
+  
+      const handleTouchMove = (e) => {
+        if (e.touches && e.touches.length > 0) {
+          handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY, target: e.target });
+        }
+      };
+  
+      const targetElement = activeGlobal ? window : container;
+      targetElement.addEventListener("pointermove", handlePointerMove);
+      targetElement.addEventListener("pointerleave", handlePointerLeave);
+      targetElement.addEventListener("pointerup", handlePointerLeave);
+      targetElement.addEventListener("pointercancel", handlePointerLeave);
+      targetElement.addEventListener("touchmove", handleTouchMove, { passive: true });
+      targetElement.addEventListener("touchstart", handleTouchMove, { passive: true });
+      targetElement.addEventListener("touchend", handlePointerLeave);
+      targetElement.addEventListener("touchcancel", handlePointerLeave);
+  
+      return () => {
+        observer.disconnect(); // 5. Clean up the observer!
+        window.removeEventListener("resize", debouncedUpdateCenters);
+        targetElement.removeEventListener("pointermove", handlePointerMove);
+        targetElement.removeEventListener("pointerleave", handlePointerLeave);
+        targetElement.removeEventListener("pointerup", handlePointerLeave);
+        targetElement.removeEventListener("pointercancel", handlePointerLeave);
+        targetElement.removeEventListener("touchmove", handleTouchMove);
+        targetElement.removeEventListener("touchstart", handleTouchMove);
+        targetElement.removeEventListener("touchend", handlePointerLeave);
+        targetElement.removeEventListener("touchcancel", handlePointerLeave);
+        gsap.killTweensOf(items); 
+      };
+    },[
+      selector, 
+      activePreset, 
+      activeReach, 
+      activeFalloff, 
+      activeDuration, 
+      activeResetDuration, 
+      activeGlobal, 
+      JSON.stringify(mergedBounds), 
+      ignoreSelectors.join(','),
+      targetEase,
+      targetResetEase
+    ]);
 
   return (
     <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...restProps}>

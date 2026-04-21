@@ -45,7 +45,7 @@ export const ProximityText = ({
       return formattedText.split("\n").map((line, lineIdx) => (
         <Fragment key={lineIdx}>
           {line.split(" ").map((word, i) => (
-            <span key={i} className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
+            <span key={i} aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
           ))}
           {lineIdx < formattedText.split("\n").length - 1 && <div style={{ width: "100%" }} />}
         </Fragment>
@@ -55,7 +55,7 @@ export const ProximityText = ({
     if (splitBy === "line") {
       return formattedText.split("\n").map((line, i) => (
         <Fragment key={i}>
-          <span className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
+          <span aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
           {i < formattedText.split("\n").length - 1 && <br />}
         </Fragment>
       ));
@@ -66,7 +66,7 @@ export const ProximityText = ({
         return <div key={i} style={{ width: "100%", height: 0 }} />;
       }
       return (
-        <span key={i} className={`prox-part ${textClassName}`} style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}>
+        <span aria-hidden="true" key={i} className={`prox-part ${textClassName}`} style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}>
           {char}
         </span>
       );
