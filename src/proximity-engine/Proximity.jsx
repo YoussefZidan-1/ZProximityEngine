@@ -5,9 +5,9 @@ import { useGSAP } from "@gsap/react";
 const PRESET_DEFAULTS = {
   scale: [1, 1.5],
   y:[0, -30],
-  opacity: [0.2, 1],
+  opacity:[0.2, 1],
   blur: [8, 0],
-  rotate: [0, 90],
+  rotate:[0, 90],
   weight:[100, 900],
 };
 
@@ -74,20 +74,53 @@ export const useProximityConfig = () => useContext(ProximityContext);
 export const Proximity = ({
   children,
   selector = ".prox-item",
-  preset = "",
   config = {},
-  onCalculate,
-  onReset,
+  preset = "",
   reach = 2,
   falloff = 2.4,
   duration = 0.2,
   resetDuration = 0.4,
   global = false,
+  onCalculate,
+  onReset,
+  ease,
+  resetEase,
+  scale,
+  y,
+  opacity,
+  blur,
+  rotate,
+  weight,
+  ignoreSelectors =[], 
   className = "",
   style = {},
-  ...props
+  ...restProps
 }) => {
   const containerRef = useRef(null);
+
+  const activeReach = config.reach ?? reach;
+  const activeFalloff = config.falloff ?? falloff;
+  const activeDuration = config.duration ?? duration;
+  const activeResetDuration = config.resetDuration ?? resetDuration;
+  const activeGlobal = config.global ?? global;
+  const activePreset = config.preset ?? preset;
+  const activeOnCalculate = config.onCalculate ?? onCalculate;
+  const activeOnReset = config.onReset ?? onReset;
+
+  const rawEase = config.ease ?? ease ?? "power1.out";
+  const targetEase = EASE_MAP[rawEase] || rawEase;
+
+  const rawResetEase = config.resetEase ?? resetEase ?? "power2.out";
+  const targetResetEase = EASE_MAP[rawResetEase] || rawResetEase;
+
+  const mergedBounds = {
+    scale: config.scale ?? scale,
+    y: config.y ?? y,
+    opacity: config.opacity ?? opacity,
+    blur: config.blur ?? blur,
+    rotate: config.rotate ?? rotate,
+    weight: config.weight ?? weight,
+  };
 
   useGSAP(() => {
     const container = containerRef.current;
@@ -119,7 +152,7 @@ export const Proximity = ({
     };
 
     const setInitialState = () => {
-      let initialProps = onReset ? onReset() : (preset ? calculatePresetValues(preset, 0, config, true) : {});
+      let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
       initialProps.willChange = "transform, filter, opacity, font-variation-settings";
       if (Object.keys(initialProps).length > 0) gsap.set(items, initialProps);
     };
@@ -134,8 +167,8 @@ export const Proximity = ({
 
     window.addEventListener("resize", updateCenters);
 
-    const actualSpread = reach * 10000;
-    const maxDistance = reach * 200;
+    const actualSpread = activeReach * 10000;
+    const maxDistance = activeReach * 200;
 
     const handlePointerMove = (e) => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -143,41 +176,50 @@ export const Proximity = ({
         const mouseX = e.pageX;
         const mouseY = e.pageY;
 
+        
+        const isBlocked = ignoreSelectors.length > 0 && ignoreSelectors.some((sel) => e.target?.closest?.(sel));
+
         items.forEach((item, i) => {
           const bounds = centers[i];
           if (!bounds) return;
           
-          const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
-          const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
-          const distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
+          let distance;
+
+          
+          if (isBlocked) {
+            distance = Infinity;
+          } else {
+            const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
+            const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
+            distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
+          }
 
           if (distance > maxDistance) {
             if (!states[i].isOutside) {
-              const resetProps = onReset ? onReset() : (preset ? calculatePresetValues(preset, 0, config, true) : {});
+              const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
               gsap.to(item, {
                 ...resetProps,
                 "--prox-intensity": 0,
-                duration: config.resetDuration ?? resetDuration,
+                duration: activeResetDuration,
                 overwrite: true,
-                ease: EASE_MAP[config.resetEase] || config.resetEase || "power2.out",
+                ease: targetResetEase,
               });
               states[i].isOutside = true;
             }
             return;
           }
 
-          const intensity = Math.exp(-(Math.pow(distance, falloff)) / actualSpread);
+          const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
 
           setters[i].intensity(intensity.toFixed(3));
           setters[i].dx(mouseX - bounds.x);
           setters[i].dy(mouseY - bounds.y);
 
-          const animationProps = onCalculate ? onCalculate(intensity, distance) : (preset ? calculatePresetValues(preset, intensity, config, false) : {});
-          const targetEase = EASE_MAP[config.ease] || config.ease || "power1.out";
+          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
 
           gsap.to(item, {
             ...animationProps,
-            duration: config.duration ?? duration,
+            duration: activeDuration,
             overwrite: true,
             ease: targetEase,
           });
@@ -189,7 +231,7 @@ export const Proximity = ({
 
     const handlePointerLeave = () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      const resetProps = onReset ? onReset() : (preset ? calculatePresetValues(preset, 0, config, true) : {});
+      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
       
       const activeItems =[];
       items.forEach((item, i) => {
@@ -203,20 +245,20 @@ export const Proximity = ({
         gsap.to(activeItems, {
           ...resetProps,
           "--prox-intensity": 0,
-          duration: config.resetDuration ?? resetDuration,
+          duration: activeResetDuration,
           overwrite: true,
-          ease: EASE_MAP[config.resetEase] || config.resetEase || "power2.out",
+          ease: targetResetEase,
         });
       }
     };
 
     const handleTouchMove = (e) => {
       if (e.touches && e.touches.length > 0) {
-        handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY });
+        handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY, target: e.target });
       }
     };
 
-    const targetElement = global ? window : container;
+    const targetElement = activeGlobal ? window : container;
     targetElement.addEventListener("pointermove", handlePointerMove);
     targetElement.addEventListener("pointerleave", handlePointerLeave);
     targetElement.addEventListener("pointerup", handlePointerLeave);
@@ -238,10 +280,22 @@ export const Proximity = ({
       targetElement.removeEventListener("touchcancel", handlePointerLeave);
       gsap.killTweensOf(items); 
     };
-  },[selector, preset, reach, falloff, duration, resetDuration, global, JSON.stringify(config)]);
+  },[
+    selector, 
+    activePreset, 
+    activeReach, 
+    activeFalloff, 
+    activeDuration, 
+    activeResetDuration, 
+    activeGlobal, 
+    JSON.stringify(mergedBounds), 
+    ignoreSelectors.join(','),
+    targetEase,
+    targetResetEase
+  ]);
 
   return (
-    <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...props}>
+    <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...restProps}>
       {children}
     </div>
   );

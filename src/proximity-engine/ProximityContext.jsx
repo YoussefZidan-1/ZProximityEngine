@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 
 const ProximityContext = createContext({
-  defaultFont: "'Georama', sans-serif",
+  defaultFont: "'Bricolage Grotesque', sans-serif",
 });
 
 export const ProximityProvider = ({ children, config }) => {
