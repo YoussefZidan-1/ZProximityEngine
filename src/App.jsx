@@ -213,7 +213,7 @@ const App = () => {
   );
 
   return (
-    <div
+    <main
       style={{
         backgroundColor: "#020202",
         minHeight: "100vh",
@@ -291,9 +291,9 @@ const App = () => {
         }}
       >
         <Sparkles size={16} />
-        <span style={{ fontSize: "10px", letterSpacing: "4px" }}>
+        <h1 style={{ fontSize: "10px", letterSpacing: "4px" }}>
           ZPROXIMITY ENGINE
-        </span>
+        </h1>
       </div>
 
       <div
@@ -779,7 +779,7 @@ const App = () => {
         {copied ? <Check size={20} /> : <Copy size={20} />}
         {copied ? "COPIED!" : "COPY ENGINE CODE"}
       </button>
-    </div>
+    </main>
   );
 };
 
