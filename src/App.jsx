@@ -181,6 +181,7 @@ const App = () => {
               value={settings[id][0]}
               onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
               style={{ width: "100%", accentColor: "#555" }}
+              aria-label={`${label} Base Value`}
             />
           </div>
           <div>
@@ -203,6 +204,7 @@ const App = () => {
               value={settings[id][1]}
               onChange={(e) => updateRange(id, 1, parseFloat(e.target.value))}
               style={{ width: "100%", accentColor: "#fff" }}
+              aria-label={`${label} Final Value`}
             />
           </div>
         </div>
