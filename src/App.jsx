@@ -224,7 +224,7 @@ const App = () => {
             alignItems: "center",
             gap: "8px",
             fontSize: "10px",
-            color: "#333",
+            color: "#888",
           }}
         >
           <MousePointer2 size={12} />{" "}
@@ -621,7 +621,7 @@ const App = () => {
         </div>
 
         {/* PRESET CARDS */}
-        <Suspense fallback={<div style={{ color: "#333" }}>Loading Settings...</div>}>
+        <Suspense fallback={<div style={{ color: "#888" }}>Loading Settings...</div>}>
         <div
           style={{
             gridColumn: "1 / -1",

@@ -59,7 +59,7 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
               display: "flex",
               justifyContent: "space-between",
               fontSize: "9px",
-              color: "#555",
+              color: "#888",
               marginBottom: "4px",
             }}
           >
@@ -72,7 +72,7 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
             step={step}
             value={settings[id][0]}
             onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
-            style={{ width: "100%", accentColor: "#555" }}
+            style={{ width: "100%", accentColor: "#888" }}
             aria-label={`${label} Base Value`}
           />
         </div>
