@@ -76,9 +76,9 @@ export const ProximityText = ({
 
   return (
     <Proximity selector=".prox-part" className={className} {...proximityProps}>
-      <span role="paragraph" aria-label={text} style={containerStyle}>
+      <div aria-label={text} style={containerStyle}>
         {renderedContent}
-      </span>
+      </div>
     </Proximity>
   );
 };
