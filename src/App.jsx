@@ -114,9 +114,9 @@ const App = () => {
   };
 
   return (
-    <main // Semantic HTML
+    <main
       style={{
-        backgroundColor: "#020202",
+        backgroundColor: "#000",
         minHeight: "100vh",
         color: "#e0e0e0",
         fontFamily: "'Georama', sans-serif",
@@ -194,7 +194,7 @@ const App = () => {
         }}
       >
         <Sparkles size={16} />
-        <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal" }}>
+        <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal", color: "#fff" }}>
           ZPROXIMITY ENGINE
         </h1>
       </header>
