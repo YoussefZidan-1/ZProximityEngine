@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, lazy, Suspense } from "react";
 import { ProximityText } from "./proximity-engine/ProximityText";
 import { Proximity } from "./proximity-engine/Proximity";
-import { PresetCard } from "./components/PresetCard";
+const PresetCard = lazy(() => import("./components/PresetCard").then(module => ({ default: module.PresetCard })));
 import {
   Type,
   Maximize,
@@ -621,6 +621,7 @@ const App = () => {
         </div>
 
         {/* PRESET CARDS */}
+        <Suspense fallback={<div style={{ color: "#333" }}>Loading Settings...</div>}>
         <div
           style={{
             gridColumn: "1 / -1",
@@ -636,8 +637,8 @@ const App = () => {
           <PresetCard id="rotate" label="Rotate" icon={Maximize} min="-360" max="360" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
           <PresetCard id="weight" label="Weight" icon={Type} min="100" max="900" step="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
         </div>
+      </Suspense>
       </div>
-
       <button
         aria-label="copyCode"
         onClick={copyCode}
