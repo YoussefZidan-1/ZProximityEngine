@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ProximityText } from "./proximity-engine/ProximityText";
 import { Proximity } from "./proximity-engine/Proximity";
+import { PresetCard } from "./components/PresetCard";
 import {
   Type,
   Maximize,
@@ -16,9 +17,29 @@ import {
   CaseUpper,
 } from "lucide-react";
 
+// Moved outside the component to prevent recreation on every render
+const easeOptions =[
+  "smooth",
+  "heavy",
+  "sharp",
+  "fluid",
+  "bouncy",
+  "elastic",
+  "jello",
+  "bounce",
+  "swing",
+  "vibrate",
+  "robot",
+  "ghost",
+  "expo",
+  "circus",
+  "glitch",
+  "slowmo",
+];
+
 const App = () => {
   const [mode, setMode] = useState("text");
-  const [activePresets, setActivePresets] = useState({
+  const[activePresets, setActivePresets] = useState({
     scale: false,
     y: true,
     opacity: true,
@@ -27,7 +48,7 @@ const App = () => {
     weight: false,
   });
 
-  const [settings, setSettings] = useState({
+  const[settings, setSettings] = useState({
     text: "Beyond\nThe\nVoid",
     elementCount: 12,
     splitBy: "line",
@@ -50,25 +71,6 @@ const App = () => {
   });
 
   const [copied, setCopied] = useState(false);
-
-  const easeOptions = [
-    "smooth",
-    "heavy",
-    "sharp",
-    "fluid",
-    "bouncy",
-    "elastic",
-    "jello",
-    "bounce",
-    "swing",
-    "vibrate",
-    "robot",
-    "ghost",
-    "expo",
-    "circus",
-    "glitch",
-    "slowmo",
-  ];
 
   const generatedPresetString = useMemo(() => {
     return Object.keys(activePresets)
@@ -94,6 +96,7 @@ const App = () => {
 
   const togglePreset = (key) =>
     setActivePresets((prev) => ({ ...prev, [key]: !prev[key] }));
+    
   const updateRange = (key, index, val) => {
     const newRange = [...settings[key]];
     newRange[index] = val;
@@ -110,110 +113,8 @@ const App = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const PresetCard = ({ id, label, icon: Icon, min, max, step = 1 }) => (
-    <div
-      style={{
-        backgroundColor: activePresets[id] ? "#111" : "#080808",
-        border: `1px solid ${activePresets[id] ? "#333" : "#1a1a1a"}`,
-        borderRadius: "16px",
-        padding: "15px",
-        transition: "0.3s",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: activePresets[id] ? "15px" : "0",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            color: activePresets[id] ? "#fff" : "#444",
-          }}
-        >
-          <Icon size={16} />
-          <span
-            style={{
-              fontSize: "12px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-            }}
-          >
-            {label}
-          </span>
-        </div>
-        <button
-          onClick={() => togglePreset(id)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: activePresets[id] ? "#10b981" : "#444",
-          }}
-        >
-          {activePresets[id] ? <Eye size={18} /> : <EyeOff size={18} />}
-        </button>
-      </div>
-      {activePresets[id] && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "9px",
-                color: "#555",
-                marginBottom: "4px",
-              }}
-            >
-              <span>BASE</span> <span>{settings[id][0]}</span>
-            </div>
-            <input
-              type="range"
-              min={min}
-              max={max}
-              step={step}
-              value={settings[id][0]}
-              onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
-              style={{ width: "100%", accentColor: "#555" }}
-              aria-label={`${label} Base Value`}
-            />
-          </div>
-          <div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "9px",
-                color: "#aaa",
-                marginBottom: "4px",
-              }}
-            >
-              <span>FINAL</span> <span>{settings[id][1]}</span>
-            </div>
-            <input
-              type="range"
-              min={min}
-              max={max}
-              step={step}
-              value={settings[id][1]}
-              onChange={(e) => updateRange(id, 1, parseFloat(e.target.value))}
-              style={{ width: "100%", accentColor: "#fff" }}
-              aria-label={`${label} Final Value`}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <main
+    <main // Semantic HTML
       style={{
         backgroundColor: "#020202",
         minHeight: "100vh",
@@ -281,7 +182,7 @@ const App = () => {
         </button>
       </div>
 
-      <div
+      <header // Semantic HTML
         style={{
           display: "flex",
           alignItems: "center",
@@ -291,10 +192,10 @@ const App = () => {
         }}
       >
         <Sparkles size={16} />
-        <h1 style={{ fontSize: "10px", letterSpacing: "4px" }}>
+        <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal" }}>
           ZPROXIMITY ENGINE
         </h1>
-      </div>
+      </header>
 
       <div
         style={{
@@ -431,6 +332,7 @@ const App = () => {
               <>
                 <input
                   type="text"
+                  aria-label="Text to animate"
                   value={settings.text}
                   onChange={(e) =>
                     setSettings({ ...settings, text: e.target.value })
@@ -456,6 +358,7 @@ const App = () => {
                 </div>
                 <input
                   type="range"
+                  aria-label="Font Size"
                   min="1"
                   max="15"
                   step="0.5"
@@ -476,6 +379,7 @@ const App = () => {
                 </div>
                 <input
                   type="range"
+                  aria-label="Line Height"
                   min="0.5"
                   max="3"
                   step="0.1"
@@ -500,6 +404,7 @@ const App = () => {
                 </div>
                 <input
                   type="range"
+                  aria-label="Letter Gap"
                   min="-0.1"
                   max="1"
                   step="0.01"
@@ -549,6 +454,7 @@ const App = () => {
                 </div>
                 <input
                   type="range"
+                  aria-label="Element Count"
                   min="1"
                   max="30"
                   step="1"
@@ -600,6 +506,7 @@ const App = () => {
             </div>
             <input
               type="range"
+              aria-label="Reach Radius"
               min="0"
               max="50"
               step="0.1"
@@ -619,6 +526,7 @@ const App = () => {
             </div>
             <input
               type="range"
+              aria-label="Animation Duration"
               min="0"
               max="10"
               step="0.1"
@@ -641,6 +549,7 @@ const App = () => {
             </div>
             <input
               type="range"
+              aria-label="Reset Duration"
               min="0"
               max="10"
               step="0.1"
@@ -661,6 +570,7 @@ const App = () => {
               }}
             >
               <select
+                aria-label="Easing Function"
                 value={settings.ease}
                 onChange={(e) =>
                   setSettings({ ...settings, ease: e.target.value })
@@ -682,6 +592,7 @@ const App = () => {
                 ))}
               </select>
               <select
+                aria-label="Reset Easing Function"
                 value={settings.resetEase}
                 onChange={(e) =>
                   setSettings({ ...settings, resetEase: e.target.value })
@@ -715,45 +626,12 @@ const App = () => {
             gap: "15px",
           }}
         >
-          <PresetCard
-            id="scale"
-            label="Scale"
-            icon={Maximize}
-            min="0.1"
-            max="4"
-            step="0.1"
-          />
-          <PresetCard
-            id="y"
-            label="Y Offset"
-            icon={Move}
-            min="-200"
-            max="200"
-          />
-          <PresetCard
-            id="opacity"
-            label="Opacity"
-            icon={Eye}
-            min="0"
-            max="1"
-            step="0.1"
-          />
-          <PresetCard id="blur" label="Blur" icon={Layers} min="0" max="50" />
-          <PresetCard
-            id="rotate"
-            label="Rotate"
-            icon={Maximize}
-            min="-360"
-            max="360"
-          />
-          <PresetCard
-            id="weight"
-            label="Weight"
-            icon={Type}
-            min="100"
-            max="900"
-            step="100"
-          />
+          <PresetCard id="scale" label="Scale" icon={Maximize} min="0.1" max="4" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="y" label="Y Offset" icon={Move} min="-200" max="200" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="opacity" label="Opacity" icon={Eye} min="0" max="1" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="blur" label="Blur" icon={Layers} min="0" max="50" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="rotate" label="Rotate" icon={Maximize} min="-360" max="360" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="weight" label="Weight" icon={Type} min="100" max="900" step="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
         </div>
       </div>
 

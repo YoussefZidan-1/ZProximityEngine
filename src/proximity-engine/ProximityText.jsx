@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from "react";
-import { Proximity, useProximityConfig } from "./Proximity";
-
+import { Proximity } from "./Proximity";
+import { useProximityConfig } from "./ProximityContext";
 export const ProximityText = ({
   text,
   splitBy = "letter",

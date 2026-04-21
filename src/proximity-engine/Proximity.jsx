@@ -1,4 +1,4 @@
-import { useRef, createContext, useContext } from "react";
+import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -65,20 +65,6 @@ const calculatePresetValues = (presetString, intensity, userConfig = {}, isReset
   return result;
 };
 
-const ProximityContext = createContext({
-  defaultFont: "'Bricolage Grotesque', sans-serif",
-});
-
-export const ProximityProvider = ({ children, config }) => {
-  return (
-    <ProximityContext.Provider value={{ ...config }}>
-      {children}
-    </ProximityContext.Provider>
-  );
-};
-
-export const useProximityConfig = () => useContext(ProximityContext);
-
 export const Proximity = ({
   children,
   selector = ".prox-item",
@@ -132,7 +118,7 @@ export const Proximity = ({
 
   useGSAP(() => {
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (prefersReducedMotion) return;
+     if (prefersReducedMotion) return;
       const container = containerRef.current;
       if (!container) return;
     
