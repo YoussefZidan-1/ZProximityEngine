@@ -175,7 +175,7 @@ export const Proximity = ({
     
     setInitialState();
 
-    window.addEventListener("resize", updateCenters);
+    window.addEventListener("resize", debouncedUpdateCenters);
 
     const actualSpread = activeReach * 10000;
     const maxDistance = activeReach * 200;
