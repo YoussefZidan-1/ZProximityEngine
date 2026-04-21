@@ -167,7 +167,7 @@ export const Proximity = ({
       if (document.fonts) {
         document.fonts.ready.then(initItems);
       } else {
-        setTimeout(initItems, 100);
+        initItems();
       }
 
       const observer = new MutationObserver(() => {

@@ -24,7 +24,7 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          color: activePresets[id] ? "#fff" : "#444",
+          color: activePresets[id] ? "#fff" : "#888",
         }}
       >
         <Icon size={16} />
@@ -45,7 +45,7 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
           background: "none",
           border: "none",
           cursor: "pointer",
-          color: activePresets[id] ? "#10b981" : "#444",
+          color: activePresets[id] ? "#10b981" : "#888",
         }}
       >
         {activePresets[id] ? <Eye size={18} /> : <EyeOff size={18} />}

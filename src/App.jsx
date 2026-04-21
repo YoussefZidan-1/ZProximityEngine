@@ -433,7 +433,7 @@ const App = () => {
                         fontWeight: "bold",
                         backgroundColor:
                           settings.splitBy === s ? "#fff" : "transparent",
-                        color: settings.splitBy === s ? "#000" : "#444",
+                        color: settings.splitBy === s ? "#000" : "#888",
                         cursor: "pointer",
                       }}
                     >
@@ -488,7 +488,7 @@ const App = () => {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              color: "#666",
+              color: "#999",
               fontSize: "12px",
               marginBottom: "20px",
             }}
