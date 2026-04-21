@@ -143,6 +143,7 @@ const App = () => {
         }}
       >
         <button
+          aria-label="set Text Mode"
           onClick={() => setMode("text")}
           style={{
             display: "flex",
@@ -155,13 +156,14 @@ const App = () => {
             fontSize: "12px",
             fontWeight: "bold",
             backgroundColor: mode === "text" ? "#fff" : "transparent",
-            color: mode === "text" ? "#000" : "#666",
+            color: mode === "text" ? "#000" : "#fff",
             transition: "0.3s",
           }}
         >
           <CaseUpper size={16} /> TEXT
         </button>
         <button
+          aria-label="set Elements Mode"
           onClick={() => setMode("elements")}
           style={{
             display: "flex",
@@ -174,7 +176,7 @@ const App = () => {
             fontSize: "12px",
             fontWeight: "bold",
             backgroundColor: mode === "elements" ? "#fff" : "transparent",
-            color: mode === "elements" ? "#000" : "#666",
+            color: mode === "elements" ? "#000" : "#fff",
             transition: "0.3s",
           }}
         >
@@ -318,7 +320,7 @@ const App = () => {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              color: "#666",
+              color: "#fff",
               fontSize: "12px",
               marginBottom: "20px",
             }}
@@ -351,7 +353,7 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>FONT SIZE</span> <span>{settings.fontSize}rem</span>
@@ -372,7 +374,7 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>LINE HEIGHT</span> <span>{settings.lineHeight}</span>
@@ -396,7 +398,7 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>LETTER GAP</span>{" "}
@@ -419,6 +421,7 @@ const App = () => {
                 <div style={{ display: "flex", gap: "5px" }}>
                   {["letter", "word", "line"].map((s) => (
                     <button
+                      aria-label="split by button"
                       key={s}
                       onClick={() => setSettings({ ...settings, splitBy: s })}
                       style={{
@@ -446,7 +449,7 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>ELEMENT COUNT</span>{" "}
@@ -636,6 +639,7 @@ const App = () => {
       </div>
 
       <button
+        aria-label="copyCode"
         onClick={copyCode}
         style={{
           marginTop: "50px",

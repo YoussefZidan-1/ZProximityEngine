@@ -39,6 +39,7 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
         </span>
       </div>
       <button
+        aria-label="Toggle preset"
         onClick={() => togglePreset(id)}
         style={{
           background: "none",
