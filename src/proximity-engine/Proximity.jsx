@@ -131,6 +131,8 @@ export const Proximity = ({
   };
 
   useGSAP(() => {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReducedMotion) return;
       const container = containerRef.current;
       if (!container) return;
     
