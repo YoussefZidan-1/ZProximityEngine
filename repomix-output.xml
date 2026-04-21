@@ -46,8 +46,10 @@ eslint.config.js
 index.html
 LICENSE
 package.json
+public/og-image.jpg
 README.md
 src/App.jsx
+src/components/PresetCard.jsx
 src/index.css
 src/main.jsx
 src/proximity-engine/Proximity.jsx
@@ -308,26 +310,156 @@ dist-ssr
 *.sw?
 </file>
 
+<file path="src/components/PresetCard.jsx">
+import React from "react";
+import { Eye, EyeOff } from "lucide-react";
+
+export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePresets, settings, togglePreset, updateRange }) => (
+  <div
+    style={{
+      backgroundColor: activePresets[id] ? "#111" : "#080808",
+      border: `1px solid ${activePresets[id] ? "#333" : "#1a1a1a"}`,
+      borderRadius: "16px",
+      padding: "15px",
+      transition: "0.3s",
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: activePresets[id] ? "15px" : "0",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          color: activePresets[id] ? "#fff" : "#444",
+        }}
+      >
+        <Icon size={16} />
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: "bold",
+            textTransform: "uppercase",
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      <button
+        aria-label="Toggle preset"
+        onClick={() => togglePreset(id)}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: activePresets[id] ? "#10b981" : "#444",
+        }}
+      >
+        {activePresets[id] ? <Eye size={18} /> : <EyeOff size={18} />}
+      </button>
+    </div>
+    {activePresets[id] && (
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: "9px",
+              color: "#555",
+              marginBottom: "4px",
+            }}
+          >
+            <span>BASE</span> <span>{settings[id][0]}</span>
+          </div>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={settings[id][0]}
+            onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#555" }}
+            aria-label={`${label} Base Value`}
+          />
+        </div>
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: "9px",
+              color: "#aaa",
+              marginBottom: "4px",
+            }}
+          >
+            <span>FINAL</span> <span>{settings[id][1]}</span>
+          </div>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={settings[id][1]}
+            onChange={(e) => updateRange(id, 1, parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#fff" }}
+            aria-label={`${label} Final Value`}
+          />
+        </div>
+      </div>
+    )}
+  </div>
+);
+</file>
+
 <file path="index.html">
 <!doctype html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>ZProximity Engine</title>
-
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-        <link
-            href="https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,100..900;1,100..900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=IBM+Plex+Sans+Arabic:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
-            rel="stylesheet"
-        />
-        <style>
-            html {scroll-behavior: smooth;}
-        </style>
-    </head>
+            <meta charset="UTF-8" />
+            <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            
+            <!-- Primary Meta Tags -->
+            <title>ZProximity Engine | Interactive Motion Design</title>
+            <meta name="title" content="ZProximity Engine | Interactive Motion Design" />
+            <meta name="description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
+            <meta name="author" content="Yousef Zedan" />
+            <meta name="keywords" content="React, GSAP, Animation, Proximity, Physics, Frontend, Engine, UI/UX" />
+    
+            <!-- Open Graph / Facebook -->
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
+            <meta property="og:title" content="ZProximity Engine | Interactive Motion Design" />
+            <meta property="og:description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
+            <!-- NOTE: You should upload a cool screenshot of your app to your public folder named 'og-image.jpg' -->
+            <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
+    
+            <!-- Twitter -->
+            <meta property="twitter:card" content="summary_large_image" />
+            <meta property="twitter:url" content="https://z-proximity-engine.vercel.app/" />
+            <meta property="twitter:title" content="ZProximity Engine | Interactive Motion Design" />
+            <meta property="twitter:description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
+            <meta property="twitter:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
+    
+            <!-- Fonts optimization -->
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+            <link
+                href="https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,100..900;1,100..900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=IBM+Plex+Sans+Arabic:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+                rel="stylesheet"
+            />
+            
+            <style>
+                html {scroll-behavior: smooth;}
+            </style>
+        </head>
     <body>
         <div id="root"></div>
         <script type="module" src="/src/main.jsx"></script>
@@ -335,10 +467,28 @@ dist-ssr
 </html>
 </file>
 
+<file path="src/proximity-engine/ProximityContext.jsx">
+import { createContext, useContext } from "react";
+
+const ProximityContext = createContext({
+  defaultFont: "'Georama', sans-serif",
+});
+
+export const ProximityProvider = ({ children, config }) => {
+  return (
+    <ProximityContext.Provider value={{ ...config }}>
+      {children}
+    </ProximityContext.Provider>
+  );
+};
+
+export const useProximityConfig = () => useContext(ProximityContext);
+</file>
+
 <file path="src/proximity-engine/ProximityText.jsx">
 import { Fragment, useMemo } from "react";
-import { Proximity, useProximityConfig } from "./Proximity";
-
+import { Proximity } from "./Proximity";
+import { useProximityConfig } from "./ProximityContext";
 export const ProximityText = ({
   text,
   splitBy = "letter",
@@ -383,7 +533,7 @@ export const ProximityText = ({
       return formattedText.split("\n").map((line, lineIdx) => (
         <Fragment key={lineIdx}>
           {line.split(" ").map((word, i) => (
-            <span key={i} className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
+            <span key={i} aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
           ))}
           {lineIdx < formattedText.split("\n").length - 1 && <div style={{ width: "100%" }} />}
         </Fragment>
@@ -393,7 +543,7 @@ export const ProximityText = ({
     if (splitBy === "line") {
       return formattedText.split("\n").map((line, i) => (
         <Fragment key={i}>
-          <span className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
+          <span aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
           {i < formattedText.split("\n").length - 1 && <br />}
         </Fragment>
       ));
@@ -404,7 +554,7 @@ export const ProximityText = ({
         return <div key={i} style={{ width: "100%", height: 0 }} />;
       }
       return (
-        <span key={i} className={`prox-part ${textClassName}`} style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}>
+        <span aria-hidden="true" key={i} className={`prox-part ${textClassName}`} style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}>
           {char}
         </span>
       );
@@ -422,10 +572,130 @@ export const ProximityText = ({
 };
 </file>
 
+<file path="README.md">
+# 🚀 ZProximity Engine
+
+**A high-performance React engine for proximity-based interactive motion design.**
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-MVP-orange.svg)
+![React](https://img.shields.io/badge/built%20with-React-61dafb.svg)
+![GSAP](https://img.shields.io/badge/powered%20by-GSAP-ff0000.svg)
+
+`ZProximity` is a specialized motion engine designed to bridge the gap between complex mathematical physics and beautiful UI design. It allows developers to create organic, reactive animations (scale, blur, rotation, weight, etc.) that respond to user proximity with a single prop.
+
+[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) | [**📦 Coming Soon to NPM**](#)
+
+---
+
+## 🎨 The Concept
+
+Most proximity effects require heavy math, manual event listeners, and complex cleanup logic. `ZProximity` abstracts this complexity into a declarative React API. 
+
+By utilizing **Exponential Decay** math and **GSAP's `quickSetter`** for high-performance DOM updates, the engine ensures buttery-smooth 60fps animations even with large numbers of interactive elements.
+
+> **"Don't just animate. React."**
+
+---
+
+## ✨ Key Features
+
+- **🚀 High Performance:** Built on GSAP, optimized with `quickSetter` to minimize layout thrashing.
+- **🎭 Preset System:** Rapidly apply styles like `scale-blur-rotate` or `blur-scale-weight-rotate-y` without writing custom logic write the preset name with the order you like.
+- **🔓 The "Escape Hatch":** Full control via `onCalculate` and `onReset` callbacks for advanced users who want to map proximity to custom logic (e.g., audio frequencies or scroll position).
+- **🛠️ Visual Playground:** A built-in editor to tweak parameters in real-time and export your configuration instantly.
+- **🔡 Intelligent Text Splitting:** Built-in support for splitting text into characters, words, or lines for granular control.
+
+---
+
+## 🚀 Quick Start (Preview)
+
+*Note: Currently available as part of the Playground source code. NPM package is in development.*
+
+```jsx
+import { ProximityText } from "./proximity-engine/ProximityText";
+import { Proximity } from "./proximity-engine/Proximity";
+
+function App() {
+  return (
+    <ProximityText 
+      text="Beyond the Void"
+      preset="scale-blur-rotate"
+      config={{
+        ease: "elastic",
+        duration: 2,
+        resetDuration: 2
+      }}
+      style={{ fontSize: '5rem', fontWeight: '800' }}
+    />
+  );
+}
+```
+
+---
+
+## 🛠 Roadmap
+
+We are currently in the **MVP (Minimum Viable Product)** stage. Here is what we are building next:
+
+- [ ] **TypeScript Support** (Full type safety for all configs and props) 🛡️
+- [ ] **Touch & Mobile Mode** (Optimized interaction for touch devices) 📱
+- [ ] **Scroll-Proximity** (Trigger animations based on scroll depth) 📜
+- [ ] **Reduced Motion Support** (Respecting user accessibility settings) ♿
+- [ ] **NPM Release** (Official package deployment) 📦
+
+---
+
+## 🤝 Contributing
+
+I am building this in public! If you are a math enthusiast, a GSAP wizard, or a React expert, I would love your help.
+
+1. **Star this repo** if you find it useful! ⭐
+2. **Open an Issue** to report bugs or suggest features.
+3. **Submit a Pull Request** to help improve the engine.
+
+Your feedback is what will turn this MVP into a professional industry standard.
+
+---
+
+## 👨‍💻 Author
+
+**Yousef Zedan**
+*Exploring the intersection of Art, Music, and Code.*
+
+<p align="center">
+  <a href="https://yzportfolio.vercel.app" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/internet--v1.png" alt="Portfolio" height="50" width="50" />
+  </a>
+  <a href="mailto:zedstudios.devs@gmail.com" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/gmail-new.png" alt="Gmail" height="50" width="50" />
+  </a>
+  <a href="https://linkedin.com/in/yousef-zedan-6a275a400" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/linkedin.png" alt="LinkedIn" height="50" width="50" />
+  </a>
+  <a href="https://wa.me/201130765715" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/whatsapp--v1.png" alt="WhatsApp" height="50" width="50" />
+  </a>
+  <a href="https://x.com/YousefZeda59629" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/twitterx--v2.png" alt="X" height="50" width="50" />
+  </a>
+  <a href="https://www.instagram.com/yousef__zedan1/" target="blank">
+    <img src="https://img.icons8.com/ios/50/B4BEFE/instagram-new--v1.png" alt="Instagram" height="50" width="50" />
+  </a>
+</p>
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+</file>
+
 <file path="src/App.jsx">
 import React, { useState, useMemo } from "react";
 import { ProximityText } from "./proximity-engine/ProximityText";
 import { Proximity } from "./proximity-engine/Proximity";
+import { PresetCard } from "./components/PresetCard";
 import {
   Type,
   Maximize,
@@ -441,9 +711,29 @@ import {
   CaseUpper,
 } from "lucide-react";
 
+// Moved outside the component to prevent recreation on every render
+const easeOptions =[
+  "smooth",
+  "heavy",
+  "sharp",
+  "fluid",
+  "bouncy",
+  "elastic",
+  "jello",
+  "bounce",
+  "swing",
+  "vibrate",
+  "robot",
+  "ghost",
+  "expo",
+  "circus",
+  "glitch",
+  "slowmo",
+];
+
 const App = () => {
   const [mode, setMode] = useState("text");
-  const [activePresets, setActivePresets] = useState({
+  const[activePresets, setActivePresets] = useState({
     scale: false,
     y: true,
     opacity: true,
@@ -452,7 +742,7 @@ const App = () => {
     weight: false,
   });
 
-  const [settings, setSettings] = useState({
+  const[settings, setSettings] = useState({
     text: "Beyond\nThe\nVoid",
     elementCount: 12,
     splitBy: "line",
@@ -475,25 +765,6 @@ const App = () => {
   });
 
   const [copied, setCopied] = useState(false);
-
-  const easeOptions = [
-    "smooth",
-    "heavy",
-    "sharp",
-    "fluid",
-    "bouncy",
-    "elastic",
-    "jello",
-    "bounce",
-    "swing",
-    "vibrate",
-    "robot",
-    "ghost",
-    "expo",
-    "circus",
-    "glitch",
-    "slowmo",
-  ];
 
   const generatedPresetString = useMemo(() => {
     return Object.keys(activePresets)
@@ -519,6 +790,7 @@ const App = () => {
 
   const togglePreset = (key) =>
     setActivePresets((prev) => ({ ...prev, [key]: !prev[key] }));
+    
   const updateRange = (key, index, val) => {
     const newRange = [...settings[key]];
     newRange[index] = val;
@@ -535,108 +807,8 @@ const App = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const PresetCard = ({ id, label, icon: Icon, min, max, step = 1 }) => (
-    <div
-      style={{
-        backgroundColor: activePresets[id] ? "#111" : "#080808",
-        border: `1px solid ${activePresets[id] ? "#333" : "#1a1a1a"}`,
-        borderRadius: "16px",
-        padding: "15px",
-        transition: "0.3s",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: activePresets[id] ? "15px" : "0",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            color: activePresets[id] ? "#fff" : "#444",
-          }}
-        >
-          <Icon size={16} />
-          <span
-            style={{
-              fontSize: "12px",
-              fontWeight: "bold",
-              textTransform: "uppercase",
-            }}
-          >
-            {label}
-          </span>
-        </div>
-        <button
-          onClick={() => togglePreset(id)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: activePresets[id] ? "#10b981" : "#444",
-          }}
-        >
-          {activePresets[id] ? <Eye size={18} /> : <EyeOff size={18} />}
-        </button>
-      </div>
-      {activePresets[id] && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "9px",
-                color: "#555",
-                marginBottom: "4px",
-              }}
-            >
-              <span>BASE</span> <span>{settings[id][0]}</span>
-            </div>
-            <input
-              type="range"
-              min={min}
-              max={max}
-              step={step}
-              value={settings[id][0]}
-              onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
-              style={{ width: "100%", accentColor: "#555" }}
-            />
-          </div>
-          <div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "9px",
-                color: "#aaa",
-                marginBottom: "4px",
-              }}
-            >
-              <span>FINAL</span> <span>{settings[id][1]}</span>
-            </div>
-            <input
-              type="range"
-              min={min}
-              max={max}
-              step={step}
-              value={settings[id][1]}
-              onChange={(e) => updateRange(id, 1, parseFloat(e.target.value))}
-              style={{ width: "100%", accentColor: "#fff" }}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <div
+    <main // Semantic HTML
       style={{
         backgroundColor: "#020202",
         minHeight: "100vh",
@@ -665,6 +837,7 @@ const App = () => {
         }}
       >
         <button
+          aria-label="set Text Mode"
           onClick={() => setMode("text")}
           style={{
             display: "flex",
@@ -677,13 +850,14 @@ const App = () => {
             fontSize: "12px",
             fontWeight: "bold",
             backgroundColor: mode === "text" ? "#fff" : "transparent",
-            color: mode === "text" ? "#000" : "#666",
+            color: mode === "text" ? "#000" : "#fff",
             transition: "0.3s",
           }}
         >
           <CaseUpper size={16} /> TEXT
         </button>
         <button
+          aria-label="set Elements Mode"
           onClick={() => setMode("elements")}
           style={{
             display: "flex",
@@ -696,7 +870,7 @@ const App = () => {
             fontSize: "12px",
             fontWeight: "bold",
             backgroundColor: mode === "elements" ? "#fff" : "transparent",
-            color: mode === "elements" ? "#000" : "#666",
+            color: mode === "elements" ? "#000" : "#fff",
             transition: "0.3s",
           }}
         >
@@ -704,7 +878,7 @@ const App = () => {
         </button>
       </div>
 
-      <div
+      <header // Semantic HTML
         style={{
           display: "flex",
           alignItems: "center",
@@ -714,10 +888,10 @@ const App = () => {
         }}
       >
         <Sparkles size={16} />
-        <span style={{ fontSize: "10px", letterSpacing: "4px" }}>
+        <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal" }}>
           ZPROXIMITY ENGINE
-        </span>
-      </div>
+        </h1>
+      </header>
 
       <div
         style={{
@@ -840,7 +1014,7 @@ const App = () => {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              color: "#666",
+              color: "#fff",
               fontSize: "12px",
               marginBottom: "20px",
             }}
@@ -854,6 +1028,7 @@ const App = () => {
               <>
                 <input
                   type="text"
+                  aria-label="Text to animate"
                   value={settings.text}
                   onChange={(e) =>
                     setSettings({ ...settings, text: e.target.value })
@@ -872,13 +1047,14 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>FONT SIZE</span> <span>{settings.fontSize}rem</span>
                 </div>
                 <input
                   type="range"
+                  aria-label="Font Size"
                   min="1"
                   max="15"
                   step="0.5"
@@ -892,13 +1068,14 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>LINE HEIGHT</span> <span>{settings.lineHeight}</span>
                 </div>
                 <input
                   type="range"
+                  aria-label="Line Height"
                   min="0.5"
                   max="3"
                   step="0.1"
@@ -915,7 +1092,7 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>LETTER GAP</span>{" "}
@@ -923,6 +1100,7 @@ const App = () => {
                 </div>
                 <input
                   type="range"
+                  aria-label="Letter Gap"
                   min="-0.1"
                   max="1"
                   step="0.01"
@@ -937,6 +1115,7 @@ const App = () => {
                 <div style={{ display: "flex", gap: "5px" }}>
                   {["letter", "word", "line"].map((s) => (
                     <button
+                      aria-label="split by button"
                       key={s}
                       onClick={() => setSettings({ ...settings, splitBy: s })}
                       style={{
@@ -964,7 +1143,7 @@ const App = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: "11px",
-                    color: "#666",
+                    color: "#fff",
                   }}
                 >
                   <span>ELEMENT COUNT</span>{" "}
@@ -972,6 +1151,7 @@ const App = () => {
                 </div>
                 <input
                   type="range"
+                  aria-label="Element Count"
                   min="1"
                   max="30"
                   step="1"
@@ -1023,6 +1203,7 @@ const App = () => {
             </div>
             <input
               type="range"
+              aria-label="Reach Radius"
               min="0"
               max="50"
               step="0.1"
@@ -1042,6 +1223,7 @@ const App = () => {
             </div>
             <input
               type="range"
+              aria-label="Animation Duration"
               min="0"
               max="10"
               step="0.1"
@@ -1064,6 +1246,7 @@ const App = () => {
             </div>
             <input
               type="range"
+              aria-label="Reset Duration"
               min="0"
               max="10"
               step="0.1"
@@ -1084,6 +1267,7 @@ const App = () => {
               }}
             >
               <select
+                aria-label="Easing Function"
                 value={settings.ease}
                 onChange={(e) =>
                   setSettings({ ...settings, ease: e.target.value })
@@ -1105,6 +1289,7 @@ const App = () => {
                 ))}
               </select>
               <select
+                aria-label="Reset Easing Function"
                 value={settings.resetEase}
                 onChange={(e) =>
                   setSettings({ ...settings, resetEase: e.target.value })
@@ -1138,49 +1323,17 @@ const App = () => {
             gap: "15px",
           }}
         >
-          <PresetCard
-            id="scale"
-            label="Scale"
-            icon={Maximize}
-            min="0.1"
-            max="4"
-            step="0.1"
-          />
-          <PresetCard
-            id="y"
-            label="Y Offset"
-            icon={Move}
-            min="-200"
-            max="200"
-          />
-          <PresetCard
-            id="opacity"
-            label="Opacity"
-            icon={Eye}
-            min="0"
-            max="1"
-            step="0.1"
-          />
-          <PresetCard id="blur" label="Blur" icon={Layers} min="0" max="50" />
-          <PresetCard
-            id="rotate"
-            label="Rotate"
-            icon={Maximize}
-            min="-360"
-            max="360"
-          />
-          <PresetCard
-            id="weight"
-            label="Weight"
-            icon={Type}
-            min="100"
-            max="900"
-            step="100"
-          />
+          <PresetCard id="scale" label="Scale" icon={Maximize} min="0.1" max="4" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="y" label="Y Offset" icon={Move} min="-200" max="200" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="opacity" label="Opacity" icon={Eye} min="0" max="1" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="blur" label="Blur" icon={Layers} min="0" max="50" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="rotate" label="Rotate" icon={Maximize} min="-360" max="360" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+          <PresetCard id="weight" label="Weight" icon={Type} min="100" max="900" step="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
         </div>
       </div>
 
       <button
+        aria-label="copyCode"
         onClick={copyCode}
         style={{
           marginTop: "50px",
@@ -1202,7 +1355,7 @@ const App = () => {
         {copied ? <Check size={20} /> : <Copy size={20} />}
         {copied ? "COPIED!" : "COPY ENGINE CODE"}
       </button>
-    </div>
+    </main>
   );
 };
 
@@ -1210,7 +1363,7 @@ export default App;
 </file>
 
 <file path="src/proximity-engine/Proximity.jsx">
-import { useRef, createContext, useContext } from "react";
+import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -1242,6 +1395,14 @@ const EASE_MAP = {
   slowmo: "slow(0.7, 0.7, false)"
 };
 
+const debounce = (func, wait) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 const calculatePresetValues = (presetString, intensity, userConfig = {}, isReset = false) => {
   const props = presetString.split("-");
   const result = {};
@@ -1268,20 +1429,6 @@ const calculatePresetValues = (presetString, intensity, userConfig = {}, isReset
 
   return result;
 };
-
-const ProximityContext = createContext({
-  defaultFont: "'Bricolage Grotesque', sans-serif",
-});
-
-export const ProximityProvider = ({ children, config }) => {
-  return (
-    <ProximityContext.Provider value={{ ...config }}>
-      {children}
-    </ProximityContext.Provider>
-  );
-};
-
-export const useProximityConfig = () => useContext(ProximityContext);
 
 export const Proximity = ({
   children,
@@ -1335,176 +1482,191 @@ export const Proximity = ({
   };
 
   useGSAP(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const items = container.querySelectorAll(selector);
-    const states = Array.from(items).map(() => ({ isOutside: true }));
-    let centers =[];
-    let animationFrameId;
-
-    const setters = Array.from(items).map(item => ({
-      intensity: gsap.quickSetter(item, "--prox-intensity"),
-      dx: gsap.quickSetter(item, "--prox-dx", "px"),
-      dy: gsap.quickSetter(item, "--prox-dy", "px")
-    }));
-
-    const updateCenters = () => {
-      centers = Array.from(items).map((item) => {
-        const rect = item.getBoundingClientRect();
-        return {
-          left: rect.left + window.scrollX,
-          right: rect.right + window.scrollX,
-          top: rect.top + window.scrollY,
-          bottom: rect.bottom + window.scrollY,
-          x: rect.left + window.scrollX + rect.width / 2,
-          y: rect.top + window.scrollY + rect.height / 2,
-        };
-      });
-    };
-
-    const setInitialState = () => {
-      let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-      initialProps.willChange = "transform, filter, opacity, font-variation-settings";
-      if (Object.keys(initialProps).length > 0) gsap.set(items, initialProps);
-    };
-
-    if (document.fonts) {
-      document.fonts.ready.then(updateCenters);
-    } else {
-      setTimeout(updateCenters, 100);
-    }
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+     if (prefersReducedMotion) return;
+      const container = containerRef.current;
+      if (!container) return;
     
-    setInitialState();
+      let items = [];
+      let states = [];
+      let centers = [];
+      let setters =[];
+      let animationFrameId;
+      const updateCenters = () => {
+        centers = items.map((item) => {
+          const rect = item.getBoundingClientRect();
+          return {
+            left: rect.left + window.scrollX,
+            right: rect.right + window.scrollX,
+            top: rect.top + window.scrollY,
+            bottom: rect.bottom + window.scrollY,
+            x: rect.left + window.scrollX + rect.width / 2,
+            y: rect.top + window.scrollY + rect.height / 2,
+          };
+        });
+      };
+  
+      const debouncedUpdateCenters = debounce(updateCenters, 200);
+  
+      const setInitialState = () => {
+        let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+        initialProps.willChange = "transform, filter, opacity, font-variation-settings";
+        if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
+      };
+  
+      const initItems = () => {
+        if (items.length > 0) gsap.killTweensOf(items);
+  
+        items = Array.from(container.querySelectorAll(selector));
+        states = items.map(() => ({ isOutside: true }));
+        setters = items.map(item => ({
+          intensity: gsap.quickSetter(item, "--prox-intensity"),
+          dx: gsap.quickSetter(item, "--prox-dx", "px"),
+          dy: gsap.quickSetter(item, "--prox-dy", "px")
+        }));
+  
+        updateCenters();
+        setInitialState();
+      };
+  
+      if (document.fonts) {
+        document.fonts.ready.then(initItems);
+      } else {
+        setTimeout(initItems, 100);
+      }
 
-    window.addEventListener("resize", updateCenters);
-
-    const actualSpread = activeReach * 10000;
-    const maxDistance = activeReach * 200;
-
-    const handlePointerMove = (e) => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      animationFrameId = requestAnimationFrame(() => {
-        const mouseX = e.pageX;
-        const mouseY = e.pageY;
-
-        
-        const isBlocked = ignoreSelectors.length > 0 && ignoreSelectors.some((sel) => e.target?.closest?.(sel));
-
-        items.forEach((item, i) => {
-          const bounds = centers[i];
-          if (!bounds) return;
-          
-          let distance;
-
-          
-          if (isBlocked) {
-            distance = Infinity;
-          } else {
-            const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
-            const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
-            distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
-          }
-
-          if (distance > maxDistance) {
-            if (!states[i].isOutside) {
-              const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-              gsap.to(item, {
-                ...resetProps,
-                "--prox-intensity": 0,
-                duration: activeResetDuration,
-                overwrite: true,
-                ease: targetResetEase,
-              });
-              states[i].isOutside = true;
+      const observer = new MutationObserver(() => {
+        initItems();
+      });
+      observer.observe(container, { childList: true, subtree: true });
+  
+      window.addEventListener("resize", debouncedUpdateCenters);
+  
+      const actualSpread = activeReach * 10000;
+      const maxDistance = activeReach * 200;
+  
+      const handlePointerMove = (e) => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = requestAnimationFrame(() => {
+          const mouseX = e.pageX;
+          const mouseY = e.pageY;
+  
+          const isBlocked = ignoreSelectors.length > 0 && ignoreSelectors.some((sel) => e.target?.closest?.(sel));
+  
+          items.forEach((item, i) => {
+            const bounds = centers[i];
+            if (!bounds) return;
+            
+            let distance;
+  
+            if (isBlocked) {
+              distance = Infinity;
+            } else {
+              const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
+              const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
+              distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
             }
-            return;
-          }
-
-          const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
-
-          setters[i].intensity(intensity.toFixed(3));
-          setters[i].dx(mouseX - bounds.x);
-          setters[i].dy(mouseY - bounds.y);
-
-          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
-
-          gsap.to(item, {
-            ...animationProps,
-            duration: activeDuration,
-            overwrite: true,
-            ease: targetEase,
+  
+            if (distance > maxDistance) {
+              if (!states[i].isOutside) {
+                const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+                gsap.to(item, {
+                  ...resetProps,
+                  "--prox-intensity": 0,
+                  duration: activeResetDuration,
+                  overwrite: true,
+                  ease: targetResetEase,
+                });
+                states[i].isOutside = true;
+              }
+              return;
+            }
+  
+            const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
+  
+            setters[i].intensity(intensity.toFixed(3));
+            setters[i].dx(mouseX - bounds.x);
+            setters[i].dy(mouseY - bounds.y);
+  
+            const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
+  
+            gsap.to(item, {
+              ...animationProps,
+              duration: activeDuration,
+              overwrite: true,
+              ease: targetEase,
+            });
+            
+            states[i].isOutside = false;
           });
-          
-          states[i].isOutside = false;
         });
-      });
-    };
-
-    const handlePointerLeave = () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-      
-      const activeItems =[];
-      items.forEach((item, i) => {
-        if (!states[i].isOutside) {
-          activeItems.push(item);
-          states[i].isOutside = true;
+      };
+  
+      const handlePointerLeave = () => {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+        
+        const activeItems =[];
+        items.forEach((item, i) => {
+          if (!states[i].isOutside) {
+            activeItems.push(item);
+            states[i].isOutside = true;
+          }
+        });
+  
+        if (activeItems.length > 0) {
+          gsap.to(activeItems, {
+            ...resetProps,
+            "--prox-intensity": 0,
+            duration: activeResetDuration,
+            overwrite: true,
+            ease: targetResetEase,
+          });
         }
-      });
-
-      if (activeItems.length > 0) {
-        gsap.to(activeItems, {
-          ...resetProps,
-          "--prox-intensity": 0,
-          duration: activeResetDuration,
-          overwrite: true,
-          ease: targetResetEase,
-        });
-      }
-    };
-
-    const handleTouchMove = (e) => {
-      if (e.touches && e.touches.length > 0) {
-        handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY, target: e.target });
-      }
-    };
-
-    const targetElement = activeGlobal ? window : container;
-    targetElement.addEventListener("pointermove", handlePointerMove);
-    targetElement.addEventListener("pointerleave", handlePointerLeave);
-    targetElement.addEventListener("pointerup", handlePointerLeave);
-    targetElement.addEventListener("pointercancel", handlePointerLeave);
-    targetElement.addEventListener("touchmove", handleTouchMove, { passive: true });
-    targetElement.addEventListener("touchstart", handleTouchMove, { passive: true });
-    targetElement.addEventListener("touchend", handlePointerLeave);
-    targetElement.addEventListener("touchcancel", handlePointerLeave);
-
-    return () => {
-      window.removeEventListener("resize", updateCenters);
-      targetElement.removeEventListener("pointermove", handlePointerMove);
-      targetElement.removeEventListener("pointerleave", handlePointerLeave);
-      targetElement.removeEventListener("pointerup", handlePointerLeave);
-      targetElement.removeEventListener("pointercancel", handlePointerLeave);
-      targetElement.removeEventListener("touchmove", handleTouchMove);
-      targetElement.removeEventListener("touchstart", handleTouchMove);
-      targetElement.removeEventListener("touchend", handlePointerLeave);
-      targetElement.removeEventListener("touchcancel", handlePointerLeave);
-      gsap.killTweensOf(items); 
-    };
-  },[
-    selector, 
-    activePreset, 
-    activeReach, 
-    activeFalloff, 
-    activeDuration, 
-    activeResetDuration, 
-    activeGlobal, 
-    JSON.stringify(mergedBounds), 
-    ignoreSelectors.join(','),
-    targetEase,
-    targetResetEase
-  ]);
+      };
+  
+      const handleTouchMove = (e) => {
+        if (e.touches && e.touches.length > 0) {
+          handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY, target: e.target });
+        }
+      };
+  
+      const targetElement = activeGlobal ? window : container;
+      targetElement.addEventListener("pointermove", handlePointerMove);
+      targetElement.addEventListener("pointerleave", handlePointerLeave);
+      targetElement.addEventListener("pointerup", handlePointerLeave);
+      targetElement.addEventListener("pointercancel", handlePointerLeave);
+      targetElement.addEventListener("touchmove", handleTouchMove, { passive: true });
+      targetElement.addEventListener("touchstart", handleTouchMove, { passive: true });
+      targetElement.addEventListener("touchend", handlePointerLeave);
+      targetElement.addEventListener("touchcancel", handlePointerLeave);
+  
+      return () => {
+        observer.disconnect(); // 5. Clean up the observer!
+        window.removeEventListener("resize", debouncedUpdateCenters);
+        targetElement.removeEventListener("pointermove", handlePointerMove);
+        targetElement.removeEventListener("pointerleave", handlePointerLeave);
+        targetElement.removeEventListener("pointerup", handlePointerLeave);
+        targetElement.removeEventListener("pointercancel", handlePointerLeave);
+        targetElement.removeEventListener("touchmove", handleTouchMove);
+        targetElement.removeEventListener("touchstart", handleTouchMove);
+        targetElement.removeEventListener("touchend", handlePointerLeave);
+        targetElement.removeEventListener("touchcancel", handlePointerLeave);
+        gsap.killTweensOf(items); 
+      };
+    },[
+      selector, 
+      activePreset, 
+      activeReach, 
+      activeFalloff, 
+      activeDuration, 
+      activeResetDuration, 
+      activeGlobal, 
+      JSON.stringify(mergedBounds), 
+      ignoreSelectors.join(','),
+      targetEase,
+      targetResetEase
+    ]);
 
   return (
     <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...restProps}>
@@ -1512,143 +1674,6 @@ export const Proximity = ({
     </div>
   );
 };
-</file>
-
-<file path="src/proximity-engine/ProximityContext.jsx">
-import { createContext, useContext } from "react";
-
-const ProximityContext = createContext({
-  defaultFont: "'Georama', sans-serif",
-});
-
-export const ProximityProvider = ({ children, config }) => {
-  return (
-    <ProximityContext.Provider value={{ ...config }}>
-      {children}
-    </ProximityContext.Provider>
-  );
-};
-
-export const useProximityConfig = () => useContext(ProximityContext);
-</file>
-
-<file path="README.md">
-# 🚀 ZProximity Engine
-
-**A high-performance React engine for proximity-based interactive motion design.**
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-MVP-orange.svg)
-![React](https://img.shields.io/badge/built%20with-React-61dafb.svg)
-![GSAP](https://img.shields.io/badge/powered%20by-GSAP-ff0000.svg)
-
-`ZProximity` is a specialized motion engine designed to bridge the gap between complex mathematical physics and beautiful UI design. It allows developers to create organic, reactive animations (scale, blur, rotation, weight, etc.) that respond to user proximity with a single prop.
-
-[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) | [**📦 Coming Soon to NPM**](#)
-
----
-
-## 🎨 The Concept
-
-Most proximity effects require heavy math, manual event listeners, and complex cleanup logic. `ZProximity` abstracts this complexity into a declarative React API. 
-
-By utilizing **Exponential Decay** math and **GSAP's `quickSetter`** for high-performance DOM updates, the engine ensures buttery-smooth 60fps animations even with large numbers of interactive elements.
-
-> **"Don't just animate. React."**
-
----
-
-## ✨ Key Features
-
-- **🚀 High Performance:** Built on GSAP, optimized with `quickSetter` to minimize layout thrashing.
-- **🎭 Preset System:** Rapidly apply styles like `scale-blur-rotate` or `blur-scale-weight-rotate-y` without writing custom logic write the preset name with the order you like.
-- **🔓 The "Escape Hatch":** Full control via `onCalculate` and `onReset` callbacks for advanced users who want to map proximity to custom logic (e.g., audio frequencies or scroll position).
-- **🛠️ Visual Playground:** A built-in editor to tweak parameters in real-time and export your configuration instantly.
-- **🔡 Intelligent Text Splitting:** Built-in support for splitting text into characters, words, or lines for granular control.
-
----
-
-## 🚀 Quick Start (Preview)
-
-*Note: Currently available as part of the Playground source code. NPM package is in development.*
-
-```jsx
-import { ProximityText } from "./proximity-engine/ProximityText";
-import { Proximity } from "./proximity-engine/Proximity";
-
-function App() {
-  return (
-    <ProximityText 
-      text="Beyond the Void"
-      preset="scale-blur-rotate"
-      config={{
-        ease: "elastic",
-        duration: 2,
-        resetDuration: 2
-      }}
-      style={{ fontSize: '5rem', fontWeight: '800' }}
-    />
-  );
-}
-```
-
----
-
-## 🛠 Roadmap
-
-We are currently in the **MVP (Minimum Viable Product)** stage. Here is what we are building next:
-
-- [ ] **TypeScript Support** (Full type safety for all configs and props) 🛡️
-- [ ] **Touch & Mobile Mode** (Optimized interaction for touch devices) 📱
-- [ ] **Scroll-Proximity** (Trigger animations based on scroll depth) 📜
-- [ ] **Reduced Motion Support** (Respecting user accessibility settings) ♿
-- [ ] **NPM Release** (Official package deployment) 📦
-
----
-
-## 🤝 Contributing
-
-I am building this in public! If you are a math enthusiast, a GSAP wizard, or a React expert, I would love your help.
-
-1. **Star this repo** if you find it useful! ⭐
-2. **Open an Issue** to report bugs or suggest features.
-3. **Submit a Pull Request** to help improve the engine.
-
-Your feedback is what will turn this MVP into a professional industry standard.
-
----
-
-## 👨‍💻 Author
-
-**Yousef Zedan**
-*Exploring the intersection of Art, Music, and Code.*
-
-<p align="center">
-  <a href="https://yzportfolio.vercel.app" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/internet--v1.png" alt="Portfolio" height="50" width="50" />
-  </a>
-  <a href="mailto:zedstudios.devs@gmail.com" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/gmail-new.png" alt="Gmail" height="50" width="50" />
-  </a>
-  <a href="https://linkedin.com/in/yousef-zedan-6a275a400" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/linkedin.png" alt="LinkedIn" height="50" width="50" />
-  </a>
-  <a href="https://wa.me/201130765715" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/whatsapp--v1.png" alt="WhatsApp" height="50" width="50" />
-  </a>
-  <a href="https://x.com/YousefZeda59629" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/twitterx--v2.png" alt="X" height="50" width="50" />
-  </a>
-  <a href="https://www.instagram.com/yousef__zedan1/" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/instagram-new--v1.png" alt="Instagram" height="50" width="50" />
-  </a>
-</p>
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 </file>
 
 </files>
