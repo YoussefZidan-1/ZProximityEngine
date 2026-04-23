@@ -170,9 +170,37 @@ export const Proximity = ({
         initItems();
       }
 
-      const observer = new MutationObserver(() => {
-        initItems();
+      const observer = new MutationObserver((mutationsList) => {
+        if (!container) return;
+      
+        let needsReinit = false;
+      
+        for (const mutation of mutationsList) {
+          if (mutation.type === "childList") {
+            const hasRelevantAdditions = Array.from(mutation.addedNodes).some(
+              (node) =>
+                node.nodeType === 1 &&
+                (node.matches(selector) || node.querySelector(selector))
+            );
+      
+            const hasRelevantRemovals = Array.from(mutation.removedNodes).some(
+              (node) =>
+                node.nodeType === 1 &&
+                (node.matches(selector) || node.querySelector(selector))
+            );
+      
+            if (hasRelevantAdditions || hasRelevantRemovals) {
+              needsReinit = true;
+              break;
+            }
+          }
+        }
+      
+        if (needsReinit) {
+          initItems();
+        }
       });
+      
       observer.observe(container, { childList: true, subtree: true });
   
       window.addEventListener("resize", debouncedUpdateCenters);
