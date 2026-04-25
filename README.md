@@ -39,9 +39,13 @@ Most interactive animations today are binary: Hover or No-Hover. `ZProximity` in
 
 | Category | Presets |
 | :--- | :--- |
-| **Transform** | `scale`, `rotate`, `y`|
-| **Filters** | `blur`, `opacity`|
-| **Typography** | `weight`|
+| **Transform** | `scale`, `rotate`, `y`, `x`, `3D Tilt` |
+| **Filters** | `blur`, `opacity`, `grayscale`, `chroma-split` |
+| **Typography** | `weight`, `width`, `cipher-text`, `text-shadow` |
+| **Gaming UI** | `valorant-cursor`, `lazer-sight`, `flashlight` |
+| **Aesthetics** | `glassmorphism`, `magnetic`, `jello`, `glitch` |
+
+*AND A LOT MORE*
 
 ---
 
