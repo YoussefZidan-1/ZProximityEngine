@@ -1,116 +1,102 @@
+Markdown
 # 🚀 ZProximity Engine
 
-**A high-performance React engine for proximity-based interactive motion design.**
+**The definitive high-performance React engine for proximity-aware motion design.**
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-MVP-orange.svg)
-![React](https://img.shields.io/badge/built%20with-React-61dafb.svg)
-![GSAP](https://img.shields.io/badge/powered%20by-GSAP-ff0000.svg)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/YoussefZidan-1/ZProximityEngine/blob/main/LICENSE)
+[![Status](https://img.shields.io/badge/status-Alpha-red.svg)](https://github.com/YoussefZidan-1/ZProximityEngine)
+[![React](https://img.shields.io/badge/React-18+-61dafb.svg)](https://reactjs.org/)
+[![GSAP](https://img.shields.io/badge/Powered%20by-GSAP-ff0000.svg)](https://greensock.com/gsap/)
 
-`ZProximity` is a specialized motion engine designed to bridge the gap between complex mathematical physics and beautiful UI design. It allows developers to create organic, reactive animations (scale, blur, rotation, weight, etc.) that respond to user proximity with a single prop.
+`ZProximity` is not just an animation library; it's a specialized **Physics-over-UI** engine. It bridges the gap between raw pointer data and aesthetic motion, enabling developers to create interfaces that "feel" the user's presence.
 
-[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) | [**📦 Coming Soon to NPM**](#)
+[**✨ Experience the Playground**](https://z-proximity-engine.vercel.app/) | [**📄 Documentation (Coming Soon)**](#)
 
 ---
 
-## 🎨 The Concept
+## 🔥 Why ZProximity?
 
-Most proximity effects require heavy math, manual event listeners, and complex cleanup logic. `ZProximity` abstracts this complexity into a declarative React API. 
+Most interactive animations today are binary: Hover or No-Hover. `ZProximity` introduces **Radial Influence**. Elements react based on their precise distance from the pointer, creating a dynamic, organic field of interaction.
 
-By utilizing **Exponential Decay** math and **GSAP's `quickSetter`** for high-performance DOM updates, the engine ensures buttery-smooth 60fps animations even with large numbers of interactive elements.
-
-> **"Don't just animate. React."**
+### ⚡ Performance Core
+- **Zero Layout Thrashing:** Built on GSAP's `quickSetter`, bypassing the React reconciliation loop for 60fps+ performance.
+- **Exponential Decay Logic:** Uses mathematical falloff algorithms ($e^{-d^x / s}$) for smoother, more natural transitions than linear math.
+- **Smart Mutation Tracking:** Automatically detects DOM changes and re-calculates centers without manual refreshes.
 
 ---
 
 ## ✨ Key Features
 
-- **🚀 High Performance:** Built on GSAP, optimized with `quickSetter` to minimize layout thrashing.
-- **🎭 Preset System:** Rapidly apply styles like `scale-blur-rotate` or `blur-scale-weight-rotate-y` without writing custom logic write the preset name with the order you like.
-- **🔓 The "Escape Hatch":** Full control via `onCalculate` and `onReset` callbacks for advanced users who want to map proximity to custom logic (e.g., audio frequencies or scroll position).
-- **🛠️ Visual Playground:** A built-in editor to tweak parameters in real-time and export your configuration instantly.
-- **🔡 Intelligent Text Splitting:** Built-in support for splitting text into characters, words, or lines for granular control.
+- **🎭 Infinite Preset Chaining:** Combine effects like `scale-blur-weight-rotate-y` in any order. The engine parses and applies them dynamically.
+- **🔡 Typography Intelligence:** Built-in text splitting (Characters, Words, Lines) with a dedicated `ProximityText` component.
+- **🎨 Variable Font Support:** Seamlessly animate `font-weight` and `font-stretch` axes in real-time.
+- **🔓 The "Escape Hatch":** Use `onCalculate` to map proximity to *anything*—CSS variables, Canvas properties, or even Web Audio frequencies.
+- **🕹️ Gaming-Grade Cursors:** Create Valorant-style expandable crosshairs or magnetic buttons with zero boilerplate.
+
+---
+
+## 🛠 Feature Presets (Included & Upcoming)
+
+| Category | Presets |
+| :--- | :--- |
+| **Transform** | `scale`, `rotate`, `y`|
+| **Filters** | `blur`, `opacity`|
+| **Typography** | `weight`|
 
 ---
 
 ## 🚀 Quick Start (Preview)
 
-*Note: Currently available as part of the Playground source code. NPM package is in development.*
-
 ```jsx
-import { ProximityText } from "./proximity-engine/ProximityText";
-import { Proximity } from "./proximity-engine/Proximity";
+import { ProximityText } from "z-proximity-engine";
 
-function App() {
+function CreativeHero() {
   return (
     <ProximityText 
-      text="Beyond the Void"
-      preset="scale-blur-rotate"
+      text="BEYOND THE VOID"
+      preset="scale-blur-weight" // Type the preset you want with the order you like
+      splitBy="word" // You can split by word, letter and line
+      reach={2.5} 
+      falloff={3}
       config={{
-        ease: "elastic",
-        duration: 2,
-        resetDuration: 2
+        ease: "bouncy", // Built-in ease mapping
+        resetEase: "elastic",
+        duration: 0.4,
+        resetDuration: 1,
       }}
-      style={{ fontSize: '5rem', fontWeight: '800' }}
     />
   );
 }
+
 ```
-
 ---
 
-## 🛠 Roadmap
+🗺️ The Roadmap (2026)
+- [ ] TypeScript Core Rewrite: Full type-safety for all presets and config objects.
 
-We are currently in the **MVP (Minimum Viable Product)** stage. Here is what we are building next:
+- [ ] Z-Mobile Tilt: Proximity effects driven by Device Orientation (Gyroscope).
 
-- [ ] **TypeScript Support** (Full type safety for all configs and props) 🛡️
-- [ ] **Touch & Mobile Mode** (Optimized interaction for touch devices) 📱
-- [ ] **Scroll-Proximity** (Trigger animations based on scroll depth) 📜
-- [ ] **Reduced Motion Support** (Respecting user accessibility settings) ♿
-- [ ] **NPM Release** (Official package deployment) 📦
+- [ ] Scroll-Proximity Mode: Triggering proximity logic based on Viewport distance (Scroll-bound).
 
+- [ ] Auto-Arabic Support: Intelligent word-based grouping for cursive scripts to maintain typography integrity.
+
+- [ ] Z-SVG Engine: Directly manipulating SVG paths and points via proximity.
+
+- [ ] NPM Official Release: A lightweight, tree-shakable package.
+      
 ---
-
 ## 🤝 Contributing
+This is a Public Build. If you are a GSAP wizard or a Math enthusiast, your PRs are welcome!
 
-I am building this in public! If you are a math enthusiast, a GSAP wizard, or a React expert, I would love your help.
+Star the repo to show support! ⭐
 
-1. **Star this repo** if you find it useful! ⭐
-2. **Open an Issue** to report bugs or suggest features.
-3. **Submit a Pull Request** to help improve the engine.
+Open an Issue for feature requests.
 
-Your feedback is what will turn this MVP into a professional industry standard.
+Check the Playground to see the engine in action.
 
----
+## 👨‍💻 Behind the Engine
+Yousef Zedan Creative Developer | Software Engineer
 
-## 👨‍💻 Author
+A 17-year-old polymath building the future of the web. I believe that code should be as expressive as art.
 
-**Yousef Zedan**
-*Exploring the intersection of Art, Music, and Code.*
-
-<p align="center">
-  <a href="https://yzportfolio.vercel.app" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/internet--v1.png" alt="Portfolio" height="50" width="50" />
-  </a>
-  <a href="mailto:zedstudios.devs@gmail.com" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/gmail-new.png" alt="Gmail" height="50" width="50" />
-  </a>
-  <a href="https://linkedin.com/in/yousef-zedan-6a275a400" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/linkedin.png" alt="LinkedIn" height="50" width="50" />
-  </a>
-  <a href="https://wa.me/201130765715" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/whatsapp--v1.png" alt="WhatsApp" height="50" width="50" />
-  </a>
-  <a href="https://x.com/YousefZeda59629" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/twitterx--v2.png" alt="X" height="50" width="50" />
-  </a>
-  <a href="https://www.instagram.com/yousef__zedan1/" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/instagram-new--v1.png" alt="Instagram" height="50" width="50" />
-  </a>
-</p>
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## LICENSE: MIT © 2026 Yousef Zedan
