@@ -1,6 +1,6 @@
 {
   "name": "z-proximity-engine",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -38,9 +38,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:lib": "vite build --mode lib",
+    "prepublishOnly": "npm run build:lib",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "prepublishOnly": "npm run build"
+    "preview": "vite preview"
   },
   "peerDependencies": {
     "@gsap/react": "^2.1.2",
