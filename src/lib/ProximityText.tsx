@@ -15,29 +15,17 @@ export interface ProximityTextProps extends ProximityProps {
 }
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
-  text,
-  splitBy = "letter",
-  className = "",
-  textClassName = "",
-  fontFamily,
-  lineHeight = 1.2,
-  letterSpacing = 0,
-  wordSpacing = 0.25,
-  clipFix = "0.2em",
-  ignoreText,
-  ...proximityProps
+  text, splitBy = "letter", className = "", textClassName = "", fontFamily,
+  lineHeight = 1.2, letterSpacing = 0, wordSpacing = 0.25, clipFix = "0.2em",
+  ignoreText, ...proximityProps
 }) => {
   const globalConfig = useProximityConfig();
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
 
   const containerStyle = useMemo<CSSProperties>(() => {
     const base: CSSProperties = { 
-      display: "flex", 
-      fontFamily: actualFontFamily,
-      lineHeight: lineHeight,
-      letterSpacing: `${letterSpacing}em`,
-      textAlign: "center",
-      justifyContent: "center"
+      display: "flex", fontFamily: actualFontFamily, lineHeight: lineHeight,
+      letterSpacing: `${letterSpacing}em`, textAlign: "center", justifyContent: "center"
     };
     if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
     if (splitBy === "line") return { ...base, display: "block" };
@@ -46,15 +34,13 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
 
   const renderedContent = useMemo(() => {
     const getStyles = (ignored: boolean): CSSProperties => ({
-      display: "inline-block",
-      userSelect: "none",
+      display: "inline-block", userSelect: "none",
       willChange: ignored ? "auto" : "transform, filter, opacity",
-      padding: clipFix,
-      margin: clipFix ? `-${clipFix}` : "0",
+      padding: clipFix, margin: clipFix ? `-${clipFix}` : "0",
     });
 
     const checkIgnore = (str: string) => {
-      if (!ignoreText) return false;
+      if (!ignoreText || !Array.isArray(ignoreText)) return false;
       return ignoreText.some((rule) => {
         if (typeof rule === "string") return rule === str;
         if (rule instanceof RegExp) return rule.test(str);
@@ -71,7 +57,6 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
             const isIgnored = checkIgnore(word);
             const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
             return (
-              // PERFORMANCE OPTIMIZATION 2: Safer React Keys
               <span key={`word-${lineIdx}-${i}`} aria-hidden="true" className={partClass} style={getStyles(isIgnored)}>
                 {word}
               </span>
@@ -97,25 +82,17 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       });
     }
 
-    return[...text].map((char, i) => {
-      if (char === "\n") {
-        return <div key={`br-${i}`} style={{ width: "100%", height: 0 }} />;
-      }
+    return [...text].map((char, i) => {
+      if (char === "\n") return <div key={`br-${i}`} style={{ width: "100%", height: 0 }} />;
       const isIgnored = checkIgnore(char);
       const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
       return (
-        <span 
-          aria-hidden="true" 
-          key={`char-${i}`} 
-          className={partClass} 
-          style={{ ...getStyles(isIgnored), whiteSpace: char === " " ? "pre" : "normal" }}
-        >
+        <span aria-hidden="true" key={`char-${i}`} className={partClass} style={{ ...getStyles(isIgnored), whiteSpace: char === " " ? "pre" : "normal" }}>
           {char}
         </span>
       );
     });
-
-  }, [text, splitBy, textClassName, clipFix, ignoreText]);
+  },[text, splitBy, textClassName, clipFix, ignoreText]);
 
   return (
     <Proximity selector=".prox-part" className={className} {...proximityProps}>

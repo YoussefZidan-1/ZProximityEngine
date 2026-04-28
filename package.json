@@ -1,6 +1,6 @@
 {
   "name": "z-proximity-engine",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
