@@ -42,7 +42,6 @@ The content is organized as follows:
 
 <directory_structure>
 .gitignore
-.npmrc
 eslint.config.js
 index.html
 LICENSE
@@ -696,27 +695,70 @@ createRoot(document.getElementById('root')).render(
 }
 </file>
 
-<file path=".gitignore">
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-dist
-dist-ssr
-*.local
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+<file path="package.json">
+{
+  "name": "z-proximity-engine",
+  "version": "1.0.0",
+  "description": "High-performance proximity-based motion engine for React.",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "react",
+    "gsap",
+    "animation",
+    "proximity",
+    "ui",
+    "motion",
+    "creative-coding"
+  ],
+  "author": "Yousef Zedan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/z-proximity-engine.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/z-proximity-engine/issues"
+  },
+  "homepage": "https://z-proximity-engine.vercel.app/",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.12.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "lucide-react": "^1.11.0",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}
 </file>
 
 <file path="src/index.css">
@@ -833,70 +875,28 @@ code {
 }
 </file>
 
-<file path="package.json">
-{
-  "name": "z-proximity-engine",
-  "version": "1.0.0",
-  "description": "High-performance proximity-based motion engine for React.",
-  "type": "module",
-  "main": "./dist/index.umd.js",
-  "module": "./dist/index.es.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.umd.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "react",
-    "gsap",
-    "animation",
-    "proximity",
-    "ui",
-    "motion",
-    "creative-coding"
-  ],
-  "author": "Yousef Zedan",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/your-username/z-proximity-engine.git"
-  },
-  "bugs": {
-    "url": "https://github.com/your-username/z-proximity-engine/issues"
-  },
-  "homepage": "https://z-proximity-engine.vercel.app/",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "prepublishOnly": "npm run build"
-  },
-  "peerDependencies": {
-    "@gsap/react": "^2.1.2",
-    "gsap": "^3.12.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "dependencies": {
-    "lucide-react": "^1.11.0"
-  },
-  "devDependencies": {
-    "@types/node": "^25.6.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.0.0",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0",
-    "vite-plugin-dts": "^4.5.4"
-  }
-}
+<file path=".gitignore">
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.npmrc
 </file>
 
 <file path="index.html">
@@ -1092,120 +1092,146 @@ export default defineConfig({
 <file path="README.md">
 # 🚀 ZProximity Engine
 
-**A high-performance React engine for proximity-based interactive motion design.**
+### **The physics of attraction for your UI.**
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-MVP-orange.svg)
-![React](https://img.shields.io/badge/built%20with-React-61dafb.svg)
-![GSAP](https://img.shields.io/badge/powered%20by-GSAP-ff0000.svg)
+`ZProximity` is a high-performance React motion engine designed to bridge the gap between complex mathematical physics and organic UI design. Create reactive, buttery-smooth interactions that respond to user proximity with a single declarative prop.
 
-`ZProximity` is a specialized motion engine designed to bridge the gap between complex mathematical physics and beautiful UI design. It allows developers to create organic, reactive animations (scale, blur, rotation, weight, etc.) that respond to user proximity with a single prop.
-
-[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) | [**📦 Coming Soon to NPM**](#)
+[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/)
 
 ---
 
-## 🎨 The Concept
+## 🎨 Why ZProximity?
 
-Most proximity effects require heavy math, manual event listeners, and complex cleanup logic. `ZProximity` abstracts this complexity into a declarative React API. 
+Most proximity effects require manual event listeners, heavy math, and complex cleanup logic that kills performance. **ZProximity** abstracts this into a performance-first architecture:
 
-By utilizing **Exponential Decay** math and **GSAP's `quickSetter`** for high-performance DOM updates, the engine ensures buttery-smooth 60fps animations even with large numbers of interactive elements.
-
-> **"Don't just animate. React."**
-
----
-
-## ✨ Key Features
-
-- **🚀 High Performance:** Built on GSAP, optimized with `quickSetter` to minimize layout thrashing.
-- **🎭 Preset System:** Rapidly apply styles like `scale-blur-rotate` or `blur-scale-weight-rotate-y` without writing custom logic write the preset name with the order you like.
-- **🔓 The "Escape Hatch":** Full control via `onCalculate` and `onReset` callbacks for advanced users who want to map proximity to custom logic (e.g., audio frequencies or scroll position).
-- **🛠️ Visual Playground:** A built-in editor to tweak parameters in real-time and export your configuration instantly.
-- **🔡 Intelligent Text Splitting:** Built-in support for splitting text into characters, words, or lines for granular control.
+- **🚀 GSAP Power:** Optimized with `quickSetter` to bypass React's render cycle for 60/120fps+ updates.
+- **🧠 Exponential Decay:** Uses advanced math (not linear distance) to create organic, "magnetic" feels.
+- **🎭 String-Based Presets:** Combine effects like `scale-blur-rotate-weight` instantly with the order you like.
+- **🔡 Text-First:** Built-in intelligent splitting for characters, words, or lines.
 
 ---
 
-## 🚀 Quick Start (Preview)
+## 📦 Installation
 
-*Note: Currently available as part of the Playground source code. NPM package is in development.*
+```bash
+npm install z-proximity-engine gsap @gsap/react
+```
+---
+
+## 🚀 Quick Start
+
+### 1. Basic Text Interaction
+Transform static text into a reactive, magnetic element.
 
 ```jsx
-import { ProximityText } from "./proximity-engine/ProximityText";
-import { Proximity } from "./proximity-engine/Proximity";
+import { ProximityText } from 'z-proximity-engine';
 
-function App() {
-  return (
-    <ProximityText 
-      text="Beyond the Void"
-      preset="scale-blur-rotate"
-      config={{
-        ease: "elastic",
-        duration: 2,
-        resetDuration: 2
-      }}
-      style={{ fontSize: '5rem', fontWeight: '800' }}
-    />
-  );
-}
+const MyComponent = () => (
+  <ProximityText 
+    text="BEYOND THE VOID"
+    preset="scale-blur-opacity"
+    config={{
+      reach: 1.5,
+      duration: 1,
+      ease: "elastic"
+    }}
+    style={{ fontSize: '4rem', fontWeight: '900' }}
+  />
+);
+```
+
+### 2. Element Groups (The "Dock" Effect)
+Apply proximity to any group of React elements (cards, icons, buttons).
+
+```jsx
+import { Proximity } from 'z-proximity-engine';
+
+const Dock = () => (
+  <Proximity 
+    selector=".item" 
+    preset="y-scale"
+    config={{ y: [0, -50], scale: [1, 1.5] }}
+  >
+    <div className="item">🚀</div>
+    <div className="item">✨</div>
+    <div className="item">🔥</div>
+  </Proximity>
+);
 ```
 
 ---
 
-## 🛠 Roadmap
+## 🛠 Features Deep-Dive
 
-We are currently in the **MVP (Minimum Viable Product)** stage. Here is what we are building next:
+### **The Preset System**
+Don't write CSS logic. Chain your desired effects in the `preset` prop string. Order doesn't matter; performance is guaranteed.
 
-- [ ] **TypeScript Support** (Full type safety for all configs and props) 🛡️
-- [ ] **Touch & Mobile Mode** (Optimized interaction for touch devices) 📱
-- [ ] **Scroll-Proximity** (Trigger animations based on scroll depth) 📜
-- [ ] **Reduced Motion Support** (Respecting user accessibility settings) ♿
-- [ ] **NPM Release** (Official package deployment) 📦
+| Preset | Effect |
+| :--- | :--- |
+| `scale` | Changes element size |
+| `y` | Moves element on the Y-axis |
+| `opacity` | Smoothly fades elements in/out |
+| `blur` | Transitions between sharp and blurred |
+| `rotate` | Rotates elements based on proximity |
+| `weight` | Animates Variable Font weight (requires variable font) |
+
+### **The "Escape Hatch" (Custom Logic)**
+For advanced users, use the `onCalculate` callback to map proximity intensity to *anything* (audio, custom SVG paths, etc).
+
+```jsx
+<Proximity
+  onCalculate={(intensity, distance) => ({
+    backgroundColor: `rgba(170, 59, 255, ${intensity})`,
+    x: Math.sin(distance) * 10
+  })}
+>
+  <div>Custom Logic</div>
+</Proximity>
+```
 
 ---
 
+## ⚙️ API Reference
+
+### `ProximityProps` & `ProximityTextProps`
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `preset` | `string` | `""` | Dash-separated effects (e.g., `"scale-y-blur"`) |
+| `reach` | `number` | `2` | Radius of influence (Higher = further reach) |
+| `falloff` | `number` | `2.4` | How quickly the effect fades (Exponential power) |
+| `duration` | `number` | `0.2` | Speed of the "attraction" animation |
+| `resetDuration`| `number` | `0.4` | Speed of the "return to home" animation |
+| `ease` | `EasePreset` | `"power1.out"` | Custom easing (smooth, bouncy, elastic, etc.) |
+| `global` | `boolean` | `false` | If true, tracks mouse even outside the container |
+
+---
+
+## ♿ Accessibility & Performance
+- **Reduced Motion:** Automatically respects `prefers-reduced-motion` settings and disables animations.
+- **Smart Throttling:** Internal logic prevents unnecessary GSAP overwrites if the movement delta is below 1%.
+- **Zero Layout Thrashing:** Uses CSS Variables and transforms to ensure animations happen on the GPU.
+
+- [ ] Auto-Arabic Support: Intelligent word-based grouping for cursive scripts to maintain typography integrity.
+
+- [ ] Z-SVG Engine: Directly manipulating SVG paths and points via proximity.
+
+- [ ] NPM Official Release: A lightweight, tree-shakable package.
+      
+---
 ## 🤝 Contributing
+This is a Public Build. If you are a GSAP wizard or a Math enthusiast, your PRs are welcome!
 
-I am building this in public! If you are a math enthusiast, a GSAP wizard, or a React expert, I would love your help.
+This engine is built for the community. If you have a math-based preset or a performance optimization, PRs are welcome!
 
-1. **Star this repo** if you find it useful! ⭐
-2. **Open an Issue** to report bugs or suggest features.
-3. **Submit a Pull Request** to help improve the engine.
-
-Your feedback is what will turn this MVP into a professional industry standard.
-
----
-
-## 👨‍💻 Author
-
-**Yousef Zedan**
-*Exploring the intersection of Art, Music, and Code.*
-
-<p align="center">
-  <a href="https://yzportfolio.vercel.app" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/internet--v1.png" alt="Portfolio" height="50" width="50" />
-  </a>
-  <a href="mailto:zedstudios.devs@gmail.com" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/gmail-new.png" alt="Gmail" height="50" width="50" />
-  </a>
-  <a href="https://linkedin.com/in/yousef-zedan-6a275a400" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/linkedin.png" alt="LinkedIn" height="50" width="50" />
-  </a>
-  <a href="https://wa.me/201130765715" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/whatsapp--v1.png" alt="WhatsApp" height="50" width="50" />
-  </a>
-  <a href="https://x.com/YousefZeda59629" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/twitterx--v2.png" alt="X" height="50" width="50" />
-  </a>
-  <a href="https://www.instagram.com/yousef__zedan1/" target="blank">
-    <img src="https://img.icons8.com/ios/50/B4BEFE/instagram-new--v1.png" alt="Instagram" height="50" width="50" />
-  </a>
-</p>
+1. Star the repo ⭐
+2. Open an issue for feature requests.
+3. Submit a PR with your creative additions.
 
 ---
 
 ## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT © [Yousef Zedan](https://github.com/yousef-zedan)
 </file>
 
 <file path="src/App.jsx">
