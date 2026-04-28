@@ -42,6 +42,7 @@ The content is organized as follows:
 
 <directory_structure>
 .gitignore
+.npmrc
 eslint.config.js
 index.html
 LICENSE
@@ -51,10 +52,13 @@ README.md
 src/App.jsx
 src/components/PresetCard.jsx
 src/index.css
+src/lib/index.ts
+src/lib/Proximity.tsx
+src/lib/ProximityContext.tsx
+src/lib/ProximityText.tsx
 src/main.jsx
-src/proximity-engine/Proximity.jsx
-src/proximity-engine/ProximityContext.jsx
-src/proximity-engine/ProximityText.jsx
+tsconfig.json
+vercel.json
 vite.config.js
 </directory_structure>
 
@@ -117,42 +121,607 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 </file>
 
-<file path="package.json">
-{
-  "name": "test-proximity",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@gsap/react": "^2.1.2",
-    "gsap": "^3.14.2",
-    "lucide-react": "^1.8.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.4.0",
-    "vite": "^8.0.4"
-  }
+<file path="src/lib/index.ts">
+export * from './Proximity';
+export * from './ProximityText';
+export * from './ProximityContext';
+</file>
+
+<file path="src/lib/Proximity.tsx">
+import React, { useRef, ReactNode, CSSProperties } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+/**
+ * EXPORTED TYPES FOR LIBRARY USAGE
+ */
+export type EasePreset = 
+  | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic" 
+  | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost" 
+  | "expo" | "circus" | "glitch" | "slowmo" | (string & {});
+
+export interface ProximityConfig {
+  reach?: number;
+  falloff?: number;
+  duration?: number;
+  resetDuration?: number;
+  global?: boolean;
+  preset?: string;
+  ease?: EasePreset;
+  resetEase?: EasePreset;
+  scale?: [number, number];
+  y?: [number, number];
+  opacity?: [number, number];
+  blur?: [number, number];
+  rotate?: [number, number];
+  weight?: [number, number];
+  onCalculate?: (intensity: number, distance: number) => gsap.TweenVars;
+  onReset?: () => gsap.TweenVars;
 }
+
+export interface ProximityProps extends ProximityConfig {
+  children: ReactNode;
+  selector?: string;
+  config?: ProximityConfig;
+  ignoreSelectors?: string[];
+  className?: string;
+  style?: CSSProperties;
+}
+
+/**
+ * CONSTANTS & MAPS
+ */
+const PRESET_DEFAULTS: Record<string, [number, number]> = {
+  scale: [1, 1.5],
+  y: [0, -30],
+  opacity: [0.2, 1],
+  blur: [8, 0],
+  rotate: [0, 90],
+  weight: [100, 900],
+};
+
+const EASE_MAP: Record<string, string> = {
+  smooth: "power1.inOut",
+  heavy: "power4.out",
+  sharp: "expo.out",
+  fluid: "circ.inOut",
+  bouncy: "back.out(1.7)",
+  elastic: "elastic.out(1, 0.3)",
+  jello: "elastic.out(1.5, 0.2)",
+  bounce: "bounce.out",
+  swing: "back.inOut(3)",
+  vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
+  robot: "steps(8)",
+  ghost: "slow(0.6, 0.8, false)",
+  expo: "expo.inOut",
+  circus: "back.out(4)",
+  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
+  slowmo: "slow(0.7, 0.7, false)"
+};
+
+/**
+ * HELPER: CALCULATION ENGINE
+ */
+const calculatePresetValues = (
+  presetString: string, 
+  intensity: number, 
+  userConfig: Record<string, [number, number] | undefined>, 
+  isReset: boolean = false
+): gsap.TweenVars => {
+  const props = presetString.split("-");
+  const result: gsap.TweenVars = {};
+
+  props.forEach((prop) => {
+    const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
+    if (!bounds) return;
+
+    const [base, max] = bounds;
+    const currentValue = isReset ? base : base + (max - base) * intensity;
+
+    if (prop === "blur") {
+      result.filter = `blur(${currentValue}px)`;
+    } else if (prop === "weight") {
+      const weightVal = Math.round(currentValue);
+      result.fontWeight = weightVal;
+      result.fontVariationSettings = `'wght' ${weightVal}`;
+    } else if (prop === "rotate") {
+      result.rotation = currentValue;
+    } else {
+      result[prop] = currentValue;
+    }
+  });
+
+  return result;
+};
+
+export const Proximity: React.FC<ProximityProps> = ({
+  children,
+  selector = ".prox-item",
+  config = {},
+  preset = "",
+  reach = 2,
+  falloff = 2.4,
+  duration = 0.2,
+  resetDuration = 0.4,
+  global = false,
+  onCalculate,
+  onReset,
+  ease,
+  resetEase,
+  scale,
+  y,
+  opacity,
+  blur,
+  rotate,
+  weight,
+  ignoreSelectors = [],
+  className = "",
+  style = {},
+  ...restProps
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Track Mouse/Touch coords
+  const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
+
+  // Resolve config with fallbacks
+  const activeReach = config.reach ?? reach;
+  const activeFalloff = config.falloff ?? falloff;
+  const activeDuration = config.duration ?? duration;
+  const activeResetDuration = config.resetDuration ?? resetDuration;
+  const activeGlobal = config.global ?? global;
+  const activePreset = config.preset ?? preset;
+  const activeOnCalculate = config.onCalculate ?? onCalculate;
+  const activeOnReset = config.onReset ?? onReset;
+
+  const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
+  const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
+
+  const mergedBounds = {
+    scale: config.scale ?? scale,
+    y: config.y ?? y,
+    opacity: config.opacity ?? opacity,
+    blur: config.blur ?? blur,
+    rotate: config.rotate ?? rotate,
+    weight: config.weight ?? weight,
+  };
+
+  useGSAP(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+    
+    const container = containerRef.current;
+    if (!container) return;
+
+    let items: HTMLElement[] = [];
+    let states: { isOutside: boolean; lastIntensity: number }[] = [];
+    let centers: { left: number; right: number; top: number; bottom: number; x: number; y: number }[] = [];
+    
+    let setters: { 
+      intensity: (val: string | number) => void; 
+      dx: (val: string | number) => void; 
+      dy: (val: string | number) => void; 
+    }[] = [];
+
+    const updateCenters = () => {
+      centers = items.map((item) => {
+        const rect = item.getBoundingClientRect();
+        return {
+          left: rect.left + window.scrollX,
+          right: rect.right + window.scrollX,
+          top: rect.top + window.scrollY,
+          bottom: rect.bottom + window.scrollY,
+          x: rect.left + window.scrollX + rect.width / 2,
+          y: rect.top + window.scrollY + rect.height / 2,
+        };
+      });
+    };
+
+    const setInitialState = () => {
+      const initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+      initialProps.willChange = "transform, filter, opacity, font-variation-settings";
+      if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
+    };
+
+    const initItems = () => {
+      if (items.length > 0) gsap.killTweensOf(items);
+      items = Array.from(container.querySelectorAll(selector));
+      states = items.map(() => ({ isOutside: true, lastIntensity: 0 }));
+      setters = items.map(item => ({
+        intensity: gsap.quickSetter(item, "--prox-intensity") as (val: string | number) => void,
+        dx: gsap.quickSetter(item, "--prox-dx", "px") as (val: string | number) => void,
+        dy: gsap.quickSetter(item, "--prox-dy", "px") as (val: string | number) => void
+      }));
+      updateCenters();
+      setInitialState();
+    };
+
+    if (document.fonts) {
+      document.fonts.ready.then(initItems);
+    } else {
+      initItems();
+    }
+
+    const mutationObserver = new MutationObserver((mutationsList) => {
+      const needsReinit = mutationsList.some(mutation => 
+        mutation.type === "childList" && (
+          Array.from(mutation.addedNodes).some(n => n instanceof HTMLElement && (n.matches(selector) || n.querySelector(selector))) ||
+          Array.from(mutation.removedNodes).some(n => n instanceof HTMLElement && (n.matches(selector) || n.querySelector(selector)))
+        )
+      );
+      if (needsReinit) initItems();
+    });
+
+    const resizeObserver = new ResizeObserver(() => updateCenters());
+    mutationObserver.observe(container, { childList: true, subtree: true });
+    resizeObserver.observe(container);
+
+    const actualSpread = activeReach * 10000;
+    const maxDistance = activeReach * 200;
+
+    /**
+     * CORE TICK LOOP
+     */
+    const onTick = () => {
+      if (!pointer.current.active) return;
+
+      const { x: pageX, y: pageY, target } = pointer.current;
+      const isBlocked = ignoreSelectors.some((sel) => (target as HTMLElement)?.closest?.(sel));
+
+      items.forEach((item, i) => {
+        const bounds = centers[i];
+        if (!bounds) return;
+        
+        let distance: number;
+        if (isBlocked) {
+          distance = Infinity;
+        } else {
+          const dxEdge = Math.max(bounds.left - pageX, 0, pageX - bounds.right);
+          const dyEdge = Math.max(bounds.top - pageY, 0, pageY - bounds.bottom);
+          distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
+        }
+
+        if (distance > maxDistance) {
+          if (!states[i].isOutside) {
+            const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+            gsap.to(item, {
+              ...resetProps,
+              "--prox-intensity": 0,
+              duration: activeResetDuration,
+              overwrite: true,
+              ease: targetResetEase,
+            });
+            states[i].isOutside = true;
+            states[i].lastIntensity = 0;
+          }
+          return;
+        }
+
+        const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
+        
+        // Performance optimization: Only update if intensity has moved significantly (~1% change)
+        // This prevents killing the ease curve on every frame.
+        if (Math.abs(intensity - states[i].lastIntensity) > 0.01) {
+          setters[i].intensity(intensity.toFixed(3));
+          setters[i].dx(pageX - bounds.x);
+          setters[i].dy(pageY - bounds.y);
+
+          const animationProps = activeOnCalculate 
+            ? activeOnCalculate(intensity, distance) 
+            : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
+          
+          gsap.to(item, {
+            ...animationProps,
+            duration: activeDuration,
+            overwrite: "auto", // Better than 'true' for smooth redirection
+            ease: targetEase,
+          });
+
+          states[i].lastIntensity = intensity;
+          states[i].isOutside = false;
+        }
+      });
+    };
+
+    gsap.ticker.add(onTick);
+
+    const updatePointer = (x: number, y: number, target: EventTarget | null) => {
+      pointer.current = { x, y, target, active: true };
+    };
+
+    const onPointerMove = (e: PointerEvent) => updatePointer(e.pageX, e.pageY, e.target);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches?.[0]) updatePointer(e.touches[0].pageX, e.touches[0].pageY, e.target);
+    };
+
+    const handleReset = () => {
+      pointer.current.active = false;
+      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+      const activeItems = items.filter((_, i) => !states[i].isOutside);
+      
+      if (activeItems.length > 0) {
+        gsap.to(activeItems, {
+          ...resetProps,
+          "--prox-intensity": 0,
+          duration: activeResetDuration,
+          overwrite: true,
+          ease: targetResetEase,
+        });
+        items.forEach((_, i) => { 
+            states[i].isOutside = true; 
+            states[i].lastIntensity = 0;
+        });
+      }
+    };
+
+    const targetElement: EventTarget = activeGlobal ? window : container;
+    
+    targetElement.addEventListener("pointermove", onPointerMove as EventListener);
+    targetElement.addEventListener("pointerleave", handleReset as EventListener);
+    targetElement.addEventListener("pointerup", handleReset as EventListener);
+    targetElement.addEventListener("pointercancel", handleReset as EventListener);
+    targetElement.addEventListener("touchmove", onTouchMove as EventListener, { passive: true });
+    targetElement.addEventListener("touchstart", onTouchMove as EventListener, { passive: true });
+    targetElement.addEventListener("touchend", handleReset as EventListener);
+    targetElement.addEventListener("touchcancel", handleReset as EventListener);
+
+    return () => {
+      mutationObserver.disconnect();
+      resizeObserver.disconnect();
+      gsap.ticker.remove(onTick);
+      targetElement.removeEventListener("pointermove", onPointerMove as EventListener);
+      targetElement.removeEventListener("pointerleave", handleReset as EventListener);
+      targetElement.removeEventListener("pointerup", handleReset as EventListener);
+      targetElement.removeEventListener("pointercancel", handleReset as EventListener);
+      targetElement.removeEventListener("touchmove", onTouchMove as EventListener);
+      targetElement.removeEventListener("touchstart", onTouchMove as EventListener);
+      targetElement.removeEventListener("touchend", handleReset as EventListener);
+      targetElement.removeEventListener("touchcancel", handleReset as EventListener);
+      gsap.killTweensOf(items);
+    };
+  }, [
+    selector, activePreset, activeReach, activeFalloff, activeDuration, 
+    activeResetDuration, activeGlobal, JSON.stringify(mergedBounds), 
+    ignoreSelectors.join(','), targetEase, targetResetEase
+  ]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className={className} 
+      style={{ position: 'relative', touchAction: 'none', ...style }} 
+      {...restProps}
+    >
+      {children}
+    </div>
+  );
+};
+</file>
+
+<file path="src/lib/ProximityContext.tsx">
+import React, { createContext, useContext, ReactNode } from "react";
+
+export interface GlobalProximityConfig {
+  defaultFont?: string;
+}
+
+const ProximityContext = createContext<GlobalProximityConfig>({
+  defaultFont: "'Georama', sans-serif",
+});
+
+interface ProximityProviderProps {
+  children: ReactNode;
+  config?: GlobalProximityConfig;
+}
+
+export const ProximityProvider: React.FC<ProximityProviderProps> = ({ children, config }) => {
+  return (
+    <ProximityContext.Provider value={{ ...config }}>
+      {children}
+    </ProximityContext.Provider>
+  );
+};
+
+export const useProximityConfig = () => useContext(ProximityContext);
+</file>
+
+<file path="src/lib/ProximityText.tsx">
+import React, { Fragment, useMemo, CSSProperties } from "react";
+import { Proximity, ProximityProps } from "./Proximity";
+import { useProximityConfig } from "./ProximityContext";
+
+export interface ProximityTextProps extends ProximityProps {
+  text: string;
+  splitBy?: "letter" | "word" | "line";
+  textClassName?: string;
+  fontFamily?: string;
+  lineHeight?: number;
+  letterSpacing?: number;
+  wordSpacing?: number;
+  clipFix?: string;
+}
+
+export const ProximityText: React.FC<ProximityTextProps> = ({
+  text,
+  splitBy = "letter",
+  className = "",
+  textClassName = "",
+  fontFamily,
+  lineHeight = 1.2,
+  letterSpacing = 0,
+  wordSpacing = 0.25,
+  clipFix = "0.2em",
+  ...proximityProps
+}) => {
+  const globalConfig = useProximityConfig();
+  const actualFontFamily = fontFamily || globalConfig.defaultFont;
+
+  const containerStyle = useMemo<CSSProperties>(() => {
+    const base: CSSProperties = { 
+      display: "flex", 
+      fontFamily: actualFontFamily,
+      lineHeight: lineHeight,
+      letterSpacing: `${letterSpacing}em`,
+      textAlign: "center",
+      justifyContent: "center"
+    };
+    if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
+    if (splitBy === "line") return { ...base, display: "block" };
+    return { ...base, flexWrap: "wrap" };
+  }, [splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
+
+  const renderedContent = useMemo(() => {
+    const itemStyle: CSSProperties = {
+      display: "inline-block",
+      userSelect: "none",
+      willChange: "transform, filter, opacity",
+      padding: clipFix,
+      margin: clipFix ? `-${clipFix}` : "0",
+    };
+
+    const lines = text.split("\n");
+
+    if (splitBy === "word") {
+      return lines.map((line, lineIdx) => (
+        <Fragment key={lineIdx}>
+          {line.split(" ").map((word, i) => (
+            <span key={i} aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
+          ))}
+          {lineIdx < lines.length - 1 && <div style={{ width: "100%" }} />}
+        </Fragment>
+      ));
+    }
+
+    if (splitBy === "line") {
+      return lines.map((line, i) => (
+        <Fragment key={i}>
+          <span aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
+          {i < lines.length - 1 && <br />}
+        </Fragment>
+      ));
+    }
+
+    return [...text].map((char, i) => {
+      if (char === "\n") {
+        return <div key={i} style={{ width: "100%", height: 0 }} />;
+      }
+      return (
+        <span 
+          aria-hidden="true" 
+          key={i} 
+          className={`prox-part ${textClassName}`} 
+          style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}
+        >
+          {char}
+        </span>
+      );
+    });
+
+  }, [text, splitBy, textClassName, clipFix]);
+
+  return (
+    <Proximity selector=".prox-part" className={className} {...proximityProps}>
+      <div aria-label={text} role="img" style={containerStyle}>
+        {renderedContent}
+      </div>
+    </Proximity>
+  );
+};
+</file>
+
+<file path="src/main.jsx">
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "gsap"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path="vercel.json">
+{
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
+</file>
+
+<file path=".gitignore">
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 </file>
 
 <file path="src/index.css">
 :root {
-  --text: #6b6375;
+  --text: #888;
   --text-h: #08060d;
   --bg: #fff;
   --border: #e5e4e7;
@@ -264,158 +833,70 @@ code {
 }
 </file>
 
-<file path="src/main.jsx">
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
-</file>
-
-<file path="vite.config.js">
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-})
-</file>
-
-<file path=".gitignore">
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-dist
-dist-ssr
-*.local
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-</file>
-
-<file path="src/components/PresetCard.jsx">
-import React from "react";
-import { Eye, EyeOff } from "lucide-react";
-
-export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePresets, settings, togglePreset, updateRange }) => (
-  <div
-    style={{
-      backgroundColor: activePresets[id] ? "#111" : "#080808",
-      border: `1px solid ${activePresets[id] ? "#333" : "#1a1a1a"}`,
-      borderRadius: "16px",
-      padding: "15px",
-      transition: "0.3s",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: activePresets[id] ? "15px" : "0",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          color: activePresets[id] ? "#fff" : "#444",
-        }}
-      >
-        <Icon size={16} />
-        <span
-          style={{
-            fontSize: "12px",
-            fontWeight: "bold",
-            textTransform: "uppercase",
-          }}
-        >
-          {label}
-        </span>
-      </div>
-      <button
-        aria-label="Toggle preset"
-        onClick={() => togglePreset(id)}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: activePresets[id] ? "#10b981" : "#444",
-        }}
-      >
-        {activePresets[id] ? <Eye size={18} /> : <EyeOff size={18} />}
-      </button>
-    </div>
-    {activePresets[id] && (
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "9px",
-              color: "#555",
-              marginBottom: "4px",
-            }}
-          >
-            <span>BASE</span> <span>{settings[id][0]}</span>
-          </div>
-          <input
-            type="range"
-            min={min}
-            max={max}
-            step={step}
-            value={settings[id][0]}
-            onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
-            style={{ width: "100%", accentColor: "#555" }}
-            aria-label={`${label} Base Value`}
-          />
-        </div>
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "9px",
-              color: "#aaa",
-              marginBottom: "4px",
-            }}
-          >
-            <span>FINAL</span> <span>{settings[id][1]}</span>
-          </div>
-          <input
-            type="range"
-            min={min}
-            max={max}
-            step={step}
-            value={settings[id][1]}
-            onChange={(e) => updateRange(id, 1, parseFloat(e.target.value))}
-            style={{ width: "100%", accentColor: "#fff" }}
-            aria-label={`${label} Final Value`}
-          />
-        </div>
-      </div>
-    )}
-  </div>
-);
+<file path="package.json">
+{
+  "name": "z-proximity-engine",
+  "version": "1.0.0",
+  "description": "High-performance proximity-based motion engine for React.",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "react",
+    "gsap",
+    "animation",
+    "proximity",
+    "ui",
+    "motion",
+    "creative-coding"
+  ],
+  "author": "Yousef Zedan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/z-proximity-engine.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/z-proximity-engine/issues"
+  },
+  "homepage": "https://z-proximity-engine.vercel.app/",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.12.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "lucide-react": "^1.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}
 </file>
 
 <file path="index.html">
@@ -452,7 +933,7 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
             <link rel="preconnect" href="https://fonts.googleapis.com" />
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
             <link
-                href="https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,100..900;1,100..900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=IBM+Plex+Sans+Arabic:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+                href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Georama:ital,wght@0,100..900;1,100..900&display=swap"
                 rel="stylesheet"
             />
             
@@ -467,109 +948,145 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
 </html>
 </file>
 
-<file path="src/proximity-engine/ProximityContext.jsx">
-import { createContext, useContext } from "react";
+<file path="src/components/PresetCard.jsx">
+import React from "react";
+import { Eye, EyeOff } from "lucide-react";
 
-const ProximityContext = createContext({
-  defaultFont: "'Georama', sans-serif",
-});
-
-export const ProximityProvider = ({ children, config }) => {
-  return (
-    <ProximityContext.Provider value={{ ...config }}>
-      {children}
-    </ProximityContext.Provider>
-  );
-};
-
-export const useProximityConfig = () => useContext(ProximityContext);
+export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePresets, settings, togglePreset, updateRange }) => (
+  <div
+    style={{
+      backgroundColor: activePresets[id] ? "#111" : "#080808",
+      border: `1px solid ${activePresets[id] ? "#333" : "#1a1a1a"}`,
+      borderRadius: "16px",
+      padding: "15px",
+      transition: "0.3s",
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: activePresets[id] ? "15px" : "0",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          color: activePresets[id] ? "#fff" : "#888",
+        }}
+      >
+        <Icon size={16} />
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: "bold",
+            textTransform: "uppercase",
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      <button
+        aria-label="Toggle preset"
+        onClick={() => togglePreset(id)}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: activePresets[id] ? "#10b981" : "#888",
+        }}
+      >
+        {activePresets[id] ? <Eye size={18} /> : <EyeOff size={18} />}
+      </button>
+    </div>
+    {activePresets[id] && (
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: "9px",
+              color: "#888",
+              marginBottom: "4px",
+            }}
+          >
+            <span>BASE</span> <span>{settings[id][0]}</span>
+          </div>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={settings[id][0]}
+            onChange={(e) => updateRange(id, 0, parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#888" }}
+            aria-label={`${label} Base Value`}
+          />
+        </div>
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: "9px",
+              color: "#aaa",
+              marginBottom: "4px",
+            }}
+          >
+            <span>FINAL</span> <span>{settings[id][1]}</span>
+          </div>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={settings[id][1]}
+            onChange={(e) => updateRange(id, 1, parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#fff" }}
+            aria-label={`${label} Final Value`}
+          />
+        </div>
+      </div>
+    )}
+  </div>
+);
 </file>
 
-<file path="src/proximity-engine/ProximityText.jsx">
-import { Fragment, useMemo } from "react";
-import { Proximity } from "./Proximity";
-import { useProximityConfig } from "./ProximityContext";
-export const ProximityText = ({
-  text,
-  splitBy = "letter",
-  className = "",
-  textClassName = "",
-  fontFamily,
-  lineHeight = 1.2,
-  letterSpacing = 0,
-  wordSpacing = 0.25,
-  clipFix = "0.2em",
-  ...proximityProps
-}) => {
-  const globalConfig = useProximityConfig();
-  const actualFontFamily = fontFamily || globalConfig.defaultFont;
+<file path="vite.config.js">
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import dts from 'vite-plugin-dts';
+import { resolve } from 'path';
 
-  const containerStyle = useMemo(() => {
-    const base = { 
-      display: "flex", 
-      fontFamily: actualFontFamily,
-      lineHeight: lineHeight,
-      letterSpacing: `${letterSpacing}em`,
-      textAlign: "center",
-      justifyContent: "center"
-    };
-    if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
-    if (splitBy === "line") return { ...base, display: "block" };
-    return { ...base, flexWrap: "wrap" };
-  }, [splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
-
-  const renderedContent = useMemo(() => {
-    const itemStyle = {
-      display: "inline-block",
-      userSelect: "none",
-      willChange: "transform, filter, opacity",
-      padding: clipFix,
-      margin: clipFix ? `-${clipFix}` : "0",
-    };
-
-    const formattedText = text;
-
-    if (splitBy === "word") {
-      return formattedText.split("\n").map((line, lineIdx) => (
-        <Fragment key={lineIdx}>
-          {line.split(" ").map((word, i) => (
-            <span key={i} aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
-          ))}
-          {lineIdx < formattedText.split("\n").length - 1 && <div style={{ width: "100%" }} />}
-        </Fragment>
-      ));
-    }
-
-    if (splitBy === "line") {
-      return formattedText.split("\n").map((line, i) => (
-        <Fragment key={i}>
-          <span aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
-          {i < formattedText.split("\n").length - 1 && <br />}
-        </Fragment>
-      ));
-    }
-
-    return [...formattedText].map((char, i) => {
-      if (char === "\n") {
-        return <div key={i} style={{ width: "100%", height: 0 }} />;
-      }
-      return (
-        <span aria-hidden="true" key={i} className={`prox-part ${textClassName}`} style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}>
-          {char}
-        </span>
-      );
-    });
-
-  },[text, splitBy, textClassName, clipFix]);
-
-  return (
-    <Proximity selector=".prox-part" className={className} {...proximityProps}>
-      <span aria-label={text} style={containerStyle}>
-        {renderedContent}
-      </span>
-    </Proximity>
-  );
-};
+export default defineConfig({
+  plugins: [
+    react(),
+    dts({ insertTypesEntry: true, include: ['src/lib'] })
+  ],
+  publicDir: false,
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'src/lib/index.ts'),
+      name: 'ZProximityEngine',
+      fileName: (format) => `index.${format}.js`,
+    },
+    rollupOptions: {
+      external: ['react', 'react-dom', 'gsap', '@gsap/react'],
+      output: {
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM',
+          gsap: 'gsap',
+          '@gsap/react': 'gsapReact'
+        },
+      },
+    },
+  },
+});
 </file>
 
 <file path="README.md">
@@ -692,10 +1209,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 </file>
 
 <file path="src/App.jsx">
-import React, { useState, useMemo } from "react";
-import { ProximityText } from "./proximity-engine/ProximityText";
-import { Proximity } from "./proximity-engine/Proximity";
-import { PresetCard } from "./components/PresetCard";
+import React, { useState, useMemo, lazy, Suspense } from "react";
+import { ProximityText } from "./lib/ProximityText";
+import { Proximity } from "./lib/Proximity";
+const PresetCard = lazy(() => import("./components/PresetCard").then(module => ({ default: module.PresetCard })));
 import {
   Type,
   Maximize,
@@ -808,9 +1325,9 @@ const App = () => {
   };
 
   return (
-    <main // Semantic HTML
+    <main
       style={{
-        backgroundColor: "#020202",
+        backgroundColor: "#000",
         minHeight: "100vh",
         color: "#e0e0e0",
         fontFamily: "'Georama', sans-serif",
@@ -888,7 +1405,7 @@ const App = () => {
         }}
       >
         <Sparkles size={16} />
-        <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal" }}>
+        <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal", color: "#fff" }}>
           ZPROXIMITY ENGINE
         </h1>
       </header>
@@ -918,7 +1435,7 @@ const App = () => {
             alignItems: "center",
             gap: "8px",
             fontSize: "10px",
-            color: "#333",
+            color: "#888",
           }}
         >
           <MousePointer2 size={12} />{" "}
@@ -1127,7 +1644,7 @@ const App = () => {
                         fontWeight: "bold",
                         backgroundColor:
                           settings.splitBy === s ? "#fff" : "transparent",
-                        color: settings.splitBy === s ? "#000" : "#444",
+                        color: settings.splitBy === s ? "#000" : "#888",
                         cursor: "pointer",
                       }}
                     >
@@ -1182,7 +1699,7 @@ const App = () => {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              color: "#666",
+              color: "#999",
               fontSize: "12px",
               marginBottom: "20px",
             }}
@@ -1315,6 +1832,7 @@ const App = () => {
         </div>
 
         {/* PRESET CARDS */}
+        <Suspense fallback={<div style={{ color: "#888" }}>Loading Settings...</div>}>
         <div
           style={{
             gridColumn: "1 / -1",
@@ -1330,8 +1848,8 @@ const App = () => {
           <PresetCard id="rotate" label="Rotate" icon={Maximize} min="-360" max="360" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
           <PresetCard id="weight" label="Weight" icon={Type} min="100" max="900" step="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
         </div>
+      </Suspense>
       </div>
-
       <button
         aria-label="copyCode"
         onClick={copyCode}
@@ -1360,320 +1878,6 @@ const App = () => {
 };
 
 export default App;
-</file>
-
-<file path="src/proximity-engine/Proximity.jsx">
-import { useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-
-const PRESET_DEFAULTS = {
-  scale: [1, 1.5],
-  y:[0, -30],
-  opacity:[0.2, 1],
-  blur: [8, 0],
-  rotate:[0, 90],
-  weight:[100, 900],
-};
-
-const EASE_MAP = {
-  smooth: "power1.inOut",
-  heavy: "power4.out",
-  sharp: "expo.out",
-  fluid: "circ.inOut",
-  bouncy: "back.out(1.7)",
-  elastic: "elastic.out(1, 0.3)",
-  jello: "elastic.out(1.5, 0.2)",
-  bounce: "bounce.out",
-  swing: "back.inOut(3)",
-  vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
-  robot: "steps(8)",
-  ghost: "slow(0.6, 0.8, false)",
-  expo: "expo.inOut",
-  circus: "back.out(4)",
-  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
-  slowmo: "slow(0.7, 0.7, false)"
-};
-
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-const calculatePresetValues = (presetString, intensity, userConfig = {}, isReset = false) => {
-  const props = presetString.split("-");
-  const result = {};
-
-  props.forEach((prop) => {
-    const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
-    if (!bounds) return;
-
-    const [base, max] = bounds;
-    const currentValue = isReset ? base : base + (max - base) * intensity;
-
-    if (prop === "blur") {
-      result.filter = `blur(${currentValue}px)`;
-    } else if (prop === "weight") {
-      const weightVal = Math.round(currentValue);
-      result.fontWeight = weightVal;
-      result.fontVariationSettings = `'wght' ${weightVal}`;
-    } else if (prop === "rotate") {
-      result.rotation = currentValue;
-    } else {
-      result[prop] = currentValue;
-    }
-  });
-
-  return result;
-};
-
-export const Proximity = ({
-  children,
-  selector = ".prox-item",
-  config = {},
-  preset = "",
-  reach = 2,
-  falloff = 2.4,
-  duration = 0.2,
-  resetDuration = 0.4,
-  global = false,
-  onCalculate,
-  onReset,
-  ease,
-  resetEase,
-  scale,
-  y,
-  opacity,
-  blur,
-  rotate,
-  weight,
-  ignoreSelectors =[], 
-  className = "",
-  style = {},
-  ...restProps
-}) => {
-  const containerRef = useRef(null);
-
-  const activeReach = config.reach ?? reach;
-  const activeFalloff = config.falloff ?? falloff;
-  const activeDuration = config.duration ?? duration;
-  const activeResetDuration = config.resetDuration ?? resetDuration;
-  const activeGlobal = config.global ?? global;
-  const activePreset = config.preset ?? preset;
-  const activeOnCalculate = config.onCalculate ?? onCalculate;
-  const activeOnReset = config.onReset ?? onReset;
-
-  const rawEase = config.ease ?? ease ?? "power1.out";
-  const targetEase = EASE_MAP[rawEase] || rawEase;
-
-  const rawResetEase = config.resetEase ?? resetEase ?? "power2.out";
-  const targetResetEase = EASE_MAP[rawResetEase] || rawResetEase;
-
-  const mergedBounds = {
-    scale: config.scale ?? scale,
-    y: config.y ?? y,
-    opacity: config.opacity ?? opacity,
-    blur: config.blur ?? blur,
-    rotate: config.rotate ?? rotate,
-    weight: config.weight ?? weight,
-  };
-
-  useGSAP(() => {
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-     if (prefersReducedMotion) return;
-      const container = containerRef.current;
-      if (!container) return;
-    
-      let items = [];
-      let states = [];
-      let centers = [];
-      let setters =[];
-      let animationFrameId;
-      const updateCenters = () => {
-        centers = items.map((item) => {
-          const rect = item.getBoundingClientRect();
-          return {
-            left: rect.left + window.scrollX,
-            right: rect.right + window.scrollX,
-            top: rect.top + window.scrollY,
-            bottom: rect.bottom + window.scrollY,
-            x: rect.left + window.scrollX + rect.width / 2,
-            y: rect.top + window.scrollY + rect.height / 2,
-          };
-        });
-      };
-  
-      const debouncedUpdateCenters = debounce(updateCenters, 200);
-  
-      const setInitialState = () => {
-        let initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-        initialProps.willChange = "transform, filter, opacity, font-variation-settings";
-        if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
-      };
-  
-      const initItems = () => {
-        if (items.length > 0) gsap.killTweensOf(items);
-  
-        items = Array.from(container.querySelectorAll(selector));
-        states = items.map(() => ({ isOutside: true }));
-        setters = items.map(item => ({
-          intensity: gsap.quickSetter(item, "--prox-intensity"),
-          dx: gsap.quickSetter(item, "--prox-dx", "px"),
-          dy: gsap.quickSetter(item, "--prox-dy", "px")
-        }));
-  
-        updateCenters();
-        setInitialState();
-      };
-  
-      if (document.fonts) {
-        document.fonts.ready.then(initItems);
-      } else {
-        setTimeout(initItems, 100);
-      }
-
-      const observer = new MutationObserver(() => {
-        initItems();
-      });
-      observer.observe(container, { childList: true, subtree: true });
-  
-      window.addEventListener("resize", debouncedUpdateCenters);
-  
-      const actualSpread = activeReach * 10000;
-      const maxDistance = activeReach * 200;
-  
-      const handlePointerMove = (e) => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        animationFrameId = requestAnimationFrame(() => {
-          const mouseX = e.pageX;
-          const mouseY = e.pageY;
-  
-          const isBlocked = ignoreSelectors.length > 0 && ignoreSelectors.some((sel) => e.target?.closest?.(sel));
-  
-          items.forEach((item, i) => {
-            const bounds = centers[i];
-            if (!bounds) return;
-            
-            let distance;
-  
-            if (isBlocked) {
-              distance = Infinity;
-            } else {
-              const dxEdge = Math.max(bounds.left - mouseX, 0, mouseX - bounds.right);
-              const dyEdge = Math.max(bounds.top - mouseY, 0, mouseY - bounds.bottom);
-              distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
-            }
-  
-            if (distance > maxDistance) {
-              if (!states[i].isOutside) {
-                const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-                gsap.to(item, {
-                  ...resetProps,
-                  "--prox-intensity": 0,
-                  duration: activeResetDuration,
-                  overwrite: true,
-                  ease: targetResetEase,
-                });
-                states[i].isOutside = true;
-              }
-              return;
-            }
-  
-            const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
-  
-            setters[i].intensity(intensity.toFixed(3));
-            setters[i].dx(mouseX - bounds.x);
-            setters[i].dy(mouseY - bounds.y);
-  
-            const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
-  
-            gsap.to(item, {
-              ...animationProps,
-              duration: activeDuration,
-              overwrite: true,
-              ease: targetEase,
-            });
-            
-            states[i].isOutside = false;
-          });
-        });
-      };
-  
-      const handlePointerLeave = () => {
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-        
-        const activeItems =[];
-        items.forEach((item, i) => {
-          if (!states[i].isOutside) {
-            activeItems.push(item);
-            states[i].isOutside = true;
-          }
-        });
-  
-        if (activeItems.length > 0) {
-          gsap.to(activeItems, {
-            ...resetProps,
-            "--prox-intensity": 0,
-            duration: activeResetDuration,
-            overwrite: true,
-            ease: targetResetEase,
-          });
-        }
-      };
-  
-      const handleTouchMove = (e) => {
-        if (e.touches && e.touches.length > 0) {
-          handlePointerMove({ pageX: e.touches[0].pageX, pageY: e.touches[0].pageY, target: e.target });
-        }
-      };
-  
-      const targetElement = activeGlobal ? window : container;
-      targetElement.addEventListener("pointermove", handlePointerMove);
-      targetElement.addEventListener("pointerleave", handlePointerLeave);
-      targetElement.addEventListener("pointerup", handlePointerLeave);
-      targetElement.addEventListener("pointercancel", handlePointerLeave);
-      targetElement.addEventListener("touchmove", handleTouchMove, { passive: true });
-      targetElement.addEventListener("touchstart", handleTouchMove, { passive: true });
-      targetElement.addEventListener("touchend", handlePointerLeave);
-      targetElement.addEventListener("touchcancel", handlePointerLeave);
-  
-      return () => {
-        observer.disconnect(); // 5. Clean up the observer!
-        window.removeEventListener("resize", debouncedUpdateCenters);
-        targetElement.removeEventListener("pointermove", handlePointerMove);
-        targetElement.removeEventListener("pointerleave", handlePointerLeave);
-        targetElement.removeEventListener("pointerup", handlePointerLeave);
-        targetElement.removeEventListener("pointercancel", handlePointerLeave);
-        targetElement.removeEventListener("touchmove", handleTouchMove);
-        targetElement.removeEventListener("touchstart", handleTouchMove);
-        targetElement.removeEventListener("touchend", handlePointerLeave);
-        targetElement.removeEventListener("touchcancel", handlePointerLeave);
-        gsap.killTweensOf(items); 
-      };
-    },[
-      selector, 
-      activePreset, 
-      activeReach, 
-      activeFalloff, 
-      activeDuration, 
-      activeResetDuration, 
-      activeGlobal, 
-      JSON.stringify(mergedBounds), 
-      ignoreSelectors.join(','),
-      targetEase,
-      targetResetEase
-    ]);
-
-  return (
-    <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...restProps}>
-      {children}
-    </div>
-  );
-};
 </file>
 
 </files>

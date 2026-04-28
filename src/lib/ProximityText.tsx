@@ -1,7 +1,19 @@
-import { Fragment, useMemo } from "react";
-import { Proximity } from "./Proximity";
+import React, { Fragment, useMemo, CSSProperties } from "react";
+import { Proximity, ProximityProps } from "./Proximity";
 import { useProximityConfig } from "./ProximityContext";
-export const ProximityText = ({
+
+export interface ProximityTextProps extends ProximityProps {
+  text: string;
+  splitBy?: "letter" | "word" | "line";
+  textClassName?: string;
+  fontFamily?: string;
+  lineHeight?: number;
+  letterSpacing?: number;
+  wordSpacing?: number;
+  clipFix?: string;
+}
+
+export const ProximityText: React.FC<ProximityTextProps> = ({
   text,
   splitBy = "letter",
   className = "",
@@ -16,8 +28,8 @@ export const ProximityText = ({
   const globalConfig = useProximityConfig();
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
 
-  const containerStyle = useMemo(() => {
-    const base = { 
+  const containerStyle = useMemo<CSSProperties>(() => {
+    const base: CSSProperties = { 
       display: "flex", 
       fontFamily: actualFontFamily,
       lineHeight: lineHeight,
@@ -31,7 +43,7 @@ export const ProximityText = ({
   }, [splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
 
   const renderedContent = useMemo(() => {
-    const itemStyle = {
+    const itemStyle: CSSProperties = {
       display: "inline-block",
       userSelect: "none",
       willChange: "transform, filter, opacity",
@@ -39,40 +51,45 @@ export const ProximityText = ({
       margin: clipFix ? `-${clipFix}` : "0",
     };
 
-    const formattedText = text;
+    const lines = text.split("\n");
 
     if (splitBy === "word") {
-      return formattedText.split("\n").map((line, lineIdx) => (
+      return lines.map((line, lineIdx) => (
         <Fragment key={lineIdx}>
           {line.split(" ").map((word, i) => (
             <span key={i} aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
           ))}
-          {lineIdx < formattedText.split("\n").length - 1 && <div style={{ width: "100%" }} />}
+          {lineIdx < lines.length - 1 && <div style={{ width: "100%" }} />}
         </Fragment>
       ));
     }
 
     if (splitBy === "line") {
-      return formattedText.split("\n").map((line, i) => (
+      return lines.map((line, i) => (
         <Fragment key={i}>
           <span aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
-          {i < formattedText.split("\n").length - 1 && <br />}
+          {i < lines.length - 1 && <br />}
         </Fragment>
       ));
     }
 
-    return [...formattedText].map((char, i) => {
+    return [...text].map((char, i) => {
       if (char === "\n") {
         return <div key={i} style={{ width: "100%", height: 0 }} />;
       }
       return (
-        <span aria-hidden="true" key={i} className={`prox-part ${textClassName}`} style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}>
+        <span 
+          aria-hidden="true" 
+          key={i} 
+          className={`prox-part ${textClassName}`} 
+          style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}
+        >
           {char}
         </span>
       );
     });
 
-  },[text, splitBy, textClassName, clipFix]);
+  }, [text, splitBy, textClassName, clipFix]);
 
   return (
     <Proximity selector=".prox-part" className={className} {...proximityProps}>

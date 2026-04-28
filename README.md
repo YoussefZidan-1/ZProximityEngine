@@ -1,86 +1,124 @@
-Markdown
 # 🚀 ZProximity Engine
 
-**The definitive high-performance React engine for proximity-aware motion design.**
+### **The physics of attraction for your UI.**
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/YoussefZidan-1/ZProximityEngine/blob/main/LICENSE)
-[![Status](https://img.shields.io/badge/status-Alpha-red.svg)](https://github.com/YoussefZidan-1/ZProximityEngine)
-[![React](https://img.shields.io/badge/React-18+-61dafb.svg)](https://reactjs.org/)
-[![GSAP](https://img.shields.io/badge/Powered%20by-GSAP-ff0000.svg)](https://greensock.com/gsap/)
+`ZProximity` is a high-performance React motion engine designed to bridge the gap between complex mathematical physics and organic UI design. Create reactive, buttery-smooth interactions that respond to user proximity with a single declarative prop.
 
-`ZProximity` is not just an animation library; it's a specialized **Physics-over-UI** engine. It bridges the gap between raw pointer data and aesthetic motion, enabling developers to create interfaces that "feel" the user's presence.
-
-[**✨ Experience the Playground**](https://z-proximity-engine.vercel.app/) | [**📄 Documentation (Coming Soon)**](#)
+[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/)
 
 ---
 
-## 🔥 Why ZProximity?
+## 🎨 Why ZProximity?
 
-Most interactive animations today are binary: Hover or No-Hover. `ZProximity` introduces **Radial Influence**. Elements react based on their precise distance from the pointer, creating a dynamic, organic field of interaction.
+Most proximity effects require manual event listeners, heavy math, and complex cleanup logic that kills performance. **ZProximity** abstracts this into a performance-first architecture:
 
-### ⚡ Performance Core
-- **Zero Layout Thrashing:** Built on GSAP's `quickSetter`, bypassing the React reconciliation loop for 60fps+ performance.
-- **Exponential Decay Logic:** Uses mathematical falloff algorithms ($e^{-d^x / s}$) for smoother, more natural transitions than linear math.
-- **Smart Mutation Tracking:** Automatically detects DOM changes and re-calculates centers without manual refreshes.
-
----
-
-## ✨ Key Features
-
-- **🎭 Infinite Preset Chaining:** Combine effects like `scale-blur-weight-rotate-y` in any order. The engine parses and applies them dynamically.
-- **🔡 Typography Intelligence:** Built-in text splitting (Characters, Words, Lines) with a dedicated `ProximityText` component.
-- **🎨 Variable Font Support:** Seamlessly animate `font-weight` and `font-stretch` axes in real-time.
-- **🔓 The "Escape Hatch":** Use `onCalculate` to map proximity to *anything*—CSS variables, Canvas properties, or even Web Audio frequencies.
-- **🕹️ Gaming-Grade Cursors:** Create Valorant-style expandable crosshairs or magnetic buttons with zero boilerplate.
+- **🚀 GSAP Power:** Optimized with `quickSetter` to bypass React's render cycle for 60/120fps+ updates.
+- **🧠 Exponential Decay:** Uses advanced math (not linear distance) to create organic, "magnetic" feels.
+- **🎭 String-Based Presets:** Combine effects like `scale-blur-rotate-weight` instantly with the order you like.
+- **🔡 Text-First:** Built-in intelligent splitting for characters, words, or lines.
 
 ---
 
-## 🛠 Feature Presets (Included & Upcoming)
+## 📦 Installation
 
-| Category | Presets |
-| :--- | :--- |
-| **Transform** | `scale`, `rotate`, `y`, `x`, `3D Tilt` |
-| **Filters** | `blur`, `opacity`, `grayscale`, `chroma-split` |
-| **Typography** | `weight`, `width`, `cipher-text`, `text-shadow` |
-| **Gaming UI** | `valorant-cursor`, `lazer-sight`, `flashlight` |
-| **Aesthetics** | `glassmorphism`, `magnetic`, `jello`, `glitch` |
-
-*AND A LOT MORE*
-
----
-
-## 🚀 Quick Start (Preview)
-
-```jsx
-import { ProximityText } from "z-proximity-engine";
-
-function CreativeHero() {
-  return (
-    <ProximityText 
-      text="BEYOND THE VOID"
-      preset="scale-blur-weight" // Type the preset you want with the order you like
-      splitBy="word" // You can split by word, letter and line
-      reach={2.5} 
-      falloff={3}
-      config={{
-        ease: "bouncy", // Built-in ease mapping
-        resetEase: "elastic",
-        duration: 0.4,
-        resetDuration: 1,
-      }}
-    />
-  );
-}
-
+```bash
+npm install z-proximity-engine gsap @gsap/react
 ```
 ---
 
-🗺️ The Roadmap (2026)
-- [ ] TypeScript Core Rewrite: Full type-safety for all presets and config objects.
+## 🚀 Quick Start
 
-- [ ] Z-Mobile Tilt: Proximity effects driven by Device Orientation (Gyroscope).
+### 1. Basic Text Interaction
+Transform static text into a reactive, magnetic element.
 
-- [ ] Scroll-Proximity Mode: Triggering proximity logic based on Viewport distance (Scroll-bound).
+```jsx
+import { ProximityText } from 'z-proximity-engine';
+
+const MyComponent = () => (
+  <ProximityText 
+    text="BEYOND THE VOID"
+    preset="scale-blur-opacity"
+    config={{
+      reach: 1.5,
+      duration: 1,
+      ease: "elastic"
+    }}
+    style={{ fontSize: '4rem', fontWeight: '900' }}
+  />
+);
+```
+
+### 2. Element Groups (The "Dock" Effect)
+Apply proximity to any group of React elements (cards, icons, buttons).
+
+```jsx
+import { Proximity } from 'z-proximity-engine';
+
+const Dock = () => (
+  <Proximity 
+    selector=".item" 
+    preset="y-scale"
+    config={{ y: [0, -50], scale: [1, 1.5] }}
+  >
+    <div className="item">🚀</div>
+    <div className="item">✨</div>
+    <div className="item">🔥</div>
+  </Proximity>
+);
+```
+
+---
+
+## 🛠 Features Deep-Dive
+
+### **The Preset System**
+Don't write CSS logic. Chain your desired effects in the `preset` prop string. Order doesn't matter; performance is guaranteed.
+
+| Preset | Effect |
+| :--- | :--- |
+| `scale` | Changes element size |
+| `y` | Moves element on the Y-axis |
+| `opacity` | Smoothly fades elements in/out |
+| `blur` | Transitions between sharp and blurred |
+| `rotate` | Rotates elements based on proximity |
+| `weight` | Animates Variable Font weight (requires variable font) |
+
+### **The "Escape Hatch" (Custom Logic)**
+For advanced users, use the `onCalculate` callback to map proximity intensity to *anything* (audio, custom SVG paths, etc).
+
+```jsx
+<Proximity
+  onCalculate={(intensity, distance) => ({
+    backgroundColor: `rgba(170, 59, 255, ${intensity})`,
+    x: Math.sin(distance) * 10
+  })}
+>
+  <div>Custom Logic</div>
+</Proximity>
+```
+
+---
+
+## ⚙️ API Reference
+
+### `ProximityProps` & `ProximityTextProps`
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `preset` | `string` | `""` | Dash-separated effects (e.g., `"scale-y-blur"`) |
+| `reach` | `number` | `2` | Radius of influence (Higher = further reach) |
+| `falloff` | `number` | `2.4` | How quickly the effect fades (Exponential power) |
+| `duration` | `number` | `0.2` | Speed of the "attraction" animation |
+| `resetDuration`| `number` | `0.4` | Speed of the "return to home" animation |
+| `ease` | `EasePreset` | `"power1.out"` | Custom easing (smooth, bouncy, elastic, etc.) |
+| `global` | `boolean` | `false` | If true, tracks mouse even outside the container |
+
+---
+
+## ♿ Accessibility & Performance
+- **Reduced Motion:** Automatically respects `prefers-reduced-motion` settings and disables animations.
+- **Smart Throttling:** Internal logic prevents unnecessary GSAP overwrites if the movement delta is below 1%.
+- **Zero Layout Thrashing:** Uses CSS Variables and transforms to ensure animations happen on the GPU.
 
 - [ ] Auto-Arabic Support: Intelligent word-based grouping for cursive scripts to maintain typography integrity.
 
@@ -92,15 +130,13 @@ function CreativeHero() {
 ## 🤝 Contributing
 This is a Public Build. If you are a GSAP wizard or a Math enthusiast, your PRs are welcome!
 
-Star the repo to show support! ⭐
+This engine is built for the community. If you have a math-based preset or a performance optimization, PRs are welcome!
 
-Open an Issue for feature requests.
+1. Star the repo ⭐
+2. Open an issue for feature requests.
+3. Submit a PR with your creative additions.
 
-Check the Playground to see the engine in action.
+---
 
-## 👨‍💻 Behind the Engine
-Yousef Zedan Creative Developer | Software Engineer
-
-A 17-year-old polymath building the future of the web. I believe that code should be as expressive as art.
-
-## LICENSE: MIT © 2026 Yousef Zedan
+## 📄 License
+MIT © [Yousef Zedan](https://github.com/yousef-zedan)

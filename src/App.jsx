@@ -1,6 +1,6 @@
 import React, { useState, useMemo, lazy, Suspense } from "react";
-import { ProximityText } from "./proximity-engine/ProximityText";
-import { Proximity } from "./proximity-engine/Proximity";
+import { ProximityText } from "./lib/ProximityText";
+import { Proximity } from "./lib/Proximity";
 const PresetCard = lazy(() => import("./components/PresetCard").then(module => ({ default: module.PresetCard })));
 import {
   Type,
