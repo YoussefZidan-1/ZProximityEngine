@@ -1,6 +1,6 @@
 {
   "name": "z-proximity-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -29,10 +29,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/z-proximity-engine.git"
+    "url": "git+https://github.com/YoussefZidan-1/ZProximityEngine"
   },
   "bugs": {
-    "url": "https://github.com/your-username/z-proximity-engine/issues"
+    "url": "https://github.com/YoussefZidan-1/ZProximityEngine/issues"
   },
   "homepage": "https://z-proximity-engine.vercel.app/",
   "scripts": {
