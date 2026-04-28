@@ -695,72 +695,6 @@ createRoot(document.getElementById('root')).render(
 }
 </file>
 
-<file path="package.json">
-{
-  "name": "z-proximity-engine",
-  "version": "1.0.0",
-  "description": "High-performance proximity-based motion engine for React.",
-  "type": "module",
-  "main": "./dist/index.umd.js",
-  "module": "./dist/index.es.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.umd.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "react",
-    "gsap",
-    "animation",
-    "proximity",
-    "ui",
-    "motion",
-    "creative-coding"
-  ],
-  "author": "Yousef Zedan",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/your-username/z-proximity-engine.git"
-  },
-  "bugs": {
-    "url": "https://github.com/your-username/z-proximity-engine/issues"
-  },
-  "homepage": "https://z-proximity-engine.vercel.app/",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "prepublishOnly": "npm run build"
-  },
-  "peerDependencies": {
-    "@gsap/react": "^2.1.2",
-    "gsap": "^3.12.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "dependencies": {
-  },
-  "devDependencies": {
-    "lucide-react": "^1.11.0",
-    "@types/node": "^25.6.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.0.0",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0",
-    "vite-plugin-dts": "^4.5.4"
-  }
-}
-</file>
-
 <file path="src/index.css">
 :root {
   --text: #888;
@@ -897,6 +831,7 @@ dist-ssr
 *.sln
 *.sw?
 .npmrc
+*.tgz
 </file>
 
 <file path="index.html">
@@ -1056,36 +991,117 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
 );
 </file>
 
+<file path="package.json">
+{
+  "name": "z-proximity-engine",
+  "version": "1.0.3",
+  "description": "High-performance proximity-based motion engine for React.",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "react",
+    "gsap",
+    "animation",
+    "proximity",
+    "ui",
+    "motion",
+    "creative-coding"
+  ],
+  "author": "Yousef Zedan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YoussefZidan-1/ZProximityEngine"
+  },
+  "bugs": {
+    "url": "https://github.com/YoussefZidan-1/ZProximityEngine/issues"
+  },
+  "homepage": "https://z-proximity-engine.vercel.app/",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:lib": "vite build --mode lib",
+    "prepublishOnly": "npm run build:lib",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.12.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "lucide-react": "^1.11.0",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}
+</file>
+
 <file path="vite.config.js">
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 
-export default defineConfig({
-  plugins: [
-    react(),
-    dts({ insertTypesEntry: true, include: ['src/lib'] })
-  ],
-  publicDir: false,
-  build: {
-    lib: {
-      entry: resolve(__dirname, 'src/lib/index.ts'),
-      name: 'ZProximityEngine',
-      fileName: (format) => `index.${format}.js`,
-    },
-    rollupOptions: {
-      external: ['react', 'react-dom', 'gsap', '@gsap/react'],
-      output: {
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM',
-          gsap: 'gsap',
-          '@gsap/react': 'gsapReact'
+export default defineConfig(({ mode }) => {
+  const isLib = mode === 'lib';
+
+  return {
+    plugins: [
+      react(),
+      isLib && dts({ 
+        insertTypesEntry: true, 
+        include: ['src/lib']
+      })
+    ].filter(Boolean),
+
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      ...(isLib ? {
+        // --- LIBRARY CONFIG ---
+        lib: {
+          entry: resolve(__dirname, 'src/lib/index.ts'),
+          name: 'ZProximityEngine',
+          formats: ['es', 'umd'],
+          fileName: (format) => `index.${format}.js`,
         },
-      },
+        rollupOptions: {
+          external: ['react', 'react-dom', 'gsap', '@gsap/react'],
+          output: {
+            globals: {
+              react: 'React',
+              'react-dom': 'ReactDOM',
+              gsap: 'gsap',
+              '@gsap/react': 'gsapReact'
+            },
+          },
+        },
+      } : {
+      })
     },
-  },
+  };
 });
 </file>
 
