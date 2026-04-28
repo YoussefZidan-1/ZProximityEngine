@@ -1,4 +1,4 @@
-import React, { useRef, ReactNode, CSSProperties } from "react";
+import React, { useRef, useMemo, ReactNode, CSSProperties } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -20,7 +20,7 @@ export interface ProximityConfig {
   ease?: EasePreset;
   resetEase?: EasePreset;
   scale?: [number, number];
-  y?: [number, number];
+  y?:[number, number];
   opacity?: [number, number];
   blur?: [number, number];
   rotate?: [number, number];
@@ -34,6 +34,7 @@ export interface ProximityProps extends ProximityConfig {
   selector?: string;
   config?: ProximityConfig;
   ignoreSelectors?: string[];
+  excludeElements?: string;
   className?: string;
   style?: CSSProperties;
 }
@@ -46,7 +47,7 @@ const PRESET_DEFAULTS: Record<string, [number, number]> = {
   y: [0, -30],
   opacity: [0.2, 1],
   blur: [8, 0],
-  rotate: [0, 90],
+  rotate:[0, 90],
   weight: [100, 900],
 };
 
@@ -124,7 +125,8 @@ export const Proximity: React.FC<ProximityProps> = ({
   blur,
   rotate,
   weight,
-  ignoreSelectors = [],
+  ignoreSelectors =[],
+  excludeElements,
   className = "",
   style = {},
   ...restProps
@@ -147,14 +149,17 @@ export const Proximity: React.FC<ProximityProps> = ({
   const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
 
-  const mergedBounds = {
+  // PERFORMANCE OPTIMIZATION 1: Memoize merged bounds so React doesn't recreate arrays on every render
+  const mergedBoundsStr = JSON.stringify({
     scale: config.scale ?? scale,
     y: config.y ?? y,
     opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur,
     rotate: config.rotate ?? rotate,
     weight: config.weight ?? weight,
-  };
+  });
+  
+  const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr), [mergedBoundsStr]);
 
   useGSAP(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -163,15 +168,15 @@ export const Proximity: React.FC<ProximityProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    let items: HTMLElement[] = [];
-    let states: { isOutside: boolean; lastIntensity: number }[] = [];
-    let centers: { left: number; right: number; top: number; bottom: number; x: number; y: number }[] = [];
+    let items: HTMLElement[] =[];
+    let states: { isOutside: boolean; lastIntensity: number }[] =[];
+    let centers: { left: number; right: number; top: number; bottom: number; x: number; y: number }[] =[];
     
     let setters: { 
       intensity: (val: string | number) => void; 
       dx: (val: string | number) => void; 
       dy: (val: string | number) => void; 
-    }[] = [];
+    }[] =[];
 
     const updateCenters = () => {
       centers = items.map((item) => {
@@ -195,7 +200,13 @@ export const Proximity: React.FC<ProximityProps> = ({
 
     const initItems = () => {
       if (items.length > 0) gsap.killTweensOf(items);
-      items = Array.from(container.querySelectorAll(selector));
+      
+      // Smart injection of CSS :not() pseudo-class to safely ignore elements
+      const targetSelector = excludeElements 
+        ? selector.split(',').map(s => `${s.trim()}:not(${excludeElements})`).join(', ')
+        : selector;
+
+      items = Array.from(container.querySelectorAll(targetSelector));
       states = items.map(() => ({ isOutside: true, lastIntensity: 0 }));
       setters = items.map(item => ({
         intensity: gsap.quickSetter(item, "--prox-intensity") as (val: string | number) => void,
@@ -269,8 +280,6 @@ export const Proximity: React.FC<ProximityProps> = ({
 
         const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
         
-        // Performance optimization: Only update if intensity has moved significantly (~1% change)
-        // This prevents killing the ease curve on every frame.
         if (Math.abs(intensity - states[i].lastIntensity) > 0.01) {
           setters[i].intensity(intensity.toFixed(3));
           setters[i].dx(pageX - bounds.x);
@@ -283,7 +292,7 @@ export const Proximity: React.FC<ProximityProps> = ({
           gsap.to(item, {
             ...animationProps,
             duration: activeDuration,
-            overwrite: "auto", // Better than 'true' for smooth redirection
+            overwrite: "auto", 
             ease: targetEase,
           });
 
@@ -349,9 +358,9 @@ export const Proximity: React.FC<ProximityProps> = ({
       targetElement.removeEventListener("touchcancel", handleReset as EventListener);
       gsap.killTweensOf(items);
     };
-  }, [
-    selector, activePreset, activeReach, activeFalloff, activeDuration, 
-    activeResetDuration, activeGlobal, JSON.stringify(mergedBounds), 
+  },[
+    selector, excludeElements, activePreset, activeReach, activeFalloff, activeDuration, 
+    activeResetDuration, activeGlobal, mergedBoundsStr, 
     ignoreSelectors.join(','), targetEase, targetResetEase
   ]);
 

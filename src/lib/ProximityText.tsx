@@ -11,6 +11,7 @@ export interface ProximityTextProps extends ProximityProps {
   letterSpacing?: number;
   wordSpacing?: number;
   clipFix?: string;
+  ignoreText?: (string | RegExp)[];
 }
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
@@ -23,6 +24,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   letterSpacing = 0,
   wordSpacing = 0.25,
   clipFix = "0.2em",
+  ignoreText,
   ...proximityProps
 }) => {
   const globalConfig = useProximityConfig();
@@ -40,56 +42,80 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
     if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
     if (splitBy === "line") return { ...base, display: "block" };
     return { ...base, flexWrap: "wrap" };
-  }, [splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
+  },[splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
 
   const renderedContent = useMemo(() => {
-    const itemStyle: CSSProperties = {
+    const getStyles = (ignored: boolean): CSSProperties => ({
       display: "inline-block",
       userSelect: "none",
-      willChange: "transform, filter, opacity",
+      willChange: ignored ? "auto" : "transform, filter, opacity",
       padding: clipFix,
       margin: clipFix ? `-${clipFix}` : "0",
+    });
+
+    const checkIgnore = (str: string) => {
+      if (!ignoreText) return false;
+      return ignoreText.some((rule) => {
+        if (typeof rule === "string") return rule === str;
+        if (rule instanceof RegExp) return rule.test(str);
+        return false;
+      });
     };
 
     const lines = text.split("\n");
 
     if (splitBy === "word") {
       return lines.map((line, lineIdx) => (
-        <Fragment key={lineIdx}>
-          {line.split(" ").map((word, i) => (
-            <span key={i} aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{word}</span>
-          ))}
+        <Fragment key={`line-group-${lineIdx}`}>
+          {line.split(" ").map((word, i) => {
+            const isIgnored = checkIgnore(word);
+            const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
+            return (
+              // PERFORMANCE OPTIMIZATION 2: Safer React Keys
+              <span key={`word-${lineIdx}-${i}`} aria-hidden="true" className={partClass} style={getStyles(isIgnored)}>
+                {word}
+              </span>
+            );
+          })}
           {lineIdx < lines.length - 1 && <div style={{ width: "100%" }} />}
         </Fragment>
       ));
     }
 
     if (splitBy === "line") {
-      return lines.map((line, i) => (
-        <Fragment key={i}>
-          <span aria-hidden="true" className={`prox-part ${textClassName}`} style={itemStyle}>{line}</span>
-          {i < lines.length - 1 && <br />}
-        </Fragment>
-      ));
+      return lines.map((line, i) => {
+        const isIgnored = checkIgnore(line);
+        const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
+        return (
+          <Fragment key={`line-${i}`}>
+            <span aria-hidden="true" className={partClass} style={getStyles(isIgnored)}>
+              {line}
+            </span>
+            {i < lines.length - 1 && <br />}
+          </Fragment>
+        );
+      });
     }
 
-    return [...text].map((char, i) => {
+    return[...text].map((char, i) => {
       if (char === "\n") {
-        return <div key={i} style={{ width: "100%", height: 0 }} />;
+        return <div key={`br-${i}`} style={{ width: "100%", height: 0 }} />;
       }
+      const isIgnored = checkIgnore(char);
+      const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
       return (
         <span 
           aria-hidden="true" 
-          key={i} 
-          className={`prox-part ${textClassName}`} 
-          style={{ ...itemStyle, whiteSpace: char === " " ? "pre" : "normal" }}
+          key={`char-${i}`} 
+          className={partClass} 
+          style={{ ...getStyles(isIgnored), whiteSpace: char === " " ? "pre" : "normal" }}
         >
           {char}
         </span>
       );
     });
 
-  }, [text, splitBy, textClassName, clipFix]);
+  }, [text, splitBy, textClassName, clipFix, ignoreText]);
 
   return (
     <Proximity selector=".prox-part" className={className} {...proximityProps}>
