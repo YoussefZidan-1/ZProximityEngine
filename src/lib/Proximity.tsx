@@ -10,9 +10,10 @@ export type EasePreset =
 export interface ProximityConfig {
   reach?: number; falloff?: number; duration?: number; resetDuration?: number;
   global?: boolean; preset?: string; ease?: EasePreset; resetEase?: EasePreset;
-  scale?: [number, number]; y?:[number, number]; opacity?: [number, number];
+  scale?: [number, number]; y?:[number, number]; x?:[number, number]; opacity?: [number, number];
   blur?:[number, number]; rotate?: [number, number]; weight?: [number, number];
-  onCalculate?: (intensity: number, distance: number) => gsap.TweenVars;
+  skew?: [number, number]; magnetic?: [number, number]; tilt?: [number, number]; tiltCard?: [number, number];
+  onCalculate?: (intensity: number, distance: number, dx: number, dy: number) => gsap.TweenVars;
   onReset?: () => gsap.TweenVars;
 }
 
@@ -22,7 +23,8 @@ export interface ProximityProps extends ProximityConfig {
 }
 
 const PRESET_DEFAULTS: Record<string, [number, number]> = {
-  scale: [1, 1.5], y: [0, -30], opacity: [0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
+  scale: [1, 1.5], y: [0, -30], x: [0, 30], opacity: [0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
+  skew: [0, 20], magnetic: [0, 0.1], tilt: [0, 30], tiltCard: [0, 15]
 };
 
 const EASE_MAP: Record<string, string> = {
@@ -33,7 +35,7 @@ const EASE_MAP: Record<string, string> = {
   glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })", slowmo: "slow(0.7, 0.7, false)"
 };
 
-const calculatePresetValues = (presetString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, isReset: boolean = false): gsap.TweenVars => {
+const calculatePresetValues = (presetString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, dx: number, dy: number, w: number, h: number, isReset: boolean = false): gsap.TweenVars => {
   const props = presetString.split("-");
   const result: gsap.TweenVars = {};
   props.forEach((prop) => {
@@ -46,6 +48,19 @@ const calculatePresetValues = (presetString: string, intensity: number, userConf
       const weightVal = Math.round(currentValue);
       result.fontWeight = weightVal; result.fontVariationSettings = `'wght' ${weightVal}`;
     } else if (prop === "rotate") result.rotation = currentValue;
+    else if (prop === "skew") result.skewX = currentValue;
+    else if (prop === "magnetic") {
+      result.x = isReset ? 0 : dx * intensity * max;
+      result.y = isReset ? 0 : dy * intensity * max;
+    } else if (prop === "tilt") {
+      result.rotateX = isReset ? 0 : -dy * intensity * (max / 10);
+      result.rotateY = isReset ? 0 : dx * intensity * (max / 10);
+      result.transformPerspective = 1000;
+    } else if (prop === "tiltCard") {
+      result.rotateX = isReset ? 0 : (dy / (h / 2)) * -max * intensity;
+      result.rotateY = isReset ? 0 : (dx / (w / 2)) * max * intensity;
+      result.transformPerspective = 1000;
+    }
     else result[prop] = currentValue;
   });
   return result;
@@ -54,10 +69,9 @@ const calculatePresetValues = (presetString: string, intensity: number, userConf
 export const Proximity: React.FC<ProximityProps> = ({
   children, selector = ".prox-item", config = {}, preset = "", reach = 2, falloff = 2.4,
   duration = 0.2, resetDuration = 0.4, global = false, onCalculate, onReset, ease, resetEase,
-  scale, y, opacity, blur, rotate, weight, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
+  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  // Store clientX/Y so we can compute dynamic scroll offsets
   const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
 
   const activeReach = config.reach ?? reach; const activeFalloff = config.falloff ?? falloff;
@@ -69,8 +83,9 @@ export const Proximity: React.FC<ProximityProps> = ({
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
 
   const mergedBoundsStr = JSON.stringify({
-    scale: config.scale ?? scale, y: config.y ?? y, opacity: config.opacity ?? opacity,
+    scale: config.scale ?? scale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
+    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard
   });
   
   const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr), [mergedBoundsStr]);
@@ -81,8 +96,9 @@ export const Proximity: React.FC<ProximityProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    let items: HTMLElement[] =[]; let states: { isOutside: boolean; lastIntensity: number }[] =[];
-    let centers: { left: number; right: number; top: number; bottom: number; x: number; y: number }[] =[];
+    let items: HTMLElement[] =[]; 
+    let states: { isOutside: boolean; lastIntensity: number; lastDx: number; lastDy: number }[] =[];
+    let centers: { left: number; right: number; top: number; bottom: number; x: number; y: number; w: number; h: number }[] =[];
     let setters: { intensity: (val: string | number) => void; dx: (val: string | number) => void; dy: (val: string | number) => void; }[] =[];
 
     const updateCenters = () => {
@@ -92,12 +108,13 @@ export const Proximity: React.FC<ProximityProps> = ({
           left: rect.left + window.scrollX, right: rect.right + window.scrollX,
           top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY,
           x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY + rect.height / 2,
+          w: rect.width, h: rect.height
         };
       });
     };
 
     const setInitialState = () => {
-      const initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
+      const initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, 1, 1, true) : {});
       initialProps.willChange = "transform, filter, opacity, font-variation-settings";
       if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
     };
@@ -107,7 +124,7 @@ export const Proximity: React.FC<ProximityProps> = ({
       const targetSelector = excludeElements && excludeElements.trim() !== ""
         ? selector.split(',').map(s => `${s.trim()}:not(${excludeElements})`).join(', ') : selector;
       items = Array.from(container.querySelectorAll(targetSelector));
-      states = items.map(() => ({ isOutside: true, lastIntensity: 0 }));
+      states = items.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
       setters = items.map(item => ({
         intensity: gsap.quickSetter(item, "--prox-intensity") as (val: string | number) => void,
         dx: gsap.quickSetter(item, "--prox-dx", "px") as (val: string | number) => void,
@@ -118,24 +135,16 @@ export const Proximity: React.FC<ProximityProps> = ({
 
     if (document.fonts) { document.fonts.ready.then(initItems); } else { initItems(); }
 
-    const mutationObserver = new MutationObserver((mutationsList) => {
-      const needsReinit = mutationsList.some(mutation => 
-        mutation.type === "childList" && (Array.from(mutation.addedNodes).some(n => n instanceof HTMLElement && (n.matches(selector) || n.querySelector(selector))) || Array.from(mutation.removedNodes).some(n => n instanceof HTMLElement && (n.matches(selector) || n.querySelector(selector))))
-      );
-      if (needsReinit) initItems();
-    });
-
+    const mutationObserver = new MutationObserver(() => initItems());
     const resizeObserver = new ResizeObserver(() => updateCenters());
     mutationObserver.observe(container, { childList: true, subtree: true });
     resizeObserver.observe(container);
-    // Observe body to catch layout shifts from lazy-loaded components above this one!
     if (document.body) resizeObserver.observe(document.body);
 
     const actualSpread = activeReach * 10000; const maxDistance = activeReach * 200;
 
     const onTick = () => {
       if (!pointer.current.active) return;
-      // Dynamically add scroll offset so scrolling tracks perfectly!
       const pageX = pointer.current.x + window.scrollX;
       const pageY = pointer.current.y + window.scrollY;
       const { target } = pointer.current;
@@ -145,7 +154,10 @@ export const Proximity: React.FC<ProximityProps> = ({
         const bounds = centers[i];
         if (!bounds) return;
         
+        const dx = pageX - bounds.x;
+        const dy = pageY - bounds.y;
         let distance: number;
+
         if (isBlocked) { distance = Infinity; } else {
           const dxEdge = Math.max(bounds.left - pageX, 0, pageX - bounds.right);
           const dyEdge = Math.max(bounds.top - pageY, 0, pageY - bounds.bottom);
@@ -154,37 +166,35 @@ export const Proximity: React.FC<ProximityProps> = ({
 
         if (distance > maxDistance) {
           if (!states[i].isOutside) {
-            const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-            gsap.to(item, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: true, ease: targetResetEase });
+            const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, bounds.w, bounds.h, true) : {});
+            gsap.to(item, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: "auto", ease: targetResetEase });
             states[i].isOutside = true; states[i].lastIntensity = 0;
           }
           return;
         }
 
         const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
-        if (Math.abs(intensity - states[i].lastIntensity) > 0.01) {
-          setters[i].intensity(intensity.toFixed(3)); setters[i].dx(pageX - bounds.x); setters[i].dy(pageY - bounds.y);
-          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
+        
+        // High-sensitivity check to allow tilt effects to follow the mouse move-by-move
+        if (Math.abs(intensity - states[i].lastIntensity) > 0.001 || Math.abs(dx - states[i].lastDx) > 0.5 || Math.abs(dy - states[i].lastDy) > 0.5) {
+          setters[i].intensity(intensity.toFixed(3)); setters[i].dx(dx); setters[i].dy(dy);
+          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance, dx, dy) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, dx, dy, bounds.w, bounds.h, false) : {});
           gsap.to(item, { ...animationProps, duration: activeDuration, overwrite: "auto", ease: targetEase });
-          states[i].lastIntensity = intensity; states[i].isOutside = false;
+          states[i].lastIntensity = intensity; states[i].lastDx = dx; states[i].lastDy = dy; states[i].isOutside = false;
         }
       });
     };
 
     gsap.ticker.add(onTick);
 
-    // Save clientX/Y (relative to screen) instead of pageX/Y
     const updatePointer = (x: number, y: number, target: EventTarget | null) => { pointer.current = { x, y, target, active: true }; };
     const onPointerMove = (e: PointerEvent) => updatePointer(e.clientX, e.clientY, e.target);
     const onTouchMove = (e: TouchEvent) => { if (e.touches?.[0]) updatePointer(e.touches[0].clientX, e.touches[0].clientY, e.target); };
     const handleReset = () => {
       pointer.current.active = false;
-      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-      const activeItems = items.filter((_, i) => !states[i].isOutside);
-      if (activeItems.length > 0) {
-        gsap.to(activeItems, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: true, ease: targetResetEase });
-        items.forEach((_, i) => { states[i].isOutside = true; states[i].lastIntensity = 0; });
-      }
+      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, 1, 1, true) : {});
+      gsap.to(items, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: "auto", ease: targetResetEase });
+      states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; s.lastDx = 0; s.lastDy = 0; });
     };
 
     const targetElement: EventTarget = activeGlobal ? window : container;

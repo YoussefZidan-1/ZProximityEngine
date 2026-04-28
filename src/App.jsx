@@ -29,7 +29,6 @@ const DocSection = ({ icon: Icon, title, description, children, code }) => {
     <div style={{
       backgroundColor: "#0c0c0c", border: "1px solid #1a1a1a", borderRadius: "20px", padding: "clamp(15px, 5vw, 30px)", 
       marginBottom: "20px", display: "grid", 
-      // Responsive grid: stacks on mobile, 2-columns on desktop
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))", 
       gap: "30px", alignItems: "start"
     }}>
@@ -60,7 +59,6 @@ const DocSection = ({ icon: Icon, title, description, children, code }) => {
           )}
         </div>
 
-        {/* Animated Code Block */}
         <div style={{ 
           maxHeight: showCode ? "500px" : "0", 
           overflow: "hidden", 
@@ -89,12 +87,13 @@ const DocSection = ({ icon: Icon, title, description, children, code }) => {
 
 const App = () => {
   const[mode, setMode] = useState("text");
-  const [activePresets, setActivePresets] = useState({ scale: false, y: true, opacity: true, blur: true, rotate: false, weight: false });
+  const [activePresets, setActivePresets] = useState({ scale: false, y: true, x: false, opacity: true, blur: true, rotate: false, weight: false, skew: false, magnetic: false, tilt: false, tiltCard: false });
 
   const[settings, setSettings] = useState({
     text: "Beyond\nThe\nVoid", elementCount: 12, splitBy: "line", fontSize: 5, lineHeight: 1.1, letterSpacing: 0, 
     wordSpacing: 0.25, reach: 1, falloff: 2.4, duration: 2, resetDuration: 2, ease: "elastic", resetEase: "elastic",
-    scale: [1, 1.2], y:[0, -30], opacity:[0, 1], blur: [20, 0], rotate: [0, 15], weight:[100, 800],
+    scale: [1, 1.2], y:[0, -30], x:[0, 30], opacity:[0, 1], blur: [20, 0], rotate: [0, 15], weight:[100, 800],
+    skew:[0, 20], magnetic:[0, 0.2], tilt:[0, 40], tiltCard:[0, 20]
   });
 
   const [copied, setCopied] = useState(false);
@@ -102,8 +101,9 @@ const App = () => {
   const generatedPresetString = useMemo(() => Object.keys(activePresets).filter((key) => activePresets[key]).join("-"), [activePresets]);
 
   const config = useMemo(() => ({
-    scale: settings.scale, y: settings.y, opacity: settings.opacity, blur: settings.blur, rotate: settings.rotate, 
-    weight: settings.weight, ease: settings.ease, resetEase: settings.resetEase, duration: settings.duration, resetDuration: settings.resetDuration,
+    scale: settings.scale, y: settings.y, x: settings.x, opacity: settings.opacity, blur: settings.blur, rotate: settings.rotate, 
+    weight: settings.weight, skew: settings.skew, magnetic: settings.magnetic, tilt: settings.tilt, tiltCard: settings.tiltCard,
+    ease: settings.ease, resetEase: settings.resetEase, duration: settings.duration, resetDuration: settings.resetDuration,
   }), [settings]);
 
   const togglePreset = (key) => setActivePresets((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -121,7 +121,6 @@ const App = () => {
     <main style={{ backgroundColor: "#000", minHeight: "100vh", color: "#e0e0e0", fontFamily: "'Georama', sans-serif", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@200..800&display=swap" rel="stylesheet" />
 
-      {/* --- HERO & MAIN PLAYGROUND --- */}
       <div style={{ display: "flex", backgroundColor: "#0c0c0c", padding: "4px", borderRadius: "12px", border: "1px solid #1a1a1a", marginBottom: "30px" }}>
         <button aria-label="set Text Mode" onClick={() => setMode("text")} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold", backgroundColor: mode === "text" ? "#fff" : "transparent", color: mode === "text" ? "#000" : "#fff", transition: "0.3s" }}><CaseUpper size={16} /> TEXT</button>
         <button aria-label="set Elements Mode" onClick={() => setMode("elements")} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold", backgroundColor: mode === "elements" ? "#fff" : "transparent", color: mode === "elements" ? "#000" : "#fff", transition: "0.3s" }}><LayoutGrid size={16} /> ELS</button>
@@ -132,7 +131,6 @@ const App = () => {
         <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal", color: "#fff" }}>ZPROXIMITY ENGINE</h1>
       </header>
 
-      {/* MAIN DEMO WINDOW */}
       <div style={{ width: "100%", maxWidth: "1000px", minHeight: "500px", backgroundColor: "#070707", borderRadius: "24px", border: "1px solid #151515", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", marginBottom: "30px", boxShadow: "0 30px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "20px", left: "20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "10px", color: "#888", zIndex: 10 }}><MousePointer2 size={12} /> {generatedPresetString || "NO PRESETS ACTIVE"}</div>
         {mode === "text" ? (
@@ -152,9 +150,7 @@ const App = () => {
         )}
       </div>
 
-      {/* CONTROLS */}
       <div style={{ width: "100%", maxWidth: "1000px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginBottom: "30px" }}>
-        {/* CORE STRUCTURE */}
         <div style={{ backgroundColor: "#0c0c0c", borderRadius: "20px", padding: "25px", border: "1px solid #1a1a1a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#fff", fontSize: "12px", marginBottom: "20px" }}><Type size={16} /> CORE STRUCTURE</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -187,7 +183,6 @@ const App = () => {
           </div>
         </div>
 
-        {/* GLOBAL MOTION */}
         <div style={{ backgroundColor: "#0c0c0c", borderRadius: "20px", padding: "25px", border: "1px solid #1a1a1a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#999", fontSize: "12px", marginBottom: "20px" }}><Maximize size={16} /> GLOBAL MOTION</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -202,15 +197,19 @@ const App = () => {
           </div>
         </div>
 
-        {/* PRESET CARDS */}
         <Suspense fallback={<div style={{ color: "#888" }}>Loading...</div>}>
           <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px" }}>
             <PresetCard id="scale" label="Scale" icon={Maximize} min="0.1" max="4" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="y" label="Y Offset" icon={Move} min="-200" max="200" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="x" label="X Offset" icon={Move} min="-200" max="200" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="opacity" label="Opacity" icon={Eye} min="0" max="1" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="blur" label="Blur" icon={Layers} min="0" max="50" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="rotate" label="Rotate" icon={Maximize} min="-360" max="360" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="weight" label="Weight" icon={Type} min="100" max="900" step="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="skew" label="Skew" icon={Type} min="-90" max="90" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="magnetic" label="Magnetic" icon={Fingerprint} min="0" max="1" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="tilt" label="Tilt" icon={Layers} min="0" max="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="tiltCard" label="TiltCard" icon={Layers} min="0" max="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
           </div>
         </Suspense>
       </div>
@@ -219,7 +218,6 @@ const App = () => {
         {copied ? <Check size={20} /> : <Copy size={20} />} {copied ? "COPIED!" : "COPY ENGINE CODE"}
       </button>
 
-      {/* --- INTERACTIVE DOCUMENTATION --- */}
       <div style={{ width: "100%", maxWidth: "1000px", borderTop: "1px solid #1a1a1a", paddingTop: "60px", paddingBottom: "100px" }}>
         <header style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "40px" }}>
           <BookOpen size={28} color="#10b981" />
