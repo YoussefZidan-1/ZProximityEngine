@@ -66,6 +66,8 @@ const App = () => {
     });
 
     return {
+      reach: settings.reach,
+      falloff: settings.falloff,
       scale: settings.scale, y: settings.y, x: settings.x, opacity: settings.opacity, blur: settings.blur, rotate: settings.rotate, 
       weight: settings.weight, skew: settings.skew, magnetic: settings.magnetic, repel: settings.repel, cipher: settings.cipher, tilt: settings.tilt, tiltCard: settings.tiltCard,
       ease: settings.ease, resetEase: settings.resetEase, duration: settings.duration, resetDuration: settings.resetDuration,
@@ -113,7 +115,7 @@ const App = () => {
         
         {mode === "text" ? (
           <ProximityText 
-            key={settings.text + settings.splitBy + generatedPresetString + settings.focusMode + settings.nearestPreset + settings.neighborPreset + JSON.stringify(config)} 
+            key={settings.text + settings.splitBy} 
             text={settings.text.split("\\n").join("\n")} 
             splitBy={settings.splitBy} 
             preset={settings.focusMode ? "" : generatedPresetString} 
@@ -124,7 +126,7 @@ const App = () => {
           />
         ) : (
           <Proximity 
-            key={"elements" + settings.elementCount + generatedPresetString + settings.focusMode + settings.nearestPreset + settings.neighborPreset + JSON.stringify(config)} 
+            key={"elements" + settings.elementCount} 
             selector=".dock-icon" 
             preset={settings.focusMode ? "" : generatedPresetString} 
             nearestPreset={settings.focusMode ? settings.nearestPreset : ""}
