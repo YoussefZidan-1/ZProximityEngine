@@ -334,234 +334,6 @@ code {
 }
 </file>
 
-<file path="src/lib/Proximity.tsx">
-import React, { useRef, useMemo, ReactNode, CSSProperties } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-
-export type EasePreset = 
-  | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic" 
-  | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost" 
-  | "expo" | "circus" | "glitch" | "slowmo" | (string & {});
-
-export interface ProximityConfig {
-  reach?: number; falloff?: number; duration?: number; resetDuration?: number;
-  global?: boolean; preset?: string; ease?: EasePreset; resetEase?: EasePreset;
-  scale?: [number, number]; y?:[number, number]; opacity?: [number, number];
-  blur?:[number, number]; rotate?: [number, number]; weight?: [number, number];
-  onCalculate?: (intensity: number, distance: number) => gsap.TweenVars;
-  onReset?: () => gsap.TweenVars;
-}
-
-export interface ProximityProps extends ProximityConfig {
-  children: ReactNode; selector?: string; config?: ProximityConfig;
-  ignoreSelectors?: string[]; excludeElements?: string; className?: string; style?: CSSProperties;
-}
-
-const PRESET_DEFAULTS: Record<string, [number, number]> = {
-  scale: [1, 1.5], y: [0, -30], opacity: [0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
-};
-
-const EASE_MAP: Record<string, string> = {
-  smooth: "power1.inOut", heavy: "power4.out", sharp: "expo.out", fluid: "circ.inOut",
-  bouncy: "back.out(1.7)", elastic: "elastic.out(1, 0.3)", jello: "elastic.out(1.5, 0.2)",
-  bounce: "bounce.out", swing: "back.inOut(3)", vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
-  robot: "steps(8)", ghost: "slow(0.6, 0.8, false)", expo: "expo.inOut", circus: "back.out(4)",
-  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })", slowmo: "slow(0.7, 0.7, false)"
-};
-
-const calculatePresetValues = (presetString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, isReset: boolean = false): gsap.TweenVars => {
-  const props = presetString.split("-");
-  const result: gsap.TweenVars = {};
-  props.forEach((prop) => {
-    const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
-    if (!bounds) return;
-    const[base, max] = bounds;
-    const currentValue = isReset ? base : base + (max - base) * intensity;
-    if (prop === "blur") result.filter = `blur(${currentValue}px)`;
-    else if (prop === "weight") {
-      const weightVal = Math.round(currentValue);
-      result.fontWeight = weightVal; result.fontVariationSettings = `'wght' ${weightVal}`;
-    } else if (prop === "rotate") result.rotation = currentValue;
-    else result[prop] = currentValue;
-  });
-  return result;
-};
-
-export const Proximity: React.FC<ProximityProps> = ({
-  children, selector = ".prox-item", config = {}, preset = "", reach = 2, falloff = 2.4,
-  duration = 0.2, resetDuration = 0.4, global = false, onCalculate, onReset, ease, resetEase,
-  scale, y, opacity, blur, rotate, weight, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  // Store clientX/Y so we can compute dynamic scroll offsets
-  const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
-
-  const activeReach = config.reach ?? reach; const activeFalloff = config.falloff ?? falloff;
-  const activeDuration = config.duration ?? duration; const activeResetDuration = config.resetDuration ?? resetDuration;
-  const activeGlobal = config.global ?? global; const activePreset = config.preset ?? preset;
-  const activeOnCalculate = config.onCalculate ?? onCalculate; const activeOnReset = config.onReset ?? onReset;
-
-  const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
-  const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
-
-  const mergedBoundsStr = JSON.stringify({
-    scale: config.scale ?? scale, y: config.y ?? y, opacity: config.opacity ?? opacity,
-    blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
-  });
-  
-  const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr), [mergedBoundsStr]);
-
-  useGSAP(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
-    const container = containerRef.current;
-    if (!container) return;
-
-    let items: HTMLElement[] =[]; let states: { isOutside: boolean; lastIntensity: number }[] =[];
-    let centers: { left: number; right: number; top: number; bottom: number; x: number; y: number }[] =[];
-    let setters: { intensity: (val: string | number) => void; dx: (val: string | number) => void; dy: (val: string | number) => void; }[] =[];
-
-    const updateCenters = () => {
-      centers = items.map((item) => {
-        const rect = item.getBoundingClientRect();
-        return {
-          left: rect.left + window.scrollX, right: rect.right + window.scrollX,
-          top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY,
-          x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY + rect.height / 2,
-        };
-      });
-    };
-
-    const setInitialState = () => {
-      const initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-      initialProps.willChange = "transform, filter, opacity, font-variation-settings";
-      if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
-    };
-
-    const initItems = () => {
-      if (items.length > 0) gsap.killTweensOf(items);
-      const targetSelector = excludeElements && excludeElements.trim() !== ""
-        ? selector.split(',').map(s => `${s.trim()}:not(${excludeElements})`).join(', ') : selector;
-      items = Array.from(container.querySelectorAll(targetSelector));
-      states = items.map(() => ({ isOutside: true, lastIntensity: 0 }));
-      setters = items.map(item => ({
-        intensity: gsap.quickSetter(item, "--prox-intensity") as (val: string | number) => void,
-        dx: gsap.quickSetter(item, "--prox-dx", "px") as (val: string | number) => void,
-        dy: gsap.quickSetter(item, "--prox-dy", "px") as (val: string | number) => void
-      }));
-      updateCenters(); setInitialState();
-    };
-
-    if (document.fonts) { document.fonts.ready.then(initItems); } else { initItems(); }
-
-    const mutationObserver = new MutationObserver((mutationsList) => {
-      const needsReinit = mutationsList.some(mutation => 
-        mutation.type === "childList" && (Array.from(mutation.addedNodes).some(n => n instanceof HTMLElement && (n.matches(selector) || n.querySelector(selector))) || Array.from(mutation.removedNodes).some(n => n instanceof HTMLElement && (n.matches(selector) || n.querySelector(selector))))
-      );
-      if (needsReinit) initItems();
-    });
-
-    const resizeObserver = new ResizeObserver(() => updateCenters());
-    mutationObserver.observe(container, { childList: true, subtree: true });
-    resizeObserver.observe(container);
-    // Observe body to catch layout shifts from lazy-loaded components above this one!
-    if (document.body) resizeObserver.observe(document.body);
-
-    const actualSpread = activeReach * 10000; const maxDistance = activeReach * 200;
-
-    const onTick = () => {
-      if (!pointer.current.active) return;
-      // Dynamically add scroll offset so scrolling tracks perfectly!
-      const pageX = pointer.current.x + window.scrollX;
-      const pageY = pointer.current.y + window.scrollY;
-      const { target } = pointer.current;
-      const isBlocked = ignoreSelectors.some((sel) => (target as HTMLElement)?.closest?.(sel));
-
-      items.forEach((item, i) => {
-        const bounds = centers[i];
-        if (!bounds) return;
-        
-        let distance: number;
-        if (isBlocked) { distance = Infinity; } else {
-          const dxEdge = Math.max(bounds.left - pageX, 0, pageX - bounds.right);
-          const dyEdge = Math.max(bounds.top - pageY, 0, pageY - bounds.bottom);
-          distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
-        }
-
-        if (distance > maxDistance) {
-          if (!states[i].isOutside) {
-            const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-            gsap.to(item, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: true, ease: targetResetEase });
-            states[i].isOutside = true; states[i].lastIntensity = 0;
-          }
-          return;
-        }
-
-        const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
-        if (Math.abs(intensity - states[i].lastIntensity) > 0.01) {
-          setters[i].intensity(intensity.toFixed(3)); setters[i].dx(pageX - bounds.x); setters[i].dy(pageY - bounds.y);
-          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, false) : {});
-          gsap.to(item, { ...animationProps, duration: activeDuration, overwrite: "auto", ease: targetEase });
-          states[i].lastIntensity = intensity; states[i].isOutside = false;
-        }
-      });
-    };
-
-    gsap.ticker.add(onTick);
-
-    // Save clientX/Y (relative to screen) instead of pageX/Y
-    const updatePointer = (x: number, y: number, target: EventTarget | null) => { pointer.current = { x, y, target, active: true }; };
-    const onPointerMove = (e: PointerEvent) => updatePointer(e.clientX, e.clientY, e.target);
-    const onTouchMove = (e: TouchEvent) => { if (e.touches?.[0]) updatePointer(e.touches[0].clientX, e.touches[0].clientY, e.target); };
-    const handleReset = () => {
-      pointer.current.active = false;
-      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, true) : {});
-      const activeItems = items.filter((_, i) => !states[i].isOutside);
-      if (activeItems.length > 0) {
-        gsap.to(activeItems, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: true, ease: targetResetEase });
-        items.forEach((_, i) => { states[i].isOutside = true; states[i].lastIntensity = 0; });
-      }
-    };
-
-    const targetElement: EventTarget = activeGlobal ? window : container;
-    targetElement.addEventListener("pointermove", onPointerMove as EventListener);
-    targetElement.addEventListener("pointerleave", handleReset as EventListener);
-    targetElement.addEventListener("pointerup", handleReset as EventListener);
-    targetElement.addEventListener("pointercancel", handleReset as EventListener);
-    targetElement.addEventListener("touchmove", onTouchMove as EventListener, { passive: true });
-    targetElement.addEventListener("touchstart", onTouchMove as EventListener, { passive: true });
-    targetElement.addEventListener("touchend", handleReset as EventListener);
-    targetElement.addEventListener("touchcancel", handleReset as EventListener);
-
-    return () => {
-      mutationObserver.disconnect(); resizeObserver.disconnect(); gsap.ticker.remove(onTick);
-      targetElement.removeEventListener("pointermove", onPointerMove as EventListener);
-      targetElement.removeEventListener("pointerleave", handleReset as EventListener);
-      targetElement.removeEventListener("pointerup", handleReset as EventListener);
-      targetElement.removeEventListener("pointercancel", handleReset as EventListener);
-      targetElement.removeEventListener("touchmove", onTouchMove as EventListener);
-      targetElement.removeEventListener("touchstart", onTouchMove as EventListener);
-      targetElement.removeEventListener("touchend", handleReset as EventListener);
-      targetElement.removeEventListener("touchcancel", handleReset as EventListener);
-      gsap.killTweensOf(items);
-    };
-  }, { 
-    dependencies:[
-      selector, excludeElements, activePreset, activeReach, activeFalloff, activeDuration, 
-      activeResetDuration, activeGlobal, mergedBoundsStr, ignoreSelectors.join(','), targetEase, targetResetEase
-    ],
-    scope: containerRef
-  });
-
-  return (
-    <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...restProps}>
-      {children}
-    </div>
-  );
-};
-</file>
-
 <file path="src/lib/ProximityText.tsx">
 import React, { Fragment, useMemo, CSSProperties } from "react";
 import { Proximity, ProximityProps } from "./Proximity";
@@ -851,10 +623,248 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
 );
 </file>
 
+<file path="src/lib/Proximity.tsx">
+import React, { useRef, useMemo, ReactNode, CSSProperties } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+export type EasePreset = 
+  | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic" 
+  | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost" 
+  | "expo" | "circus" | "glitch" | "slowmo" | (string & {});
+
+export interface ProximityConfig {
+  reach?: number; falloff?: number; duration?: number; resetDuration?: number;
+  global?: boolean; preset?: string; ease?: EasePreset; resetEase?: EasePreset;
+  scale?: [number, number]; y?:[number, number]; x?:[number, number]; opacity?: [number, number];
+  blur?:[number, number]; rotate?: [number, number]; weight?: [number, number];
+  skew?: [number, number]; magnetic?: [number, number]; tilt?: [number, number]; tiltCard?: [number, number];
+  onCalculate?: (intensity: number, distance: number, dx: number, dy: number) => gsap.TweenVars;
+  onReset?: () => gsap.TweenVars;
+}
+
+export interface ProximityProps extends ProximityConfig {
+  children: ReactNode; selector?: string; config?: ProximityConfig;
+  ignoreSelectors?: string[]; excludeElements?: string; className?: string; style?: CSSProperties;
+}
+
+const PRESET_DEFAULTS: Record<string, [number, number]> = {
+  scale: [1, 1.5], y: [0, -30], x: [0, 30], opacity: [0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
+  skew: [0, 20], magnetic: [0, 0.1], tilt: [0, 30], tiltCard: [0, 15]
+};
+
+const EASE_MAP: Record<string, string> = {
+  smooth: "power1.inOut", heavy: "power4.out", sharp: "expo.out", fluid: "circ.inOut",
+  bouncy: "back.out(1.7)", elastic: "elastic.out(1, 0.3)", jello: "elastic.out(1.5, 0.2)",
+  bounce: "bounce.out", swing: "back.inOut(3)", vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
+  robot: "steps(8)", ghost: "slow(0.6, 0.8, false)", expo: "expo.inOut", circus: "back.out(4)",
+  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })", slowmo: "slow(0.7, 0.7, false)"
+};
+
+const calculatePresetValues = (presetString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, dx: number, dy: number, w: number, h: number, isReset: boolean = false): gsap.TweenVars => {
+  const props = presetString.split("-");
+  const result: gsap.TweenVars = {};
+  props.forEach((prop) => {
+    const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
+    if (!bounds) return;
+    const[base, max] = bounds;
+    const currentValue = isReset ? base : base + (max - base) * intensity;
+    if (prop === "blur") result.filter = `blur(${currentValue}px)`;
+    else if (prop === "weight") {
+      const weightVal = Math.round(currentValue);
+      result.fontWeight = weightVal; result.fontVariationSettings = `'wght' ${weightVal}`;
+    } else if (prop === "rotate") result.rotation = currentValue;
+    else if (prop === "skew") result.skewX = currentValue;
+    else if (prop === "magnetic") {
+      result.x = isReset ? 0 : dx * intensity * max;
+      result.y = isReset ? 0 : dy * intensity * max;
+    } else if (prop === "tilt") {
+      result.rotateX = isReset ? 0 : -dy * intensity * (max / 10);
+      result.rotateY = isReset ? 0 : dx * intensity * (max / 10);
+      result.transformPerspective = 1000;
+    } else if (prop === "tiltCard") {
+      result.rotateX = isReset ? 0 : (dy / (h / 2)) * -max * intensity;
+      result.rotateY = isReset ? 0 : (dx / (w / 2)) * max * intensity;
+      result.transformPerspective = 1000;
+    }
+    else result[prop] = currentValue;
+  });
+  return result;
+};
+
+export const Proximity: React.FC<ProximityProps> = ({
+  children, selector = ".prox-item", config = {}, preset = "", reach = 2, falloff = 2.4,
+  duration = 0.2, resetDuration = 0.4, global = false, onCalculate, onReset, ease, resetEase,
+  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
+
+  const activeReach = config.reach ?? reach; const activeFalloff = config.falloff ?? falloff;
+  const activeDuration = config.duration ?? duration; const activeResetDuration = config.resetDuration ?? resetDuration;
+  const activeGlobal = config.global ?? global; const activePreset = config.preset ?? preset;
+  const activeOnCalculate = config.onCalculate ?? onCalculate; const activeOnReset = config.onReset ?? onReset;
+
+  const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
+  const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
+
+  const mergedBoundsStr = JSON.stringify({
+    scale: config.scale ?? scale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
+    blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
+    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard
+  });
+  
+  const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr), [mergedBoundsStr]);
+
+  useGSAP(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    let items: HTMLElement[] =[]; 
+    let states: { isOutside: boolean; lastIntensity: number; lastDx: number; lastDy: number }[] =[];
+    let centers: { left: number; right: number; top: number; bottom: number; x: number; y: number; w: number; h: number }[] =[];
+    let setters: { intensity: (val: string | number) => void; dx: (val: string | number) => void; dy: (val: string | number) => void; }[] =[];
+
+    const updateCenters = () => {
+      centers = items.map((item) => {
+        const rect = item.getBoundingClientRect();
+        return {
+          left: rect.left + window.scrollX, right: rect.right + window.scrollX,
+          top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY,
+          x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY + rect.height / 2,
+          w: rect.width, h: rect.height
+        };
+      });
+    };
+
+    const setInitialState = () => {
+      const initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, 1, 1, true) : {});
+      initialProps.willChange = "transform, filter, opacity, font-variation-settings";
+      if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
+    };
+
+    const initItems = () => {
+      if (items.length > 0) gsap.killTweensOf(items);
+      const targetSelector = excludeElements && excludeElements.trim() !== ""
+        ? selector.split(',').map(s => `${s.trim()}:not(${excludeElements})`).join(', ') : selector;
+      items = Array.from(container.querySelectorAll(targetSelector));
+      states = items.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
+      setters = items.map(item => ({
+        intensity: gsap.quickSetter(item, "--prox-intensity") as (val: string | number) => void,
+        dx: gsap.quickSetter(item, "--prox-dx", "px") as (val: string | number) => void,
+        dy: gsap.quickSetter(item, "--prox-dy", "px") as (val: string | number) => void
+      }));
+      updateCenters(); setInitialState();
+    };
+
+    if (document.fonts) { document.fonts.ready.then(initItems); } else { initItems(); }
+
+    const mutationObserver = new MutationObserver(() => initItems());
+    const resizeObserver = new ResizeObserver(() => updateCenters());
+    mutationObserver.observe(container, { childList: true, subtree: true });
+    resizeObserver.observe(container);
+    if (document.body) resizeObserver.observe(document.body);
+
+    const actualSpread = activeReach * 10000; const maxDistance = activeReach * 200;
+
+    const onTick = () => {
+      if (!pointer.current.active) return;
+      const pageX = pointer.current.x + window.scrollX;
+      const pageY = pointer.current.y + window.scrollY;
+      const { target } = pointer.current;
+      const isBlocked = ignoreSelectors.some((sel) => (target as HTMLElement)?.closest?.(sel));
+
+      items.forEach((item, i) => {
+        const bounds = centers[i];
+        if (!bounds) return;
+        
+        const dx = pageX - bounds.x;
+        const dy = pageY - bounds.y;
+        let distance: number;
+
+        if (isBlocked) { distance = Infinity; } else {
+          const dxEdge = Math.max(bounds.left - pageX, 0, pageX - bounds.right);
+          const dyEdge = Math.max(bounds.top - pageY, 0, pageY - bounds.bottom);
+          distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
+        }
+
+        if (distance > maxDistance) {
+          if (!states[i].isOutside) {
+            const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, bounds.w, bounds.h, true) : {});
+            gsap.to(item, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: "auto", ease: targetResetEase });
+            states[i].isOutside = true; states[i].lastIntensity = 0;
+          }
+          return;
+        }
+
+        const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
+        
+        // High-sensitivity check to allow tilt effects to follow the mouse move-by-move
+        if (Math.abs(intensity - states[i].lastIntensity) > 0.001 || Math.abs(dx - states[i].lastDx) > 0.5 || Math.abs(dy - states[i].lastDy) > 0.5) {
+          setters[i].intensity(intensity.toFixed(3)); setters[i].dx(dx); setters[i].dy(dy);
+          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance, dx, dy) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, dx, dy, bounds.w, bounds.h, false) : {});
+          gsap.to(item, { ...animationProps, duration: activeDuration, overwrite: "auto", ease: targetEase });
+          states[i].lastIntensity = intensity; states[i].lastDx = dx; states[i].lastDy = dy; states[i].isOutside = false;
+        }
+      });
+    };
+
+    gsap.ticker.add(onTick);
+
+    const updatePointer = (x: number, y: number, target: EventTarget | null) => { pointer.current = { x, y, target, active: true }; };
+    const onPointerMove = (e: PointerEvent) => updatePointer(e.clientX, e.clientY, e.target);
+    const onTouchMove = (e: TouchEvent) => { if (e.touches?.[0]) updatePointer(e.touches[0].clientX, e.touches[0].clientY, e.target); };
+    const handleReset = () => {
+      pointer.current.active = false;
+      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, 1, 1, true) : {});
+      gsap.to(items, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: "auto", ease: targetResetEase });
+      states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; s.lastDx = 0; s.lastDy = 0; });
+    };
+
+    const targetElement: EventTarget = activeGlobal ? window : container;
+    targetElement.addEventListener("pointermove", onPointerMove as EventListener);
+    targetElement.addEventListener("pointerleave", handleReset as EventListener);
+    targetElement.addEventListener("pointerup", handleReset as EventListener);
+    targetElement.addEventListener("pointercancel", handleReset as EventListener);
+    targetElement.addEventListener("touchmove", onTouchMove as EventListener, { passive: true });
+    targetElement.addEventListener("touchstart", onTouchMove as EventListener, { passive: true });
+    targetElement.addEventListener("touchend", handleReset as EventListener);
+    targetElement.addEventListener("touchcancel", handleReset as EventListener);
+
+    return () => {
+      mutationObserver.disconnect(); resizeObserver.disconnect(); gsap.ticker.remove(onTick);
+      targetElement.removeEventListener("pointermove", onPointerMove as EventListener);
+      targetElement.removeEventListener("pointerleave", handleReset as EventListener);
+      targetElement.removeEventListener("pointerup", handleReset as EventListener);
+      targetElement.removeEventListener("pointercancel", handleReset as EventListener);
+      targetElement.removeEventListener("touchmove", onTouchMove as EventListener);
+      targetElement.removeEventListener("touchstart", onTouchMove as EventListener);
+      targetElement.removeEventListener("touchend", handleReset as EventListener);
+      targetElement.removeEventListener("touchcancel", handleReset as EventListener);
+      gsap.killTweensOf(items);
+    };
+  }, { 
+    dependencies:[
+      selector, excludeElements, activePreset, activeReach, activeFalloff, activeDuration, 
+      activeResetDuration, activeGlobal, mergedBoundsStr, ignoreSelectors.join(','), targetEase, targetResetEase
+    ],
+    scope: containerRef
+  });
+
+  return (
+    <div ref={containerRef} className={className} style={{ position: 'relative', touchAction: 'none', ...style }} {...restProps}>
+      {children}
+    </div>
+  );
+};
+</file>
+
 <file path="package.json">
 {
   "name": "z-proximity-engine",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -1142,7 +1152,6 @@ const DocSection = ({ icon: Icon, title, description, children, code }) => {
     <div style={{
       backgroundColor: "#0c0c0c", border: "1px solid #1a1a1a", borderRadius: "20px", padding: "clamp(15px, 5vw, 30px)", 
       marginBottom: "20px", display: "grid", 
-      // Responsive grid: stacks on mobile, 2-columns on desktop
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))", 
       gap: "30px", alignItems: "start"
     }}>
@@ -1173,7 +1182,6 @@ const DocSection = ({ icon: Icon, title, description, children, code }) => {
           )}
         </div>
 
-        {/* Animated Code Block */}
         <div style={{ 
           maxHeight: showCode ? "500px" : "0", 
           overflow: "hidden", 
@@ -1202,12 +1210,13 @@ const DocSection = ({ icon: Icon, title, description, children, code }) => {
 
 const App = () => {
   const[mode, setMode] = useState("text");
-  const [activePresets, setActivePresets] = useState({ scale: false, y: true, opacity: true, blur: true, rotate: false, weight: false });
+  const [activePresets, setActivePresets] = useState({ scale: false, y: true, x: false, opacity: true, blur: true, rotate: false, weight: false, skew: false, magnetic: false, tilt: false, tiltCard: false });
 
   const[settings, setSettings] = useState({
     text: "Beyond\nThe\nVoid", elementCount: 12, splitBy: "line", fontSize: 5, lineHeight: 1.1, letterSpacing: 0, 
     wordSpacing: 0.25, reach: 1, falloff: 2.4, duration: 2, resetDuration: 2, ease: "elastic", resetEase: "elastic",
-    scale: [1, 1.2], y:[0, -30], opacity:[0, 1], blur: [20, 0], rotate: [0, 15], weight:[100, 800],
+    scale: [1, 1.2], y:[0, -30], x:[0, 30], opacity:[0, 1], blur: [20, 0], rotate: [0, 15], weight:[100, 800],
+    skew:[0, 20], magnetic:[0, 0.2], tilt:[0, 40], tiltCard:[0, 20]
   });
 
   const [copied, setCopied] = useState(false);
@@ -1215,8 +1224,9 @@ const App = () => {
   const generatedPresetString = useMemo(() => Object.keys(activePresets).filter((key) => activePresets[key]).join("-"), [activePresets]);
 
   const config = useMemo(() => ({
-    scale: settings.scale, y: settings.y, opacity: settings.opacity, blur: settings.blur, rotate: settings.rotate, 
-    weight: settings.weight, ease: settings.ease, resetEase: settings.resetEase, duration: settings.duration, resetDuration: settings.resetDuration,
+    scale: settings.scale, y: settings.y, x: settings.x, opacity: settings.opacity, blur: settings.blur, rotate: settings.rotate, 
+    weight: settings.weight, skew: settings.skew, magnetic: settings.magnetic, tilt: settings.tilt, tiltCard: settings.tiltCard,
+    ease: settings.ease, resetEase: settings.resetEase, duration: settings.duration, resetDuration: settings.resetDuration,
   }), [settings]);
 
   const togglePreset = (key) => setActivePresets((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -1234,7 +1244,6 @@ const App = () => {
     <main style={{ backgroundColor: "#000", minHeight: "100vh", color: "#e0e0e0", fontFamily: "'Georama', sans-serif", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@200..800&display=swap" rel="stylesheet" />
 
-      {/* --- HERO & MAIN PLAYGROUND --- */}
       <div style={{ display: "flex", backgroundColor: "#0c0c0c", padding: "4px", borderRadius: "12px", border: "1px solid #1a1a1a", marginBottom: "30px" }}>
         <button aria-label="set Text Mode" onClick={() => setMode("text")} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold", backgroundColor: mode === "text" ? "#fff" : "transparent", color: mode === "text" ? "#000" : "#fff", transition: "0.3s" }}><CaseUpper size={16} /> TEXT</button>
         <button aria-label="set Elements Mode" onClick={() => setMode("elements")} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold", backgroundColor: mode === "elements" ? "#fff" : "transparent", color: mode === "elements" ? "#000" : "#fff", transition: "0.3s" }}><LayoutGrid size={16} /> ELS</button>
@@ -1245,7 +1254,6 @@ const App = () => {
         <h1 style={{ fontSize: "10px", letterSpacing: "4px", margin: 0, fontWeight: "normal", color: "#fff" }}>ZPROXIMITY ENGINE</h1>
       </header>
 
-      {/* MAIN DEMO WINDOW */}
       <div style={{ width: "100%", maxWidth: "1000px", minHeight: "500px", backgroundColor: "#070707", borderRadius: "24px", border: "1px solid #151515", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", marginBottom: "30px", boxShadow: "0 30px 60px rgba(0,0,0,0.5)", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "20px", left: "20px", display: "flex", alignItems: "center", gap: "8px", fontSize: "10px", color: "#888", zIndex: 10 }}><MousePointer2 size={12} /> {generatedPresetString || "NO PRESETS ACTIVE"}</div>
         {mode === "text" ? (
@@ -1265,9 +1273,7 @@ const App = () => {
         )}
       </div>
 
-      {/* CONTROLS */}
       <div style={{ width: "100%", maxWidth: "1000px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginBottom: "30px" }}>
-        {/* CORE STRUCTURE */}
         <div style={{ backgroundColor: "#0c0c0c", borderRadius: "20px", padding: "25px", border: "1px solid #1a1a1a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#fff", fontSize: "12px", marginBottom: "20px" }}><Type size={16} /> CORE STRUCTURE</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1300,7 +1306,6 @@ const App = () => {
           </div>
         </div>
 
-        {/* GLOBAL MOTION */}
         <div style={{ backgroundColor: "#0c0c0c", borderRadius: "20px", padding: "25px", border: "1px solid #1a1a1a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#999", fontSize: "12px", marginBottom: "20px" }}><Maximize size={16} /> GLOBAL MOTION</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1315,15 +1320,19 @@ const App = () => {
           </div>
         </div>
 
-        {/* PRESET CARDS */}
         <Suspense fallback={<div style={{ color: "#888" }}>Loading...</div>}>
           <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px" }}>
             <PresetCard id="scale" label="Scale" icon={Maximize} min="0.1" max="4" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="y" label="Y Offset" icon={Move} min="-200" max="200" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="x" label="X Offset" icon={Move} min="-200" max="200" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="opacity" label="Opacity" icon={Eye} min="0" max="1" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="blur" label="Blur" icon={Layers} min="0" max="50" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="rotate" label="Rotate" icon={Maximize} min="-360" max="360" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
             <PresetCard id="weight" label="Weight" icon={Type} min="100" max="900" step="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="skew" label="Skew" icon={Type} min="-90" max="90" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="magnetic" label="Magnetic" icon={Fingerprint} min="0" max="1" step="0.1" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="tilt" label="Tilt" icon={Layers} min="0" max="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
+            <PresetCard id="tiltCard" label="TiltCard" icon={Layers} min="0" max="100" activePresets={activePresets} settings={settings} togglePreset={togglePreset} updateRange={updateRange} />
           </div>
         </Suspense>
       </div>
@@ -1332,7 +1341,6 @@ const App = () => {
         {copied ? <Check size={20} /> : <Copy size={20} />} {copied ? "COPIED!" : "COPY ENGINE CODE"}
       </button>
 
-      {/* --- INTERACTIVE DOCUMENTATION --- */}
       <div style={{ width: "100%", maxWidth: "1000px", borderTop: "1px solid #1a1a1a", paddingTop: "60px", paddingBottom: "100px" }}>
         <header style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "40px" }}>
           <BookOpen size={28} color="#10b981" />
