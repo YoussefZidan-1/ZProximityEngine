@@ -115,7 +115,7 @@ const App = () => {
         
         {mode === "text" ? (
           <ProximityText 
-            key={settings.text + settings.splitBy} 
+            key={settings.text + settings.splitBy + generatedPresetString + settings.focusMode + settings.nearestPreset + settings.neighborPreset + JSON.stringify(config)} 
             text={settings.text.split("\\n").join("\n")} 
             splitBy={settings.splitBy} 
             preset={settings.focusMode ? "" : generatedPresetString} 
@@ -126,7 +126,7 @@ const App = () => {
           />
         ) : (
           <Proximity 
-            key={"elements" + settings.elementCount} 
+            key={"elements" + settings.elementCount + generatedPresetString + settings.focusMode + settings.nearestPreset + settings.neighborPreset + JSON.stringify(config)} 
             selector=".dock-icon" 
             preset={settings.focusMode ? "" : generatedPresetString} 
             nearestPreset={settings.focusMode ? settings.nearestPreset : ""}

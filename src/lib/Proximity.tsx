@@ -235,7 +235,7 @@ export const Proximity: React.FC<ProximityProps> = ({
     resizeObserver.observe(container);
     if (document.body) resizeObserver.observe(document.body);
 
-    const actualSpread = Math.max(100, activeReach * 10000); const maxDistance = Math.max(1, activeReach * 300);
+    const actualSpread = activeReach * 10000; const maxDistance = activeReach * 200;
 
     const onTick = () => {
       if (!pointer.current.active) return;
