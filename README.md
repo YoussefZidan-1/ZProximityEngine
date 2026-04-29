@@ -116,15 +116,15 @@ For advanced users, use the `onCalculate` callback to map proximity intensity to
 ---
 
 ## ♿ Accessibility & Performance
-- **Reduced Motion:** Automatically respects `prefers-reduced-motion` settings and disables animations.
-- **Smart Throttling:** Internal logic prevents unnecessary GSAP overwrites if the movement delta is below 1%.
-- **Zero Layout Thrashing:** Uses CSS Variables and transforms to ensure animations happen on the GPU.
+- [x] **Reduced Motion:** Automatically respects `prefers-reduced-motion` settings and disables animations.
+- [x] **Smart Throttling:** Internal logic prevents unnecessary GSAP overwrites if the movement delta is below 1%.
+- [x] **Zero Layout Thrashing:** Uses CSS Variables and transforms to ensure animations happen on the GPU.
 
-- [ ] Auto-Arabic Support: Intelligent word-based grouping for cursive scripts to maintain typography integrity.
+- [ ] **Auto-Arabic Support:** Intelligent word-based grouping for cursive scripts to maintain typography integrity.
 
-- [ ] Z-SVG Engine: Directly manipulating SVG paths and points via proximity.
+- [ ] **Z-SVG Engine:** Directly manipulating SVG paths and points via proximity.
 
-- [ ] NPM Official Release: A lightweight, tree-shakable package.
+- [x] **NPM Official Release:** A lightweight, tree-shakable package.
       
 ---
 ## 🤝 Contributing
