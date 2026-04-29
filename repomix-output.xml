@@ -744,10 +744,10 @@ const calculatePresetValues = (
   return result;
 };
 
-// Custom GSAP onUpdate handler for the cipher effect
+// Custom GSAP onUpdate handler for the SMOOTH cipher effect
 function cipherUpdate(this: any) {
   const item = this.targets()[0];
-  if (!item || item.children.length > 0) return; // Protect complex DOM layouts
+  if (!item || item.children.length > 0) return; 
   
   const val = item.proxCipher;
   if (val === undefined) return;
@@ -755,25 +755,40 @@ function cipherUpdate(this: any) {
   const orig = item.dataset.proxOriginal;
   if (!orig || orig.trim() === "") return;
   
+  // Restore original immediately if intensity is near zero
   if (val <= 0.01) {
       if (item.innerText !== orig) item.innerText = orig;
       return;
   }
+
+  // SMOOTHNESS FIX: Throttle the scrambling frequency.
+  // Instead of updating every frame (60fps+), we update every ~60ms.
+  // This makes it look like a purposeful hacker animation rather than noise.
+  const now = Date.now();
+  if (item._lastCipherUpdate && now - item._lastCipherUpdate < 60) return;
+  item._lastCipherUpdate = now;
   
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$*&%";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$*&%0123456789";
   let scrambled = "";
   for (let i = 0; i < orig.length; i++) {
       if (orig[i] === " " || orig[i] === "\n") { 
           scrambled += orig[i]; 
           continue; 
       }
+
+      // Logic: If intensity (val) is high, the chance of scrambling is high.
+      // As intensity drops, characters naturally "lock" back to the original.
       if (Math.random() < val) {
           scrambled += chars[Math.floor(Math.random() * chars.length)];
       } else {
           scrambled += orig[i];
       }
   }
-  item.innerText = scrambled;
+
+  // Only touch the DOM if the text actually changed
+  if (item.innerText !== scrambled) {
+      item.innerText = scrambled;
+  }
 }
 
 export const Proximity: React.FC<ProximityProps> = ({
@@ -843,7 +858,6 @@ export const Proximity: React.FC<ProximityProps> = ({
       Object.values(groupedProps).forEach(v => Object.assign(flatProps, v));
       if (Object.keys(flatProps).length > 1 && items.length > 0) gsap.set(items, flatProps);
 
-      // Trigger initial scramble if cipher starts active (e.g. cipher: [1, 0])
       if (flatProps.proxCipher !== undefined) {
           items.forEach(item => {
               (item as any).proxCipher = flatProps.proxCipher;
@@ -877,7 +891,16 @@ export const Proximity: React.FC<ProximityProps> = ({
 
     if (document.fonts) { document.fonts.ready.then(initItems); } else { initItems(); }
 
-    const mutationObserver = new MutationObserver(() => initItems());
+    const mutationObserver = new MutationObserver((mutations) => {
+        // ENGINE FREEZE FIX: Only reset if the actual DOM structure changes.
+        // We ignore text changes (nodeType 3) caused by the Cipher effect.
+        const structuralChange = mutations.some(m => 
+            Array.from(m.addedNodes).some(n => n.nodeType === 1) || 
+            Array.from(m.removedNodes).some(n => n.nodeType === 1)
+        );
+        if (structuralChange) initItems();
+    });
+    
     const resizeObserver = new ResizeObserver(() => updateCenters());
     mutationObserver.observe(container, { childList: true, subtree: true });
     resizeObserver.observe(container);
@@ -1107,7 +1130,7 @@ export default defineConfig(({ mode }) => {
 <file path="package.json">
 {
   "name": "z-proximity-engine",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -1152,18 +1175,16 @@ export default defineConfig(({ mode }) => {
   },
   "peerDependencies": {
     "@gsap/react": "^2.1.2",
-    "gsap": "^3.12.0",
+    "gsap": "^3.15.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
-  "dependencies": {
-  },
   "devDependencies": {
-    "lucide-react": "^1.11.0",
     "@types/node": "^25.6.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.0.0",
+    "lucide-react": "^1.11.0",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^4.5.4"
