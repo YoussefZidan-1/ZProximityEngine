@@ -7,9 +7,13 @@ export type EasePreset =
   | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost" 
   | "expo" | "circus" | "glitch" | "slowmo" | (string & {});
 
+export type ProximityPreset = 
+  | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard"
+  | (string & {});
+
 export interface ProximityConfig {
   reach?: number; falloff?: number; duration?: number; resetDuration?: number;
-  global?: boolean; preset?: string; ease?: EasePreset; resetEase?: EasePreset;
+  global?: boolean; explicit?: boolean; preset?: ProximityPreset; ease?: EasePreset; resetEase?: EasePreset;
   scale?: [number, number]; y?:[number, number]; x?:[number, number]; opacity?: [number, number];
   blur?:[number, number]; rotate?: [number, number]; weight?: [number, number];
   skew?: [number, number]; magnetic?: [number, number]; tilt?: [number, number]; tiltCard?: [number, number];
@@ -43,23 +47,27 @@ const calculatePresetValues = (presetString: string, intensity: number, userConf
     if (!bounds) return;
     const[base, max] = bounds;
     const currentValue = isReset ? base : base + (max - base) * intensity;
+    
     if (prop === "blur") result.filter = `blur(${currentValue}px)`;
     else if (prop === "weight") {
       const weightVal = Math.round(currentValue);
       result.fontWeight = weightVal; result.fontVariationSettings = `'wght' ${weightVal}`;
-    } else if (prop === "rotate") result.rotation = currentValue;
+    } 
+    else if (prop === "rotate") result.rotation = currentValue;
     else if (prop === "skew") result.skewX = currentValue;
     else if (prop === "magnetic") {
-      result.x = isReset ? 0 : dx * intensity * max;
-      result.y = isReset ? 0 : dy * intensity * max;
-    } else if (prop === "tilt") {
-      result.rotateX = isReset ? 0 : -dy * intensity * (max / 10);
-      result.rotateY = isReset ? 0 : dx * intensity * (max / 10);
-      result.transformPerspective = 1000;
-    } else if (prop === "tiltCard") {
-      result.rotateX = isReset ? 0 : (dy / (h / 2)) * -max * intensity;
-      result.rotateY = isReset ? 0 : (dx / (w / 2)) * max * intensity;
-      result.transformPerspective = 1000;
+        result.x = isReset ? 0 : dx * intensity * max;
+        result.y = isReset ? 0 : dy * intensity * max;
+    }
+    else if (prop === "tilt") {
+        result.rotateX = isReset ? 0 : -dy * intensity * (max / 10);
+        result.rotateY = isReset ? 0 : dx * intensity * (max / 10);
+        result.transformPerspective = 1000;
+    }
+    else if (prop === "tiltCard") {
+        result.rotateX = isReset ? 0 : (dy / (h / 2)) * -max * intensity;
+        result.rotateY = isReset ? 0 : (dx / (w / 2)) * max * intensity;
+        result.transformPerspective = 1000;
     }
     else result[prop] = currentValue;
   });
@@ -68,7 +76,7 @@ const calculatePresetValues = (presetString: string, intensity: number, userConf
 
 export const Proximity: React.FC<ProximityProps> = ({
   children, selector = ".prox-item", config = {}, preset = "", reach = 2, falloff = 2.4,
-  duration = 0.2, resetDuration = 0.4, global = false, onCalculate, onReset, ease, resetEase,
+  duration = 0.2, resetDuration = 0.4, global = false, explicit = false, onCalculate, onReset, ease, resetEase,
   scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,7 +84,8 @@ export const Proximity: React.FC<ProximityProps> = ({
 
   const activeReach = config.reach ?? reach; const activeFalloff = config.falloff ?? falloff;
   const activeDuration = config.duration ?? duration; const activeResetDuration = config.resetDuration ?? resetDuration;
-  const activeGlobal = config.global ?? global; const activePreset = config.preset ?? preset;
+  const activeGlobal = config.global ?? global; const activeExplicit = config.explicit ?? explicit; 
+  const activePreset = config.preset ?? preset;
   const activeOnCalculate = config.onCalculate ?? onCalculate; const activeOnReset = config.onReset ?? onReset;
 
   const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
@@ -158,7 +167,12 @@ export const Proximity: React.FC<ProximityProps> = ({
         const dy = pageY - bounds.y;
         let distance: number;
 
-        if (isBlocked) { distance = Infinity; } else {
+        // NEW: Explicit Mode logic
+        const isInsideRect = pageX >= bounds.left && pageX <= bounds.right && pageY >= bounds.top && pageY <= bounds.bottom;
+
+        if (isBlocked || (activeExplicit && !isInsideRect)) { 
+          distance = Infinity; 
+        } else {
           const dxEdge = Math.max(bounds.left - pageX, 0, pageX - bounds.right);
           const dyEdge = Math.max(bounds.top - pageY, 0, pageY - bounds.bottom);
           distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
@@ -168,14 +182,13 @@ export const Proximity: React.FC<ProximityProps> = ({
           if (!states[i].isOutside) {
             const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, bounds.w, bounds.h, true) : {});
             gsap.to(item, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: "auto", ease: targetResetEase });
-            states[i].isOutside = true; states[i].lastIntensity = 0;
+            states[i].isOutside = true; states[i].lastIntensity = 0; states[i].lastDx = 0; states[i].lastDy = 0;
           }
           return;
         }
 
         const intensity = Math.exp(-(Math.pow(distance, activeFalloff)) / actualSpread);
         
-        // High-sensitivity check to allow tilt effects to follow the mouse move-by-move
         if (Math.abs(intensity - states[i].lastIntensity) > 0.001 || Math.abs(dx - states[i].lastDx) > 0.5 || Math.abs(dy - states[i].lastDy) > 0.5) {
           setters[i].intensity(intensity.toFixed(3)); setters[i].dx(dx); setters[i].dy(dy);
           const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance, dx, dy) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, dx, dy, bounds.w, bounds.h, false) : {});
@@ -222,7 +235,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   }, { 
     dependencies:[
       selector, excludeElements, activePreset, activeReach, activeFalloff, activeDuration, 
-      activeResetDuration, activeGlobal, mergedBoundsStr, ignoreSelectors.join(','), targetEase, targetResetEase
+      activeResetDuration, activeGlobal, activeExplicit, mergedBoundsStr, ignoreSelectors.join(','), targetEase, targetResetEase
     ],
     scope: containerRef
   });
