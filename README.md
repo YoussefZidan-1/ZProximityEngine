@@ -1,21 +1,22 @@
-# 🚀 ZProximity Engine
+# 🚀 ZProximity Engine v1.5.0
 
-### **The physics of attraction for your UI.**
+### **The Physics of Attraction for the Modern Web.**
 
 `ZProximity` is a high-performance React motion engine designed to bridge the gap between complex mathematical physics and organic UI design. Create reactive, buttery-smooth interactions that respond to user proximity with a single declarative prop.
 
-[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/)
+[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) • [**📦 NPM Package**](https://www.npmjs.com/package/z-proximity-engine)
 
 ---
 
 ## 🎨 Why ZProximity?
 
-Most proximity effects require manual event listeners, heavy math, and complex cleanup logic that kills performance. **ZProximity** abstracts this into a performance-first architecture:
+Most proximity effects require manual event listeners and heavy math that kills performance. **ZProximity** abstracts this into a performance-first architecture:
 
-- **🚀 GSAP Power:** Optimized with `quickSetter` to bypass React's render cycle for 60/120fps+ updates.
-- **🧠 Exponential Decay:** Uses advanced math (not linear distance) to create organic, "magnetic" feels.
-- **🎭 String-Based Presets:** Combine effects like `scale-blur-rotate-weight` instantly with the order you like.
-- **🔡 Text-First:** Built-in intelligent splitting for characters, words, or lines.
+- **🚀 GSAP Power:** Optimized with `quickSetter` to bypass React's render cycle for 120fps+ updates.
+- **🧠 Exponential Decay:** Uses advanced math (not linear distance) for an organic, "magnetic" feel.
+- **🎭 String-Based Presets:** Chain effects like `scale-blur-rotate-weight` instantly.
+- **🔡 Text-First:** Intelligent splitting for characters, words, or lines.
+- **⏳ Micro-Timing:** v1.5.0 introduces per-property timeline control.
 
 ---
 
@@ -24,32 +25,32 @@ Most proximity effects require manual event listeners, heavy math, and complex c
 ```bash
 npm install z-proximity-engine gsap @gsap/react
 ```
+
 ---
 
 ## 🚀 Quick Start
 
-### 1. Basic Text Interaction
-Transform static text into a reactive, magnetic element.
+### 1. The "Cipher" Reveal (Text)
+Transform static text into a reactive, scrambling hacker-style element.
 
 ```jsx
 import { ProximityText } from 'z-proximity-engine';
 
 const MyComponent = () => (
   <ProximityText 
-    text="BEYOND THE VOID"
-    preset="scale-blur-opacity"
+    text="TOP SECRET"
+    preset="cipher-scale-opacity"
     config={{
+      cipher: [1, 0], // Scrambled at distance, clear on hover
       reach: 1.5,
-      duration: 1,
-      ease: "elastic"
+      ease: "sharp"
     }}
-    style={{ fontSize: '4rem', fontWeight: '900' }}
   />
 );
 ```
 
-### 2. Element Groups (The "Dock" Effect)
-Apply proximity to any group of React elements (cards, icons, buttons).
+### 2. The "Interactive Dock" (Elements)
+Apply physics to any group of React elements (cards, icons, buttons).
 
 ```jsx
 import { Proximity } from 'z-proximity-engine';
@@ -57,7 +58,8 @@ import { Proximity } from 'z-proximity-engine';
 const Dock = () => (
   <Proximity 
     selector=".item" 
-    preset="y-scale"
+    nearestPreset="scale-y" 
+    neighborPreset="repel"
     config={{ y: [0, -50], scale: [1, 1.5] }}
   >
     <div className="item">🚀</div>
@@ -69,72 +71,87 @@ const Dock = () => (
 
 ---
 
-## 🛠 Features Deep-Dive
+## 🛠 Features & Abilities
 
-### **The Preset System**
-Don't write CSS logic. Chain your desired effects in the `preset` prop string. Order doesn't matter; performance is guaranteed.
+### **1. The Preset Library**
+ZProximity comes with 13 built-in presets that can be combined using dash-syntax (e.g., `preset="scale-blur-tilt"`).
 
-| Preset | Effect |
-| :--- | :--- |
-| `scale` | Changes element size |
-| `y` | Moves element on the Y-axis |
-| `opacity` | Smoothly fades elements in/out |
-| `blur` | Transitions between sharp and blurred |
-| `rotate` | Rotates elements based on proximity |
-| `weight` | Animates Variable Font weight (requires variable font) |
+| Category | Preset | Description |
+| :--- | :--- | :--- |
+| **Transform** | `scale`, `x`, `y`, `rotate`, `skew` | Standard 2D hardware-accelerated transforms. |
+| **Appearance** | `opacity`, `blur` | Smooth visibility and depth-of-field transitions. |
+| **Physics** | `magnetic`, `repel` | Elements pull toward or push away from the cursor. |
+| **3D Space** | `tilt`, `tiltCard` | Realistic 3D rotation following the pointer angle. |
+| **Specialist** | `weight`, `cipher` | Animates Variable Font weights or "Hacker" text scrambling. |
 
-### **The "Escape Hatch" (Custom Logic)**
-For advanced users, use the `onCalculate` callback to map proximity intensity to *anything* (audio, custom SVG paths, etc).
+---
+
+### **2. ⏳ Timeline Overrides (New)**
+You no longer have to use a global duration. Give every property its own timing for a staggered, high-end feel.
 
 ```jsx
-<Proximity
-  onCalculate={(intensity, distance) => ({
-    backgroundColor: `rgba(170, 59, 255, ${intensity})`,
-    x: Math.sin(distance) * 10
-  })}
->
-  <div>Custom Logic</div>
-</Proximity>
+config={{
+  timeline: {
+    blur: { duration: 0.1 },                // Instant response
+    scale: { duration: 0.8, ease: "bouncy" }, // Rubbery lag
+    rotate: { delay: 0.1, duration: 1.5 }    // Trailing effect
+  }
+}}
 ```
+
+---
+
+### **3. 🎯 Split Focus Logic (New)**
+The engine can distinguish between the element you are touching and its neighbors.
+- **`nearestPreset`**: Applied to the element closest to the cursor.
+- **`neighborPreset`**: Applied to surrounding elements to create "space."
+
+---
+
+### **4. 🛡️ Movement Constraints**
+- **`maxTravel`**: Clamp the maximum pixels an element can move (essential for `magnetic` and `repel`).
+- **`explicit`**: If `true`, the effect only triggers when the mouse is physically inside the container’s bounding box.
+- **`global`**: If `true`, tracks the mouse across the entire window, regardless of where the container is.
+
+---
+
+### **5. 🔡 Advanced Text Control**
+`ProximityText` offers granular control over typography:
+- **`splitBy`**: Split by `"letter"`, `"word"`, or `"line"`.
+- **`ignoreText`**: An array of strings or Regex (e.g., `["&", /@/ ]`) that the engine will skip animating.
+- **`clipFix`**: Adds invisible padding to prevent "cutoff" edges on bouncy or scaled text.
 
 ---
 
 ## ⚙️ API Reference
 
-### `ProximityProps` & `ProximityTextProps`
+### `ProximityConfig`
 
 | Prop | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `preset` | `string` | `""` | Dash-separated effects (e.g., `"scale-y-blur"`) |
-| `reach` | `number` | `2` | Radius of influence (Higher = further reach) |
-| `falloff` | `number` | `2.4` | How quickly the effect fades (Exponential power) |
-| `duration` | `number` | `0.2` | Speed of the "attraction" animation |
-| `resetDuration`| `number` | `0.4` | Speed of the "return to home" animation |
-| `ease` | `EasePreset` | `"power1.out"` | Custom easing (smooth, bouncy, elastic, etc.) |
-| `global` | `boolean` | `false` | If true, tracks mouse even outside the container |
+| `reach` | `number` | `2` | Radius of influence (Higher = further reach). |
+| `falloff` | `number` | `2.4` | Power of the exponential decay (Curve smoothness). |
+| `duration` | `number` | `0.2` | Entry animation speed. |
+| `resetDuration`| `number` | `0.4` | "Return to home" animation speed. |
+| `ease` | `string` | `"power1.out"` | Custom easing (smooth, bouncy, elastic, jello, etc.). |
+| `maxTravel` | `number` | `Infinity` | Clamps the movement in pixels. |
+| `onCalculate` | `function` | `null` | The "Escape Hatch" for custom math mapping. |
 
 ---
 
 ## ♿ Accessibility & Performance
-- [x] **Reduced Motion:** Automatically respects `prefers-reduced-motion` settings and disables animations.
-- [x] **Smart Throttling:** Internal logic prevents unnecessary GSAP overwrites if the movement delta is below 1%.
-- [x] **Zero Layout Thrashing:** Uses CSS Variables and transforms to ensure animations happen on the GPU.
+- [x] **Reduced Motion:** Automatically detects `prefers-reduced-motion` and kills all animations.
+- [x] **Zero Layout Thrashing:** Uses `quickSetter` to modify transforms/filters on the GPU layer.
+- [x] **Smart Throttling:** Skips updates if the movement delta is below 0.001%.
+- [x] **Mutation Aware:** Automatically re-initializes if the DOM structure changes.
 
-- [ ] **Auto-Arabic Support:** Intelligent word-based grouping for cursive scripts to maintain typography integrity.
-
-- [ ] **Z-SVG Engine:** Directly manipulating SVG paths and points via proximity.
-
-- [x] **NPM Official Release:** A lightweight, tree-shakable package.
-      
 ---
-## 🤝 Contributing
-This is a Public Build. If you are a GSAP wizard or a Math enthusiast, your PRs are welcome!
 
-This engine is built for the community. If you have a math-based preset or a performance optimization, PRs are welcome!
+## 🤝 Contributing
+Built by **Yousef Zedan**. This is an open-source project. If you are a GSAP wizard or a Math enthusiast, your PRs are welcome!
 
 1. Star the repo ⭐
-2. Open an issue for feature requests.
-3. Submit a PR with your creative additions.
+2. Submit a PR with your creative additions.
 
 ---
 
