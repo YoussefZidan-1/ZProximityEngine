@@ -8,16 +8,32 @@ export type EasePreset =
   | "expo" | "circus" | "glitch" | "slowmo" | (string & {});
 
 export type ProximityPreset = 
-  | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard"
+  | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel" | "cipher"
   | (string & {});
+
+export interface ProximityTimelineConfig {
+  duration?: number;
+  resetDuration?: number;
+  delay?: number;
+  resetDelay?: number;
+  ease?: EasePreset;
+  resetEase?: EasePreset;
+}
 
 export interface ProximityConfig {
   reach?: number; falloff?: number; duration?: number; resetDuration?: number;
-  global?: boolean; explicit?: boolean; preset?: ProximityPreset; ease?: EasePreset; resetEase?: EasePreset;
-  scale?: [number, number]; y?:[number, number]; x?:[number, number]; opacity?: [number, number];
-  blur?:[number, number]; rotate?: [number, number]; weight?: [number, number];
-  skew?: [number, number]; magnetic?: [number, number]; tilt?: [number, number]; tiltCard?: [number, number];
-  onCalculate?: (intensity: number, distance: number, dx: number, dy: number) => gsap.TweenVars;
+  global?: boolean; explicit?: boolean; 
+  preset?: ProximityPreset; 
+  nearestPreset?: ProximityPreset; 
+  neighborPreset?: ProximityPreset;
+  ease?: EasePreset; resetEase?: EasePreset;
+  maxTravel?: number;
+  timeline?: Record<string, ProximityTimelineConfig>;
+  scale?:[number, number]; y?:[number, number]; x?:[number, number]; opacity?:[number, number];
+  blur?:[number, number]; rotate?:[number, number]; weight?: [number, number];
+  skew?:[number, number]; magnetic?:[number, number]; tilt?: [number, number]; tiltCard?:[number, number]; repel?: [number, number];
+  cipher?: [number, number];
+  onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
   onReset?: () => gsap.TweenVars;
 }
 
@@ -27,8 +43,8 @@ export interface ProximityProps extends ProximityConfig {
 }
 
 const PRESET_DEFAULTS: Record<string, [number, number]> = {
-  scale: [1, 1.5], y: [0, -30], x: [0, 30], opacity: [0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
-  skew: [0, 20], magnetic: [0, 0.1], tilt: [0, 30], tiltCard: [0, 15]
+  scale:[1, 1.5], y: [0, -30], x:[0, 30], opacity:[0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
+  skew:[0, 20], magnetic: [0, 0.1], tilt:[0, 30], tiltCard:[0, 15], repel: [0, 0.4], cipher: [0, 1]
 };
 
 const EASE_MAP: Record<string, string> = {
@@ -39,45 +55,121 @@ const EASE_MAP: Record<string, string> = {
   glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })", slowmo: "slow(0.7, 0.7, false)"
 };
 
-const calculatePresetValues = (presetString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, dx: number, dy: number, w: number, h: number, isReset: boolean = false): gsap.TweenVars => {
-  const props = presetString.split("-");
-  const result: gsap.TweenVars = {};
-  props.forEach((prop) => {
+const calculatePresetValues = (
+  activePresetString: string, allPresetsString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, 
+  dx: number, dy: number, w: number, h: number, isReset: boolean = false, maxTravel?: number
+): Record<string, gsap.TweenVars> => {
+  const activeProps = new Set(activePresetString.split("-").filter(Boolean));
+  const allProps = Array.from(new Set(allPresetsString.split("-").filter(Boolean)));
+  const result: Record<string, gsap.TweenVars> = {};
+
+  const clampTravel = (val: number) => {
+    if (maxTravel === undefined || maxTravel === Infinity) return val;
+    return Math.max(-maxTravel, Math.min(val, maxTravel));
+  };
+
+  allProps.forEach((prop) => {
     const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
     if (!bounds) return;
-    const[base, max] = bounds;
-    const currentValue = isReset ? base : base + (max - base) * intensity;
     
-    if (prop === "blur") result.filter = `blur(${currentValue}px)`;
+    const isActive = activeProps.has(prop);
+    const useBase = isReset || !isActive;
+    const currentIntensity = useBase ? 0 : intensity;
+
+    const[base, max] = bounds;
+    const currentValue = base + (max - base) * currentIntensity;
+    
+    result[prop] = {}; 
+    
+    if (prop === "blur") result[prop].filter = `blur(${currentValue}px)`;
     else if (prop === "weight") {
       const weightVal = Math.round(currentValue);
-      result.fontWeight = weightVal; result.fontVariationSettings = `'wght' ${weightVal}`;
+      result[prop].fontWeight = weightVal; 
+      result[prop].fontVariationSettings = `'wght' ${weightVal}`;
     } 
-    else if (prop === "rotate") result.rotation = currentValue;
-    else if (prop === "skew") result.skewX = currentValue;
+    else if (prop === "rotate") result[prop].rotation = currentValue;
+    else if (prop === "skew") result[prop].skewX = currentValue;
+    else if (prop === "cipher") result[prop].proxCipher = currentValue;
     else if (prop === "magnetic") {
-        result.x = isReset ? 0 : dx * intensity * max;
-        result.y = isReset ? 0 : dy * intensity * max;
+        const pullX = dx * currentIntensity * max;
+        const pullY = dy * currentIntensity * max;
+        result[prop].x = useBase ? 0 : clampTravel(pullX);
+        result[prop].y = useBase ? 0 : clampTravel(pullY);
+        result[prop].rotation = useBase ? 0 : clampTravel(pullX) * 0.05;
+    }
+    else if (prop === "repel") {
+        const pushX = -dx * currentIntensity * max;
+        const pushY = -dy * currentIntensity * max;
+        result[prop].x = useBase ? 0 : clampTravel(pushX);
+        result[prop].y = useBase ? 0 : clampTravel(pushY);
     }
     else if (prop === "tilt") {
-        result.rotateX = isReset ? 0 : -dy * intensity * (max / 10);
-        result.rotateY = isReset ? 0 : dx * intensity * (max / 10);
-        result.transformPerspective = 1000;
+        result[prop].rotateX = useBase ? 0 : clampTravel(-dy * currentIntensity * (max / 10));
+        result[prop].rotateY = useBase ? 0 : clampTravel(dx * currentIntensity * (max / 10));
+        result[prop].transformPerspective = 1000;
     }
     else if (prop === "tiltCard") {
-        result.rotateX = isReset ? 0 : (dy / (h / 2)) * -max * intensity;
-        result.rotateY = isReset ? 0 : (dx / (w / 2)) * max * intensity;
-        result.transformPerspective = 1000;
+        result[prop].rotateX = useBase ? 0 : clampTravel((dy / (h / 2)) * -max * currentIntensity);
+        result[prop].rotateY = useBase ? 0 : clampTravel((dx / (w / 2)) * max * currentIntensity);
+        result[prop].transformPerspective = 1000;
     }
-    else result[prop] = currentValue;
+    else result[prop][prop] = currentValue; 
   });
   return result;
 };
 
+// Custom GSAP onUpdate handler for the SMOOTH cipher effect
+function cipherUpdate(this: any) {
+  const item = this.targets()[0];
+  if (!item || item.children.length > 0) return; 
+  
+  const val = item.proxCipher;
+  if (val === undefined) return;
+  
+  const orig = item.dataset.proxOriginal;
+  if (!orig || orig.trim() === "") return;
+  
+  // Restore original immediately if intensity is near zero
+  if (val <= 0.01) {
+      if (item.innerText !== orig) item.innerText = orig;
+      return;
+  }
+
+  // SMOOTHNESS FIX: Throttle the scrambling frequency.
+  // Instead of updating every frame (60fps+), we update every ~60ms.
+  // This makes it look like a purposeful hacker animation rather than noise.
+  const now = Date.now();
+  if (item._lastCipherUpdate && now - item._lastCipherUpdate < 60) return;
+  item._lastCipherUpdate = now;
+  
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$*&%0123456789";
+  let scrambled = "";
+  for (let i = 0; i < orig.length; i++) {
+      if (orig[i] === " " || orig[i] === "\n") { 
+          scrambled += orig[i]; 
+          continue; 
+      }
+
+      // Logic: If intensity (val) is high, the chance of scrambling is high.
+      // As intensity drops, characters naturally "lock" back to the original.
+      if (Math.random() < val) {
+          scrambled += chars[Math.floor(Math.random() * chars.length)];
+      } else {
+          scrambled += orig[i];
+      }
+  }
+
+  // Only touch the DOM if the text actually changed
+  if (item.innerText !== scrambled) {
+      item.innerText = scrambled;
+  }
+}
+
 export const Proximity: React.FC<ProximityProps> = ({
-  children, selector = ".prox-item", config = {}, preset = "", reach = 2, falloff = 2.4,
-  duration = 0.2, resetDuration = 0.4, global = false, explicit = false, onCalculate, onReset, ease, resetEase,
-  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
+  children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "", reach = 2, falloff = 2.4,
+  duration = 0.2, resetDuration = 0.4, global = false, explicit = false, 
+  maxTravel, onCalculate, onReset, ease, resetEase,
+  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
@@ -86,18 +178,30 @@ export const Proximity: React.FC<ProximityProps> = ({
   const activeDuration = config.duration ?? duration; const activeResetDuration = config.resetDuration ?? resetDuration;
   const activeGlobal = config.global ?? global; const activeExplicit = config.explicit ?? explicit; 
   const activePreset = config.preset ?? preset;
+  const activeNearestPreset = config.nearestPreset ?? nearestPreset;
+  const activeNeighborPreset = config.neighborPreset ?? neighborPreset;
+  const activeMaxTravel = config.maxTravel ?? maxTravel;
   const activeOnCalculate = config.onCalculate ?? onCalculate; const activeOnReset = config.onReset ?? onReset;
 
   const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
 
+  const timelineConfigStr = JSON.stringify(config.timeline || {});
+
   const mergedBoundsStr = JSON.stringify({
     scale: config.scale ?? scale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
-    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard
+    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard, repel: config.repel ?? repel, cipher: config.cipher ?? cipher
   });
   
   const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr), [mergedBoundsStr]);
+  const activeTimeline = useMemo(() => JSON.parse(timelineConfigStr),[timelineConfigStr]);
+
+  const allPresetsStr = useMemo(() => {
+    return Array.from(new Set([activePreset, activeNearestPreset, activeNeighborPreset]
+        .filter(Boolean).flatMap(p => p.split('-'))
+    )).join('-');
+  }, [activePreset, activeNearestPreset, activeNeighborPreset]);
 
   useGSAP(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -123,28 +227,54 @@ export const Proximity: React.FC<ProximityProps> = ({
     };
 
     const setInitialState = () => {
-      const initialProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, 1, 1, true) : {});
-      initialProps.willChange = "transform, filter, opacity, font-variation-settings";
-      if (Object.keys(initialProps).length > 0 && items.length > 0) gsap.set(items, initialProps);
+      const groupedProps = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, 1, 1, true, activeMaxTravel);
+      const flatProps: gsap.TweenVars = { willChange: "transform, filter, opacity, font-variation-settings" };
+      Object.values(groupedProps).forEach(v => Object.assign(flatProps, v));
+      if (Object.keys(flatProps).length > 1 && items.length > 0) gsap.set(items, flatProps);
+
+      if (flatProps.proxCipher !== undefined) {
+          items.forEach(item => {
+              (item as any).proxCipher = flatProps.proxCipher;
+              cipherUpdate.call({ targets: () => [item] });
+          });
+      }
     };
 
     const initItems = () => {
       if (items.length > 0) gsap.killTweensOf(items);
+
       const targetSelector = excludeElements && excludeElements.trim() !== ""
         ? selector.split(',').map(s => `${s.trim()}:not(${excludeElements})`).join(', ') : selector;
       items = Array.from(container.querySelectorAll(targetSelector));
+      
+      items.forEach(item => {
+          if (item.dataset.proxOriginal === undefined) item.dataset.proxOriginal = item.innerText;
+          if ((item as any).proxCipher === undefined) (item as any).proxCipher = 0;
+      });
+
       states = items.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
       setters = items.map(item => ({
         intensity: gsap.quickSetter(item, "--prox-intensity") as (val: string | number) => void,
         dx: gsap.quickSetter(item, "--prox-dx", "px") as (val: string | number) => void,
         dy: gsap.quickSetter(item, "--prox-dy", "px") as (val: string | number) => void
       }));
-      updateCenters(); setInitialState();
+      
+      updateCenters(); 
+      setInitialState();
     };
 
     if (document.fonts) { document.fonts.ready.then(initItems); } else { initItems(); }
 
-    const mutationObserver = new MutationObserver(() => initItems());
+    const mutationObserver = new MutationObserver((mutations) => {
+        // ENGINE FREEZE FIX: Only reset if the actual DOM structure changes.
+        // We ignore text changes (nodeType 3) caused by the Cipher effect.
+        const structuralChange = mutations.some(m => 
+            Array.from(m.addedNodes).some(n => n.nodeType === 1) || 
+            Array.from(m.removedNodes).some(n => n.nodeType === 1)
+        );
+        if (structuralChange) initItems();
+    });
+    
     const resizeObserver = new ResizeObserver(() => updateCenters());
     mutationObserver.observe(container, { childList: true, subtree: true });
     resizeObserver.observe(container);
@@ -159,15 +289,21 @@ export const Proximity: React.FC<ProximityProps> = ({
       const { target } = pointer.current;
       const isBlocked = ignoreSelectors.some((sel) => (target as HTMLElement)?.closest?.(sel));
 
+      let nearestIndex = -1;
+      let minDistance = Infinity;
+      const distances = new Array(items.length);
+      const dxs = new Array(items.length);
+      const dys = new Array(items.length);
+
       items.forEach((item, i) => {
         const bounds = centers[i];
-        if (!bounds) return;
+        if (!bounds) { distances[i] = Infinity; return; }
         
         const dx = pageX - bounds.x;
         const dy = pageY - bounds.y;
-        let distance: number;
+        dxs[i] = dx; dys[i] = dy;
 
-        // NEW: Explicit Mode logic
+        let distance: number;
         const isInsideRect = pageX >= bounds.left && pageX <= bounds.right && pageY >= bounds.top && pageY <= bounds.bottom;
 
         if (isBlocked || (activeExplicit && !isInsideRect)) { 
@@ -178,10 +314,38 @@ export const Proximity: React.FC<ProximityProps> = ({
           distance = Math.sqrt(dxEdge * dxEdge + dyEdge * dyEdge);
         }
 
+        distances[i] = distance;
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestIndex = i;
+        }
+      });
+
+      items.forEach((item, i) => {
+        const distance = distances[i];
+        const dx = dxs[i];
+        const dy = dys[i];
+        const bounds = centers[i];
+        const isNearest = i === nearestIndex && distance <= maxDistance;
+
         if (distance > maxDistance) {
           if (!states[i].isOutside) {
-            const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, bounds.w, bounds.h, true) : {});
-            gsap.to(item, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: "auto", ease: targetResetEase });
+            const groupedResetProps = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, bounds.w, bounds.h, true, activeMaxTravel);
+            
+            gsap.to(item, { "--prox-intensity": 0, duration: activeResetDuration, ease: targetResetEase, overwrite: "auto" });
+            
+            Object.keys(groupedResetProps).forEach(key => {
+              const tl = activeTimeline?.[key] || {};
+              const tweenVars: any = {
+                  ...groupedResetProps[key],
+                  duration: tl.resetDuration ?? activeResetDuration,
+                  delay: tl.resetDelay ?? 0,
+                  ease: EASE_MAP[tl.resetEase as string] || tl.resetEase || targetResetEase,
+                  overwrite: "auto"
+              };
+              if ("proxCipher" in tweenVars) tweenVars.onUpdate = cipherUpdate;
+              gsap.to(item, tweenVars);
+            });
             states[i].isOutside = true; states[i].lastIntensity = 0; states[i].lastDx = 0; states[i].lastDy = 0;
           }
           return;
@@ -191,8 +355,31 @@ export const Proximity: React.FC<ProximityProps> = ({
         
         if (Math.abs(intensity - states[i].lastIntensity) > 0.001 || Math.abs(dx - states[i].lastDx) > 0.5 || Math.abs(dy - states[i].lastDy) > 0.5) {
           setters[i].intensity(intensity.toFixed(3)); setters[i].dx(dx); setters[i].dy(dy);
-          const animationProps = activeOnCalculate ? activeOnCalculate(intensity, distance, dx, dy) : (activePreset ? calculatePresetValues(activePreset, intensity, mergedBounds, dx, dy, bounds.w, bounds.h, false) : {});
-          gsap.to(item, { ...animationProps, duration: activeDuration, overwrite: "auto", ease: targetEase });
+          
+          let currentPreset = activePreset || "";
+          if (isNearest && activeNearestPreset) {
+              currentPreset = currentPreset ? `${currentPreset}-${activeNearestPreset}` : activeNearestPreset;
+          } else if (!isNearest && activeNeighborPreset) {
+              currentPreset = currentPreset ? `${currentPreset}-${activeNeighborPreset}` : activeNeighborPreset;
+          }
+
+          const groupedProps = activeOnCalculate 
+            ? { custom: activeOnCalculate(intensity, distance, dx, dy, isNearest) } 
+            : calculatePresetValues(currentPreset, allPresetsStr, intensity, mergedBounds, dx, dy, bounds.w, bounds.h, false, activeMaxTravel);
+          
+          Object.keys(groupedProps).forEach(key => {
+            const tl = activeTimeline?.[key] || {};
+            const tweenVars: any = {
+                ...groupedProps[key],
+                duration: tl.duration ?? activeDuration,
+                delay: tl.delay ?? 0,
+                ease: EASE_MAP[tl.ease as string] || tl.ease || targetEase,
+                overwrite: "auto"
+            };
+            if ("proxCipher" in tweenVars) tweenVars.onUpdate = cipherUpdate;
+            gsap.to(item, tweenVars);
+          });
+
           states[i].lastIntensity = intensity; states[i].lastDx = dx; states[i].lastDy = dy; states[i].isOutside = false;
         }
       });
@@ -200,17 +387,35 @@ export const Proximity: React.FC<ProximityProps> = ({
 
     gsap.ticker.add(onTick);
 
-    const updatePointer = (x: number, y: number, target: EventTarget | null) => { pointer.current = { x, y, target, active: true }; };
-    const onPointerMove = (e: PointerEvent) => updatePointer(e.clientX, e.clientY, e.target);
-    const onTouchMove = (e: TouchEvent) => { if (e.touches?.[0]) updatePointer(e.touches[0].clientX, e.touches[0].clientY, e.target); };
-    const handleReset = () => {
-      pointer.current.active = false;
-      const resetProps = activeOnReset ? activeOnReset() : (activePreset ? calculatePresetValues(activePreset, 0, mergedBounds, 0, 0, 1, 1, true) : {});
-      gsap.to(items, { ...resetProps, "--prox-intensity": 0, duration: activeResetDuration, overwrite: "auto", ease: targetResetEase });
-      states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; s.lastDx = 0; s.lastDy = 0; });
-    };
-
     const targetElement: EventTarget = activeGlobal ? window : container;
+    
+    function updatePointer(x: number, y: number, target: EventTarget | null) { pointer.current = { x, y, target, active: true }; }
+    function onPointerMove(e: PointerEvent) { updatePointer(e.clientX, e.clientY, e.target); }
+    function onTouchMove(e: TouchEvent) { if (e.touches?.[0]) updatePointer(e.touches[0].clientX, e.touches[0].clientY, e.target); }
+    function handleReset() {
+      pointer.current.active = false;
+      items.forEach((item, i) => {
+        const bounds = centers[i] || { w: 1, h: 1 };
+        const groupedResetProps = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, bounds.w, bounds.h, true, activeMaxTravel);
+        
+        gsap.to(item, { "--prox-intensity": 0, duration: activeResetDuration, ease: targetResetEase, overwrite: "auto" });
+        
+        Object.keys(groupedResetProps).forEach(key => {
+          const tl = activeTimeline?.[key] || {};
+          const tweenVars: any = {
+              ...groupedResetProps[key],
+              duration: tl.resetDuration ?? activeResetDuration,
+              delay: tl.resetDelay ?? 0,
+              ease: EASE_MAP[tl.resetEase as string] || tl.resetEase || targetResetEase,
+              overwrite: "auto"
+          };
+          if ("proxCipher" in tweenVars) tweenVars.onUpdate = cipherUpdate;
+          gsap.to(item, tweenVars);
+        });
+      });
+      states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; s.lastDx = 0; s.lastDy = 0; });
+    }
+
     targetElement.addEventListener("pointermove", onPointerMove as EventListener);
     targetElement.addEventListener("pointerleave", handleReset as EventListener);
     targetElement.addEventListener("pointerup", handleReset as EventListener);
@@ -221,7 +426,8 @@ export const Proximity: React.FC<ProximityProps> = ({
     targetElement.addEventListener("touchcancel", handleReset as EventListener);
 
     return () => {
-      mutationObserver.disconnect(); resizeObserver.disconnect(); gsap.ticker.remove(onTick);
+      mutationObserver.disconnect(); resizeObserver.disconnect();
+      gsap.ticker.remove(onTick);
       targetElement.removeEventListener("pointermove", onPointerMove as EventListener);
       targetElement.removeEventListener("pointerleave", handleReset as EventListener);
       targetElement.removeEventListener("pointerup", handleReset as EventListener);
@@ -234,8 +440,8 @@ export const Proximity: React.FC<ProximityProps> = ({
     };
   }, { 
     dependencies:[
-      selector, excludeElements, activePreset, activeReach, activeFalloff, activeDuration, 
-      activeResetDuration, activeGlobal, activeExplicit, mergedBoundsStr, ignoreSelectors.join(','), targetEase, targetResetEase
+      selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset, activeReach, activeFalloff, activeDuration, activeMaxTravel,
+      activeResetDuration, activeGlobal, activeExplicit, mergedBoundsStr, allPresetsStr, timelineConfigStr, ignoreSelectors.join(','), targetEase, targetResetEase
     ],
     scope: containerRef
   });
