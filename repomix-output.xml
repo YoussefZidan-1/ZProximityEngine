@@ -623,6 +623,53 @@ export const PresetCard = ({ id, label, icon: Icon, min, max, step = 1, activePr
 );
 </file>
 
+<file path="vite.config.js">
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import dts from 'vite-plugin-dts';
+import { resolve } from 'path';
+
+export default defineConfig(({ mode }) => {
+  const isLib = mode === 'lib';
+
+  return {
+    plugins: [
+      react(),
+      isLib && dts({ 
+        insertTypesEntry: true, 
+        include: ['src/lib']
+      })
+    ].filter(Boolean),
+
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      ...(isLib ? {
+        // --- LIBRARY CONFIG ---
+        lib: {
+          entry: resolve(__dirname, 'src/lib/index.ts'),
+          name: 'ZProximityEngine',
+          formats: ['es', 'umd'],
+          fileName: (format) => `index.${format}.js`,
+        },
+        rollupOptions: {
+          external: ['react', 'react-dom', 'gsap', '@gsap/react'],
+          output: {
+            globals: {
+              react: 'React',
+              'react-dom': 'ReactDOM',
+              gsap: 'gsap',
+              '@gsap/react': 'gsapReact'
+            },
+          },
+        },
+      } : {
+      })
+    },
+  };
+});
+</file>
+
 <file path="src/lib/Proximity.tsx">
 import React, { useRef, useMemo, ReactNode, CSSProperties } from "react";
 import gsap from "gsap";
@@ -896,7 +943,6 @@ export const Proximity: React.FC<ProximityProps> = ({
             const groupedResetProps = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, bounds.w, bounds.h, true, activeMaxTravel);
             gsap.to(item, { "--prox-intensity": 0, duration: activeResetDuration, ease: targetResetEase, overwrite: "auto" });
             
-            // AGGREGATION LOGIC FOR RESET
             const timingGroups: Record<string, any> = {};
             Object.keys(groupedResetProps).forEach(key => {
                 const tl = activeTimeline?.[key] || {};
@@ -932,7 +978,6 @@ export const Proximity: React.FC<ProximityProps> = ({
             ? { custom: activeOnCalculate(intensity, distance, dx, dy, isNearest) } 
             : calculatePresetValues(currentPreset, allPresetsStr, intensity, mergedBounds, dx, dy, bounds.w, bounds.h, false, activeMaxTravel);
           
-          // AGGREGATION LOGIC FOR TICK
           const timingGroups: Record<string, any> = {};
           Object.keys(groupedProps).forEach(key => {
               const tl = activeTimeline?.[key] || {};
@@ -1028,57 +1073,10 @@ export const Proximity: React.FC<ProximityProps> = ({
 };
 </file>
 
-<file path="vite.config.js">
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import dts from 'vite-plugin-dts';
-import { resolve } from 'path';
-
-export default defineConfig(({ mode }) => {
-  const isLib = mode === 'lib';
-
-  return {
-    plugins: [
-      react(),
-      isLib && dts({ 
-        insertTypesEntry: true, 
-        include: ['src/lib']
-      })
-    ].filter(Boolean),
-
-    build: {
-      outDir: 'dist',
-      emptyOutDir: true,
-      ...(isLib ? {
-        // --- LIBRARY CONFIG ---
-        lib: {
-          entry: resolve(__dirname, 'src/lib/index.ts'),
-          name: 'ZProximityEngine',
-          formats: ['es', 'umd'],
-          fileName: (format) => `index.${format}.js`,
-        },
-        rollupOptions: {
-          external: ['react', 'react-dom', 'gsap', '@gsap/react'],
-          output: {
-            globals: {
-              react: 'React',
-              'react-dom': 'ReactDOM',
-              gsap: 'gsap',
-              '@gsap/react': 'gsapReact'
-            },
-          },
-        },
-      } : {
-      })
-    },
-  };
-});
-</file>
-
 <file path="package.json">
 {
   "name": "z-proximity-engine",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -1371,6 +1369,8 @@ const App = () => {
     });
 
     return {
+      reach: settings.reach,
+      falloff: settings.falloff,
       scale: settings.scale, y: settings.y, x: settings.x, opacity: settings.opacity, blur: settings.blur, rotate: settings.rotate, 
       weight: settings.weight, skew: settings.skew, magnetic: settings.magnetic, repel: settings.repel, cipher: settings.cipher, tilt: settings.tilt, tiltCard: settings.tiltCard,
       ease: settings.ease, resetEase: settings.resetEase, duration: settings.duration, resetDuration: settings.resetDuration,

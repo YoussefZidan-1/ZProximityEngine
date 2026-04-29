@@ -200,7 +200,7 @@ export const Proximity: React.FC<ProximityProps> = ({
       const groupedProps = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, 1, 1, true, activeMaxTravel);
       const flatProps: gsap.TweenVars = { willChange: "transform, filter, opacity, font-variation-settings" };
       Object.values(groupedProps).forEach(v => Object.assign(flatProps, v));
-      if (Object.keys(flatProps).length > 0 && items.length > 0) gsap.set(items, flatProps);
+      if (Object.keys(flatProps).length > 1 && items.length > 0) gsap.set(items, flatProps);
       if (flatProps.proxCipher !== undefined) {
           items.forEach(item => { (item as any).proxCipher = flatProps.proxCipher; cipherUpdate.call({ targets: () => [item] }); });
       }
