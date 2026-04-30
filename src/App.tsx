@@ -36,7 +36,7 @@ const PresetCard = ({
   description: string, 
   config?: any,
   viewMode?: 'text' | 'elements',
-  splitMode?: 'letter' | 'word'
+  splitMode?: 'letter' | 'word',
 }) => (
   <Proximity 
     preset={preset as any}
@@ -99,7 +99,6 @@ export default function App() {
   }, [isDark]);
 
   useGSAP(() => {
-    // ScrollTrigger refresh to ensure calculations are correct
     ScrollTrigger.refresh();
   });
 
