@@ -18,7 +18,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "types": ["node", "gsap"]
+    "types": ["node", "gsap"],
+    "allowImportingTsExtensions": true,
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

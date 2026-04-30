@@ -8,7 +8,7 @@ export type EasePreset =
   | "expo" | "circus" | "glitch" | "slowmo" | (string & {});
 
 export type ProximityPreset = 
-  | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel" | "cipher"
+  | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel" | "cipher" | "reveal"
   | (string & {});
 
 export interface ProximityTimelineConfig {
@@ -32,7 +32,7 @@ export interface ProximityConfig {
   scale?:[number, number]; y?:[number, number]; x?:[number, number]; opacity?:[number, number];
   blur?:[number, number]; rotate?:[number, number]; weight?: [number, number];
   skew?:[number, number]; magnetic?:[number, number]; tilt?: [number, number]; tiltCard?:[number, number]; repel?: [number, number];
-  cipher?: [number, number];
+  cipher?: [number, number]; reveal?: [number, number];
   onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
   onReset?: () => gsap.TweenVars;
 }
@@ -44,7 +44,7 @@ export interface ProximityProps extends ProximityConfig {
 
 const PRESET_DEFAULTS: Record<string, [number, number]> = {
   scale:[1, 1.5], y: [0, -30], x:[0, 30], opacity:[0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
-  skew:[0, 20], magnetic: [0, 0.1], tilt:[0, 30], tiltCard:[0, 15], repel: [0, 0.4], cipher: [0, 1]
+  skew:[0, 20], magnetic: [0, 0.1], tilt:[0, 30], tiltCard:[0, 15], repel: [0, 0.4], cipher: [0, 1], reveal: [110, 0]
 };
 
 const EASE_MAP: Record<string, string> = {
@@ -90,6 +90,11 @@ const calculatePresetValues = (
     else if (prop === "rotate") result[prop].rotation = currentValue;
     else if (prop === "skew") result[prop].skewX = currentValue;
     else if (prop === "cipher") result[prop].proxCipher = currentValue;
+    else if (prop === "reveal") {
+        result[prop].y = `${currentValue}%`;
+        result[prop].clipPath = `inset(0% 0% ${currentValue}% 0%)`;
+        result[prop].webkitClipPath = `inset(0% 0% ${currentValue}% 0%)`;
+    }
     else if (prop === "magnetic") {
         const pullX = dx * currentIntensity * max;
         const pullY = dy * currentIntensity * max;
@@ -145,7 +150,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "", reach = 2, falloff = 2.4,
   duration = 0.2, resetDuration = 0.4, global = false, explicit = false, 
   maxTravel, onCalculate, onReset, ease, resetEase,
-  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
+  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
@@ -166,7 +171,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   const mergedBoundsStr = JSON.stringify({
     scale: config.scale ?? scale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
-    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard, repel: config.repel ?? repel, cipher: config.cipher ?? cipher
+    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard, repel: config.repel ?? repel, cipher: config.cipher ?? cipher, reveal: config.reveal ?? reveal
   });
   
   const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr), [mergedBoundsStr]);
@@ -198,7 +203,7 @@ export const Proximity: React.FC<ProximityProps> = ({
 
     const setInitialState = () => {
       const groupedProps = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, 1, 1, true, activeMaxTravel);
-      const flatProps: gsap.TweenVars = { willChange: "transform, filter, opacity, font-variation-settings" };
+      const flatProps: gsap.TweenVars = { willChange: "transform, filter, opacity, font-variation-settings, clip-path" };
       Object.values(groupedProps).forEach(v => Object.assign(flatProps, v));
       if (Object.keys(flatProps).length > 1 && items.length > 0) gsap.set(items, flatProps);
       if (flatProps.proxCipher !== undefined) {
