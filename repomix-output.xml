@@ -365,6 +365,35 @@ export default defineConfig(({ mode }) => {
 });
 </file>
 
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "gsap"],
+    "allowImportingTsExtensions": true,
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
 <file path="src/App.tsx">
 import React, { useState, useEffect } from 'react';
 import gsap from 'gsap';
@@ -539,7 +568,7 @@ export default function App() {
                     mode="scroll"
                     preset="reveal"
                     splitBy="word"
-                    textClassName="text-5xl font-serif italic leading-[1.1] tracking-tight origin-left"
+                    textClassName="text-5xl font-serif text-align-left italic leading-[1.1] tracking-tight origin-left"
                     config={{
                       reveal: [150, 0],
                       duration: 1.2,
@@ -811,35 +840,6 @@ export default function App() {
 }
 </file>
 
-<file path="tsconfig.json">
-{
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    "types": ["node", "gsap"],
-    "allowImportingTsExtensions": true,
-  },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
-}
-</file>
-
 <file path="src/index.css">
 @import "tailwindcss";
 
@@ -919,6 +919,31 @@ export default function App() {
 }
 </file>
 
+<file path=".gitignore">
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.npmrc
+*.tgz
+</file>
+
 <file path="src/lib/ProximityText.tsx">
 import React, { Fragment, useMemo, CSSProperties } from "react";
 import { Proximity, ProximityProps } from "./Proximity";
@@ -934,12 +959,14 @@ export interface ProximityTextProps extends ProximityProps {
   wordSpacing?: number;
   clipFix?: string;
   ignoreText?: (string | RegExp)[];
+  textAlign?: 'left' | 'center' | 'right' | 'justify'; 
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
 }
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
   text, splitBy = "letter", className = "", textClassName = "", fontFamily,
   lineHeight = 1.2, letterSpacing = 0, wordSpacing = 0.25, clipFix = "0.2em",
-  ignoreText, ...proximityProps
+  ignoreText, textAlign, justifyContent, style, ...proximityProps
 }) => {
   const globalConfig = useProximityConfig();
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
@@ -947,12 +974,12 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   const containerStyle = useMemo<CSSProperties>(() => {
     const base: CSSProperties = { 
       display: "flex", fontFamily: actualFontFamily, lineHeight: lineHeight,
-      letterSpacing: `${letterSpacing}em`, textAlign: "center", justifyContent: "center"
+      letterSpacing: `${letterSpacing}em`, textAlign: textAlign, justifyContent: justifyContent
     };
     if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
     if (splitBy === "line") return { ...base, display: "block" };
     return { ...base, flexWrap: "wrap" };
-  },[splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
+  },[splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing, textAlign, justifyContent]);
 
   const renderedContent = useMemo(() => {
     const getStyles = (ignored: boolean): CSSProperties => ({
@@ -1026,31 +1053,6 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
 };
 </file>
 
-<file path=".gitignore">
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-dist
-dist-ssr
-*.local
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.npmrc
-*.tgz
-</file>
-
 <file path="index.html">
 <!doctype html>
 <html lang="en">
@@ -1098,77 +1100,6 @@ dist-ssr
         <script type="module" src="/src/main.tsx"></script>
     </body>
 </html>
-</file>
-
-<file path="package.json">
-{
-  "name": "z-proximity-engine",
-  "version": "1.6.0",
-  "description": "High-performance proximity-based motion engine for React.",
-  "type": "module",
-  "main": "./dist/index.umd.js",
-  "module": "./dist/index.es.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.umd.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "react",
-    "gsap",
-    "animation",
-    "proximity",
-    "ui",
-    "motion",
-    "creative-coding"
-  ],
-  "author": "Yousef Zedan",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/YoussefZidan-1/ZProximityEngine"
-  },
-  "bugs": {
-    "url": "https://github.com/YoussefZidan-1/ZProximityEngine/issues"
-  },
-  "homepage": "https://z-proximity-engine.vercel.app/",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:lib": "vite build --mode lib",
-    "prepublishOnly": "npm run build:lib",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "peerDependencies": {
-    "@gsap/react": "^2.1.2",
-    "gsap": "^3.15.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.2.4",
-    "@types/node": "^25.6.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.0.0",
-    "lucide-react": "^1.11.0",
-    "split-type": "^0.3.4",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0",
-    "vite-plugin-dts": "^4.5.4"
-  },
-  "dependencies": {
-    "motion": "^12.38.0",
-    "tailwindcss": "^4.2.4"
-  }
-}
 </file>
 
 <file path="README.md">
@@ -1333,6 +1264,77 @@ Built by **Yousef Zedan**. This is an open-source project. If you are a GSAP wiz
 MIT © [Yousef Zedan](https://github.com/yousef-zedan)
 </file>
 
+<file path="package.json">
+{
+  "name": "z-proximity-engine",
+  "version": "2.0.0",
+  "description": "High-performance proximity-based motion engine for React.",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "react",
+    "gsap",
+    "animation",
+    "proximity",
+    "ui",
+    "motion",
+    "creative-coding"
+  ],
+  "author": "Yousef Zedan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YoussefZidan-1/ZProximityEngine"
+  },
+  "bugs": {
+    "url": "https://github.com/YoussefZidan-1/ZProximityEngine/issues"
+  },
+  "homepage": "https://z-proximity-engine.vercel.app/",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:lib": "vite build --mode lib",
+    "prepublishOnly": "npm run build:lib",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.15.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "lucide-react": "^1.11.0",
+    "split-type": "^0.3.4",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "dependencies": {
+    "motion": "^12.38.0",
+    "tailwindcss": "^4.2.4"
+  }
+}
+</file>
+
 <file path="src/lib/Proximity.tsx">
 import React, { useRef, useMemo, ReactNode, CSSProperties } from "react";
 import gsap from "gsap";
@@ -1359,6 +1361,7 @@ export interface ProximityScrollConfig {
   scroller?: string | Element | Window;
   scrub?: boolean | number;
   markers?: boolean;
+  once?: boolean;
 }
 
 export interface ProximityTimelineConfig {
