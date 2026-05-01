@@ -18,7 +18,7 @@ export interface ProximityTextProps extends ProximityProps {
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
   text, splitBy = "letter", className = "", textClassName = "", fontFamily,
-  lineHeight = 1.2, letterSpacing = 0, wordSpacing = 0.25, clipFix = "0.2em",
+  lineHeight = 1.2, letterSpacing = 0, wordSpacing = 0.5, clipFix = "0.2em",
   ignoreText, textAlign, justifyContent, style, ...proximityProps
 }) => {
   const globalConfig = useProximityConfig();

@@ -169,17 +169,22 @@ export default function App() {
                 <ProximityText 
                     text="Spatial awareness for the modern web."
                     mode="scroll"
-                    preset="reveal"
-                    splitBy="word"
+                    preset="reveal-opacity"
+                    splitBy="letter"
                     textClassName="text-5xl font-serif text-align-left italic leading-[1.1] tracking-tight origin-left"
+                    wordSpacing={0.5}
                     config={{
                       reveal: [150, 0],
                       duration: 1.2,
-                      ease: "heavy",
+                      resetDuration: 1.2,
+                      ease: "spring",
+                      resetEase: "spring",
                       scroll: {
                         scrub: false,
-                        once: true,
-                        start: "top 95%"
+                        once: false,
+                        start: "appear",
+                        end: "top 30%",
+                        markers: true
                       }
                     }}
                   />
