@@ -12,12 +12,14 @@ export interface ProximityTextProps extends ProximityProps {
   wordSpacing?: number;
   clipFix?: string;
   ignoreText?: (string | RegExp)[];
+  textAlign?: 'left' | 'center' | 'right' | 'justify'; 
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
 }
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
   text, splitBy = "letter", className = "", textClassName = "", fontFamily,
   lineHeight = 1.2, letterSpacing = 0, wordSpacing = 0.25, clipFix = "0.2em",
-  ignoreText, ...proximityProps
+  ignoreText, textAlign, justifyContent, style, ...proximityProps
 }) => {
   const globalConfig = useProximityConfig();
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
@@ -25,12 +27,12 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   const containerStyle = useMemo<CSSProperties>(() => {
     const base: CSSProperties = { 
       display: "flex", fontFamily: actualFontFamily, lineHeight: lineHeight,
-      letterSpacing: `${letterSpacing}em`, textAlign: "center", justifyContent: "center"
+      letterSpacing: `${letterSpacing}em`, textAlign: textAlign, justifyContent: justifyContent
     };
     if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
     if (splitBy === "line") return { ...base, display: "block" };
     return { ...base, flexWrap: "wrap" };
-  },[splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing]);
+  },[splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing, textAlign, justifyContent]);
 
   const renderedContent = useMemo(() => {
     const getStyles = (ignored: boolean): CSSProperties => ({

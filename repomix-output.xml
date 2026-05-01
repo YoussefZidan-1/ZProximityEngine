@@ -534,11 +534,23 @@ export default function App() {
                 <Badge className="mb-10 text-gray-400 dark:text-gray-500">01 / The Vision</Badge>
               </TextReveal>
               <div className="mb-8">
-                <TextReveal animateOnScroll={false} delay={0.2} duration={1.5}>
-                  <h2 className="text-5xl font-serif italic leading-[1.1] tracking-tight origin-left">
-                    Spatial awareness for the modern web.
-                  </h2>
-                </TextReveal>
+                <ProximityText 
+                    text="Spatial awareness for the modern web."
+                    mode="scroll"
+                    preset="reveal"
+                    splitBy="word"
+                    textClassName="text-5xl font-serif italic leading-[1.1] tracking-tight origin-left"
+                    config={{
+                      reveal: [150, 0],
+                      duration: 1.2,
+                      ease: "heavy",
+                      scroll: {
+                        scrub: false,
+                        once: true,
+                        start: "top 95%"
+                      }
+                    }}
+                  />
               </div>
               <TextReveal delay={0.6} duration={1}>
                 <p className="text-sm leading-relaxed mb-10 text-gray-600 dark:text-gray-400 italic">
@@ -1159,6 +1171,168 @@ dist-ssr
 }
 </file>
 
+<file path="README.md">
+# 🚀 ZProximity Engine v1.5.0
+
+### **The Physics of Attraction for the Modern Web.**
+
+`ZProximity` is a high-performance React motion engine designed to bridge the gap between complex mathematical physics and organic UI design. Create reactive, buttery-smooth interactions that respond to user proximity with a single declarative prop.
+
+[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) • [**📦 NPM Package**](https://www.npmjs.com/package/z-proximity-engine)
+
+---
+
+## 🎨 Why ZProximity?
+
+Most proximity effects require manual event listeners and heavy math that kills performance. **ZProximity** abstracts this into a performance-first architecture:
+
+- **🚀 GSAP Power:** Optimized with `quickSetter` to bypass React's render cycle for 120fps+ updates.
+- **🧠 Exponential Decay:** Uses advanced math (not linear distance) for an organic, "magnetic" feel.
+- **🎭 String-Based Presets:** Chain effects like `scale-blur-rotate-weight` instantly.
+- **🔡 Text-First:** Intelligent splitting for characters, words, or lines.
+- **⏳ Micro-Timing:** v1.5.0 introduces per-property timeline control.
+
+---
+
+## 📦 Installation
+
+```bash
+npm install z-proximity-engine gsap @gsap/react
+```
+
+---
+
+## 🚀 Quick Start
+
+### 1. The "Cipher" Reveal (Text)
+Transform static text into a reactive, scrambling hacker-style element.
+
+```jsx
+import { ProximityText } from 'z-proximity-engine';
+
+const MyComponent = () => (
+  <ProximityText 
+    text="TOP SECRET"
+    preset="cipher-scale-opacity"
+    config={{
+      cipher: [1, 0], // Scrambled at distance, clear on hover
+      reach: 1.5,
+      ease: "sharp"
+    }}
+  />
+);
+```
+
+### 2. The "Interactive Dock" (Elements)
+Apply physics to any group of React elements (cards, icons, buttons).
+
+```jsx
+import { Proximity } from 'z-proximity-engine';
+
+const Dock = () => (
+  <Proximity 
+    selector=".item" 
+    nearestPreset="scale-y" 
+    neighborPreset="repel"
+    config={{ y: [0, -50], scale: [1, 1.5] }}
+  >
+    <div className="item">🚀</div>
+    <div className="item">✨</div>
+    <div className="item">🔥</div>
+  </Proximity>
+);
+```
+
+---
+
+## 🛠 Features & Abilities
+
+### **1. The Preset Library**
+ZProximity comes with 13 built-in presets that can be combined using dash-syntax (e.g., `preset="scale-blur-tilt"`).
+
+| Category | Preset | Description |
+| :--- | :--- | :--- |
+| **Transform** | `scale`, `x`, `y`, `rotate`, `skew` | Standard 2D hardware-accelerated transforms. |
+| **Appearance** | `opacity`, `blur` | Smooth visibility and depth-of-field transitions. |
+| **Physics** | `magnetic`, `repel` | Elements pull toward or push away from the cursor. |
+| **3D Space** | `tilt`, `tiltCard` | Realistic 3D rotation following the pointer angle. |
+| **Specialist** | `weight`, `cipher` | Animates Variable Font weights or "Hacker" text scrambling. |
+
+---
+
+### **2. ⏳ Timeline Overrides (New)**
+You no longer have to use a global duration. Give every property its own timing for a staggered, high-end feel.
+
+```jsx
+config={{
+  timeline: {
+    blur: { duration: 0.1 },                // Instant response
+    scale: { duration: 0.8, ease: "bouncy" }, // Rubbery lag
+    rotate: { delay: 0.1, duration: 1.5 }    // Trailing effect
+  }
+}}
+```
+
+---
+
+### **3. 🎯 Split Focus Logic (New)**
+The engine can distinguish between the element you are touching and its neighbors.
+- **`nearestPreset`**: Applied to the element closest to the cursor.
+- **`neighborPreset`**: Applied to surrounding elements to create "space."
+
+---
+
+### **4. 🛡️ Movement Constraints**
+- **`maxTravel`**: Clamp the maximum pixels an element can move (essential for `magnetic` and `repel`).
+- **`explicit`**: If `true`, the effect only triggers when the mouse is physically inside the container’s bounding box.
+- **`global`**: If `true`, tracks the mouse across the entire window, regardless of where the container is.
+
+---
+
+### **5. 🔡 Advanced Text Control**
+`ProximityText` offers granular control over typography:
+- **`splitBy`**: Split by `"letter"`, `"word"`, or `"line"`.
+- **`ignoreText`**: An array of strings or Regex (e.g., `["&", /@/ ]`) that the engine will skip animating.
+- **`clipFix`**: Adds invisible padding to prevent "cutoff" edges on bouncy or scaled text.
+
+---
+
+## ⚙️ API Reference
+
+### `ProximityConfig`
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `reach` | `number` | `2` | Radius of influence (Higher = further reach). |
+| `falloff` | `number` | `2.4` | Power of the exponential decay (Curve smoothness). |
+| `duration` | `number` | `0.2` | Entry animation speed. |
+| `resetDuration`| `number` | `0.4` | "Return to home" animation speed. |
+| `ease` | `string` | `"power1.out"` | Custom easing (smooth, bouncy, elastic, jello, etc.). |
+| `maxTravel` | `number` | `Infinity` | Clamps the movement in pixels. |
+| `onCalculate` | `function` | `null` | The "Escape Hatch" for custom math mapping. |
+
+---
+
+## ♿ Accessibility & Performance
+- [x] **Reduced Motion:** Automatically detects `prefers-reduced-motion` and kills all animations.
+- [x] **Zero Layout Thrashing:** Uses `quickSetter` to modify transforms/filters on the GPU layer.
+- [x] **Smart Throttling:** Skips updates if the movement delta is below 0.001%.
+- [x] **Mutation Aware:** Automatically re-initializes if the DOM structure changes.
+
+---
+
+## 🤝 Contributing
+Built by **Yousef Zedan**. This is an open-source project. If you are a GSAP wizard or a Math enthusiast, your PRs are welcome!
+
+1. Star the repo ⭐
+2. Submit a PR with your creative additions.
+
+---
+
+## 📄 License
+MIT © [Yousef Zedan](https://github.com/yousef-zedan)
+</file>
+
 <file path="src/lib/Proximity.tsx">
 import React, { useRef, useMemo, ReactNode, CSSProperties } from "react";
 import gsap from "gsap";
@@ -1219,7 +1393,7 @@ export interface ProximityConfig {
 }
 
 export interface ProximityProps extends ProximityConfig {
-  children: ReactNode; selector?: string; config?: ProximityConfig;
+  children?: React.ReactNode; selector?: string; config?: ProximityConfig;
   ignoreSelectors?: string[]; excludeElements?: string; className?: string; style?: CSSProperties;
 }
 
@@ -1446,68 +1620,86 @@ export const Proximity: React.FC<ProximityProps> = ({
     resizeObserver.observe(container);
 
     if (activeMode === "scroll") {
-        const scrollerTarget = activeScrollConfig.scroller || window;
-        const parsedStart = parseScrollPosition(activeScrollConfig.start || activeScrollStart, true);
-        const parsedEnd = parseScrollPosition(activeScrollConfig.end || activeScrollEnd, false);
-        const focusPoint = getScrollFocusValue(activeScrollConfig.focus || activeScrollFocus);
-        const scrubValue = activeScrollConfig.scrub ?? activeDuration ?? true; 
-
-        const setupScroll = () => {
-            if (isCancelled) return;
-            
-            initItems();
-            scrollTriggers.forEach(t => t.kill());
-            scrollTriggers =[];
-
-            items.forEach((item, i) => {
-              scrollTriggers.push(ScrollTrigger.create({
-                trigger: item, 
-                scroller: scrollerTarget,
-                start: parsedStart, 
-                end: parsedEnd,
-                scrub: scrubValue,
-                markers: activeScrollConfig.markers || false,
-                onUpdate: (self) => {
-                  let normalizedDist = 0;
-                  if (focusPoint === 0) {
-                      normalizedDist = 1 - self.progress; 
-                  } else if (focusPoint === 1) {
-                      normalizedDist = self.progress; 
-                  } else {
-                      if (self.progress < focusPoint) {
-                          normalizedDist = self.progress / focusPoint;
-                      } else {
-                          normalizedDist = (1 - self.progress) / (1 - focusPoint);
+            const scrollerTarget = activeScrollConfig.scroller || window;
+            const parsedStart = parseScrollPosition(activeScrollConfig.start || activeScrollStart, true);
+            const parsedEnd = parseScrollPosition(activeScrollConfig.end || activeScrollEnd, false);
+            const focusPoint = getScrollFocusValue(activeScrollConfig.focus || activeScrollFocus);
+            const scrubValue = activeScrollConfig.scrub ?? activeDuration ?? true; 
+            const isOnce = activeScrollConfig.once ?? true;
+          
+            const setupScroll = () => {
+                if (isCancelled) return;
+                
+                initItems();
+                scrollTriggers.forEach(t => t.kill());
+                scrollTriggers = [];
+                
+                const isTriggerMode = activeScrollConfig.scrub === false;
+    
+                items.forEach((item, i) => {
+                  scrollTriggers.push(ScrollTrigger.create({
+                    trigger: item, 
+                    scroller: scrollerTarget,
+                    start: parsedStart, 
+                    end: parsedEnd,
+                    scrub: isTriggerMode ? false : scrubValue,
+                    once: isOnce,                              
+                    markers: activeScrollConfig.markers || false,
+                    
+                    // --- CASE 1: TRIGGER MODE (Plays like TextReveal) ---
+                    onEnter: () => {
+                      if (isTriggerMode) {
+                        const gp = calculatePresetValues(activePreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
+                        
+                        Object.keys(gp).forEach(key => {
+                          const tl = activeTimeline?.[key] || {};
+                          gsap.to(item, { 
+                            ...gp[key], 
+                            duration: activeDuration, 
+                            // STAGGER: This i * 0.1 makes words appear one by one
+                            delay: (tl.delay || 0) + (i * 0.1), 
+                            ease: targetEase, 
+                            overwrite: "auto", 
+                            onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                          });
+                        });
                       }
-                  }
-                  
-                  const intensity = Math.pow(normalizedDist, activeFalloff);
-                  const velocity = self.getVelocity(); 
-                  const simulatedDy = Math.min(Math.max(velocity * 0.05, -100), 100); 
-                  const simulatedDx = 0; 
-
-                  const gp = activeOnCalculate 
-                    ? { custom: activeOnCalculate(intensity, 0, simulatedDx, simulatedDy, true) } 
-                    : calculatePresetValues(activePreset, allPresetsStr, intensity, mergedBounds, simulatedDx, simulatedDy, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
-                  
-                  Object.keys(gp).forEach(key => {
-                      const tl = activeTimeline?.[key] || {};
-                      gsap.to(item, { 
-                          ...gp[key], 
-                          duration: tl.duration || 0.1, 
-                          delay: tl.delay || 0, 
-                          ease: EASE_MAP[tl.ease as string] || tl.ease || "none", 
-                          overwrite: "auto", 
-                          onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                    },
+    
+                    // --- CASE 2: SCRUB MODE (Follows the scrollbar) ---
+                    onUpdate: isTriggerMode ? undefined : (self) => {
+                      let normalizedDist = 0;
+                      if (focusPoint === 0) normalizedDist = 1 - self.progress; 
+                      else if (focusPoint === 1) normalizedDist = self.progress; 
+                      else normalizedDist = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
+                      
+                      const intensity = Math.pow(normalizedDist, activeFalloff);
+                      const velocity = self.getVelocity(); 
+                      const simulatedDy = Math.min(Math.max(velocity * 0.05, -100), 100); 
+    
+                      const gp = activeOnCalculate 
+                        ? { custom: activeOnCalculate(intensity, 0, 0, simulatedDy, true) } 
+                        : calculatePresetValues(activePreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
+                      
+                      Object.keys(gp).forEach(key => {
+                          const tl = activeTimeline?.[key] || {};
+                          gsap.to(item, { 
+                              ...gp[key], 
+                              duration: tl.duration || 0.1, 
+                              delay: tl.delay || 0, 
+                              ease: EASE_MAP[tl.ease as string] || tl.ease || "none", 
+                              overwrite: "auto", 
+                              onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                          });
                       });
-                  });
-                  setters[i].intensity(intensity.toFixed(3));
-                }
-              }));
-            });
-        };
-        if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
-    } else {
+                      setters[i].intensity(intensity.toFixed(3));
+                    }
+                  }));
+                });
+            };
+    
+            if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
+        } else {
         if (document.fonts) document.fonts.ready.then(initItems); else initItems();
         const actualSpread = activeReach * 10000; 
         const maxDistance = activeReach * 200;
@@ -1612,168 +1804,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     </div>
   );
 };
-</file>
-
-<file path="README.md">
-# 🚀 ZProximity Engine v1.5.0
-
-### **The Physics of Attraction for the Modern Web.**
-
-`ZProximity` is a high-performance React motion engine designed to bridge the gap between complex mathematical physics and organic UI design. Create reactive, buttery-smooth interactions that respond to user proximity with a single declarative prop.
-
-[**✨ View Live Playground**](https://z-proximity-engine.vercel.app/) • [**📦 NPM Package**](https://www.npmjs.com/package/z-proximity-engine)
-
----
-
-## 🎨 Why ZProximity?
-
-Most proximity effects require manual event listeners and heavy math that kills performance. **ZProximity** abstracts this into a performance-first architecture:
-
-- **🚀 GSAP Power:** Optimized with `quickSetter` to bypass React's render cycle for 120fps+ updates.
-- **🧠 Exponential Decay:** Uses advanced math (not linear distance) for an organic, "magnetic" feel.
-- **🎭 String-Based Presets:** Chain effects like `scale-blur-rotate-weight` instantly.
-- **🔡 Text-First:** Intelligent splitting for characters, words, or lines.
-- **⏳ Micro-Timing:** v1.5.0 introduces per-property timeline control.
-
----
-
-## 📦 Installation
-
-```bash
-npm install z-proximity-engine gsap @gsap/react
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. The "Cipher" Reveal (Text)
-Transform static text into a reactive, scrambling hacker-style element.
-
-```jsx
-import { ProximityText } from 'z-proximity-engine';
-
-const MyComponent = () => (
-  <ProximityText 
-    text="TOP SECRET"
-    preset="cipher-scale-opacity"
-    config={{
-      cipher: [1, 0], // Scrambled at distance, clear on hover
-      reach: 1.5,
-      ease: "sharp"
-    }}
-  />
-);
-```
-
-### 2. The "Interactive Dock" (Elements)
-Apply physics to any group of React elements (cards, icons, buttons).
-
-```jsx
-import { Proximity } from 'z-proximity-engine';
-
-const Dock = () => (
-  <Proximity 
-    selector=".item" 
-    nearestPreset="scale-y" 
-    neighborPreset="repel"
-    config={{ y: [0, -50], scale: [1, 1.5] }}
-  >
-    <div className="item">🚀</div>
-    <div className="item">✨</div>
-    <div className="item">🔥</div>
-  </Proximity>
-);
-```
-
----
-
-## 🛠 Features & Abilities
-
-### **1. The Preset Library**
-ZProximity comes with 13 built-in presets that can be combined using dash-syntax (e.g., `preset="scale-blur-tilt"`).
-
-| Category | Preset | Description |
-| :--- | :--- | :--- |
-| **Transform** | `scale`, `x`, `y`, `rotate`, `skew` | Standard 2D hardware-accelerated transforms. |
-| **Appearance** | `opacity`, `blur` | Smooth visibility and depth-of-field transitions. |
-| **Physics** | `magnetic`, `repel` | Elements pull toward or push away from the cursor. |
-| **3D Space** | `tilt`, `tiltCard` | Realistic 3D rotation following the pointer angle. |
-| **Specialist** | `weight`, `cipher` | Animates Variable Font weights or "Hacker" text scrambling. |
-
----
-
-### **2. ⏳ Timeline Overrides (New)**
-You no longer have to use a global duration. Give every property its own timing for a staggered, high-end feel.
-
-```jsx
-config={{
-  timeline: {
-    blur: { duration: 0.1 },                // Instant response
-    scale: { duration: 0.8, ease: "bouncy" }, // Rubbery lag
-    rotate: { delay: 0.1, duration: 1.5 }    // Trailing effect
-  }
-}}
-```
-
----
-
-### **3. 🎯 Split Focus Logic (New)**
-The engine can distinguish between the element you are touching and its neighbors.
-- **`nearestPreset`**: Applied to the element closest to the cursor.
-- **`neighborPreset`**: Applied to surrounding elements to create "space."
-
----
-
-### **4. 🛡️ Movement Constraints**
-- **`maxTravel`**: Clamp the maximum pixels an element can move (essential for `magnetic` and `repel`).
-- **`explicit`**: If `true`, the effect only triggers when the mouse is physically inside the container’s bounding box.
-- **`global`**: If `true`, tracks the mouse across the entire window, regardless of where the container is.
-
----
-
-### **5. 🔡 Advanced Text Control**
-`ProximityText` offers granular control over typography:
-- **`splitBy`**: Split by `"letter"`, `"word"`, or `"line"`.
-- **`ignoreText`**: An array of strings or Regex (e.g., `["&", /@/ ]`) that the engine will skip animating.
-- **`clipFix`**: Adds invisible padding to prevent "cutoff" edges on bouncy or scaled text.
-
----
-
-## ⚙️ API Reference
-
-### `ProximityConfig`
-
-| Prop | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `reach` | `number` | `2` | Radius of influence (Higher = further reach). |
-| `falloff` | `number` | `2.4` | Power of the exponential decay (Curve smoothness). |
-| `duration` | `number` | `0.2` | Entry animation speed. |
-| `resetDuration`| `number` | `0.4` | "Return to home" animation speed. |
-| `ease` | `string` | `"power1.out"` | Custom easing (smooth, bouncy, elastic, jello, etc.). |
-| `maxTravel` | `number` | `Infinity` | Clamps the movement in pixels. |
-| `onCalculate` | `function` | `null` | The "Escape Hatch" for custom math mapping. |
-
----
-
-## ♿ Accessibility & Performance
-- [x] **Reduced Motion:** Automatically detects `prefers-reduced-motion` and kills all animations.
-- [x] **Zero Layout Thrashing:** Uses `quickSetter` to modify transforms/filters on the GPU layer.
-- [x] **Smart Throttling:** Skips updates if the movement delta is below 0.001%.
-- [x] **Mutation Aware:** Automatically re-initializes if the DOM structure changes.
-
----
-
-## 🤝 Contributing
-Built by **Yousef Zedan**. This is an open-source project. If you are a GSAP wizard or a Math enthusiast, your PRs are welcome!
-
-1. Star the repo ⭐
-2. Submit a PR with your creative additions.
-
----
-
-## 📄 License
-MIT © [Yousef Zedan](https://github.com/yousef-zedan)
 </file>
 
 </files>

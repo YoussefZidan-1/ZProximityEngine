@@ -23,6 +23,7 @@ export interface ProximityScrollConfig {
   scroller?: string | Element | Window;
   scrub?: boolean | number;
   markers?: boolean;
+  once?: boolean;
 }
 
 export interface ProximityTimelineConfig {
@@ -57,7 +58,7 @@ export interface ProximityConfig {
 }
 
 export interface ProximityProps extends ProximityConfig {
-  children: ReactNode; selector?: string; config?: ProximityConfig;
+  children?: React.ReactNode; selector?: string; config?: ProximityConfig;
   ignoreSelectors?: string[]; excludeElements?: string; className?: string; style?: CSSProperties;
 }
 
@@ -284,68 +285,86 @@ export const Proximity: React.FC<ProximityProps> = ({
     resizeObserver.observe(container);
 
     if (activeMode === "scroll") {
-        const scrollerTarget = activeScrollConfig.scroller || window;
-        const parsedStart = parseScrollPosition(activeScrollConfig.start || activeScrollStart, true);
-        const parsedEnd = parseScrollPosition(activeScrollConfig.end || activeScrollEnd, false);
-        const focusPoint = getScrollFocusValue(activeScrollConfig.focus || activeScrollFocus);
-        const scrubValue = activeScrollConfig.scrub ?? activeDuration ?? true; 
-
-        const setupScroll = () => {
-            if (isCancelled) return;
-            
-            initItems();
-            scrollTriggers.forEach(t => t.kill());
-            scrollTriggers =[];
-
-            items.forEach((item, i) => {
-              scrollTriggers.push(ScrollTrigger.create({
-                trigger: item, 
-                scroller: scrollerTarget,
-                start: parsedStart, 
-                end: parsedEnd,
-                scrub: scrubValue,
-                markers: activeScrollConfig.markers || false,
-                onUpdate: (self) => {
-                  let normalizedDist = 0;
-                  if (focusPoint === 0) {
-                      normalizedDist = 1 - self.progress; 
-                  } else if (focusPoint === 1) {
-                      normalizedDist = self.progress; 
-                  } else {
-                      if (self.progress < focusPoint) {
-                          normalizedDist = self.progress / focusPoint;
-                      } else {
-                          normalizedDist = (1 - self.progress) / (1 - focusPoint);
+            const scrollerTarget = activeScrollConfig.scroller || window;
+            const parsedStart = parseScrollPosition(activeScrollConfig.start || activeScrollStart, true);
+            const parsedEnd = parseScrollPosition(activeScrollConfig.end || activeScrollEnd, false);
+            const focusPoint = getScrollFocusValue(activeScrollConfig.focus || activeScrollFocus);
+            const scrubValue = activeScrollConfig.scrub ?? activeDuration ?? true; 
+            const isOnce = activeScrollConfig.once ?? true;
+          
+            const setupScroll = () => {
+                if (isCancelled) return;
+                
+                initItems();
+                scrollTriggers.forEach(t => t.kill());
+                scrollTriggers = [];
+                
+                const isTriggerMode = activeScrollConfig.scrub === false;
+    
+                items.forEach((item, i) => {
+                  scrollTriggers.push(ScrollTrigger.create({
+                    trigger: item, 
+                    scroller: scrollerTarget,
+                    start: parsedStart, 
+                    end: parsedEnd,
+                    scrub: isTriggerMode ? false : scrubValue,
+                    once: isOnce,                              
+                    markers: activeScrollConfig.markers || false,
+                    
+                    // --- CASE 1: TRIGGER MODE (Plays like TextReveal) ---
+                    onEnter: () => {
+                      if (isTriggerMode) {
+                        const gp = calculatePresetValues(activePreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
+                        
+                        Object.keys(gp).forEach(key => {
+                          const tl = activeTimeline?.[key] || {};
+                          gsap.to(item, { 
+                            ...gp[key], 
+                            duration: activeDuration, 
+                            // STAGGER: This i * 0.1 makes words appear one by one
+                            delay: (tl.delay || 0) + (i * 0.1), 
+                            ease: targetEase, 
+                            overwrite: "auto", 
+                            onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                          });
+                        });
                       }
-                  }
-                  
-                  const intensity = Math.pow(normalizedDist, activeFalloff);
-                  const velocity = self.getVelocity(); 
-                  const simulatedDy = Math.min(Math.max(velocity * 0.05, -100), 100); 
-                  const simulatedDx = 0; 
-
-                  const gp = activeOnCalculate 
-                    ? { custom: activeOnCalculate(intensity, 0, simulatedDx, simulatedDy, true) } 
-                    : calculatePresetValues(activePreset, allPresetsStr, intensity, mergedBounds, simulatedDx, simulatedDy, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
-                  
-                  Object.keys(gp).forEach(key => {
-                      const tl = activeTimeline?.[key] || {};
-                      gsap.to(item, { 
-                          ...gp[key], 
-                          duration: tl.duration || 0.1, 
-                          delay: tl.delay || 0, 
-                          ease: EASE_MAP[tl.ease as string] || tl.ease || "none", 
-                          overwrite: "auto", 
-                          onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                    },
+    
+                    // --- CASE 2: SCRUB MODE (Follows the scrollbar) ---
+                    onUpdate: isTriggerMode ? undefined : (self) => {
+                      let normalizedDist = 0;
+                      if (focusPoint === 0) normalizedDist = 1 - self.progress; 
+                      else if (focusPoint === 1) normalizedDist = self.progress; 
+                      else normalizedDist = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
+                      
+                      const intensity = Math.pow(normalizedDist, activeFalloff);
+                      const velocity = self.getVelocity(); 
+                      const simulatedDy = Math.min(Math.max(velocity * 0.05, -100), 100); 
+    
+                      const gp = activeOnCalculate 
+                        ? { custom: activeOnCalculate(intensity, 0, 0, simulatedDy, true) } 
+                        : calculatePresetValues(activePreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
+                      
+                      Object.keys(gp).forEach(key => {
+                          const tl = activeTimeline?.[key] || {};
+                          gsap.to(item, { 
+                              ...gp[key], 
+                              duration: tl.duration || 0.1, 
+                              delay: tl.delay || 0, 
+                              ease: EASE_MAP[tl.ease as string] || tl.ease || "none", 
+                              overwrite: "auto", 
+                              onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                          });
                       });
-                  });
-                  setters[i].intensity(intensity.toFixed(3));
-                }
-              }));
-            });
-        };
-        if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
-    } else {
+                      setters[i].intensity(intensity.toFixed(3));
+                    }
+                  }));
+                });
+            };
+    
+            if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
+        } else {
         if (document.fonts) document.fonts.ready.then(initItems); else initItems();
         const actualSpread = activeReach * 10000; 
         const maxDistance = activeReach * 200;

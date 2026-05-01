@@ -166,11 +166,23 @@ export default function App() {
                 <Badge className="mb-10 text-gray-400 dark:text-gray-500">01 / The Vision</Badge>
               </TextReveal>
               <div className="mb-8">
-                <TextReveal animateOnScroll={false} delay={0.2} duration={1.5}>
-                  <h2 className="text-5xl font-serif italic leading-[1.1] tracking-tight origin-left">
-                    Spatial awareness for the modern web.
-                  </h2>
-                </TextReveal>
+                <ProximityText 
+                    text="Spatial awareness for the modern web."
+                    mode="scroll"
+                    preset="reveal"
+                    splitBy="word"
+                    textClassName="text-5xl font-serif text-align-left italic leading-[1.1] tracking-tight origin-left"
+                    config={{
+                      reveal: [150, 0],
+                      duration: 1.2,
+                      ease: "heavy",
+                      scroll: {
+                        scrub: false,
+                        once: true,
+                        start: "top 95%"
+                      }
+                    }}
+                  />
               </div>
               <TextReveal delay={0.6} duration={1}>
                 <p className="text-sm leading-relaxed mb-10 text-gray-600 dark:text-gray-400 italic">
