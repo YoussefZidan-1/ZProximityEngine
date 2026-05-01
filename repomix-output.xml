@@ -120,6 +120,251 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 </file>
 
+<file path="src/components/TextReveal.tsx">
+import React, { useRef, useMemo } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+import SplitType from 'split-type';
+
+gsap.registerPlugin(ScrollTrigger);
+
+export interface TextRevealProps {
+  children: React.ReactNode;
+  animateOnScroll?: boolean;
+  delay?: number;
+  duration?: number;
+  stagger?: number;
+  className?: string;
+  once?: boolean;
+}
+
+export default function TextReveal({
+  children,
+  animateOnScroll = true,
+  delay = 0,
+  duration = 1.2,
+  stagger = 0.1,
+  className = "",
+  once = true
+}: TextRevealProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!containerRef.current) return;
+
+    const initReveal = () => {
+      const container = containerRef.current;
+      if (!container) return null;
+
+      // Ensure content is visible
+      gsap.set(container, { visibility: 'visible' });
+
+      // Split text into words
+      const text = new SplitType(container, { 
+        types: 'words',
+        tagName: 'span'
+      });
+
+      if (!text.words || text.words.length === 0) {
+        gsap.to(container, { y: 0, duration: 0.5 });
+        return text;
+      }
+
+      // Wrap each word in a mask container
+      text.words.forEach(word => {
+        const wrapper = document.createElement('span');
+        wrapper.style.overflow = 'hidden';
+        wrapper.style.display = 'inline-block';
+        wrapper.style.verticalAlign = 'bottom';
+        wrapper.style.paddingBottom = '0.3em';
+        wrapper.style.marginBottom = '-0.3em';
+        wrapper.style.paddingRight = '0.2em';
+        wrapper.style.marginRight = '-0.2em';
+        wrapper.style.paddingLeft = '0.2em';
+        wrapper.style.marginLeft = '-0.2em';
+        wrapper.style.paddingTop = '0.1em';
+        wrapper.style.marginTop = '-0.1em';
+        wrapper.className = 'word-mask';
+        word.parentNode?.insertBefore(wrapper, word);
+        wrapper.appendChild(word);
+        
+        // Ensure the word itself is block/inline-block for transform
+        word.style.display = 'inline-block';
+      });
+
+      // Position words below the mask
+      gsap.set(text.words, { y: '150%' });
+
+      const tweenProps: gsap.TweenVars = {
+        y: '0%',
+        duration: duration,
+        stagger: stagger,
+        ease: 'power4.out',
+        delay: delay,
+      };
+
+      if (animateOnScroll) {
+        gsap.to(text.words, {
+          ...tweenProps,
+          scrollTrigger: {
+            trigger: container,
+            start: "top 95%",
+            once: once,
+          }
+        });
+      } else {
+        gsap.to(text.words, tweenProps);
+      }
+      return text;
+    };
+
+    // Small delay to ensure layout and fonts are ready
+    const timeoutId = setTimeout(() => {
+      let splitInstance = initReveal();
+      
+      const handleResize = () => {
+        if (splitInstance) splitInstance.revert();
+        splitInstance = initReveal();
+      };
+
+      window.addEventListener('resize', handleResize);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, { scope: containerRef, dependencies: [children, animateOnScroll, delay] });
+
+  return (
+    <div ref={containerRef} className={`relative ${className}`}>
+      {children}
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/index.ts">
+export * from './Proximity';
+export * from './ProximityText';
+export * from './ProximityContext';
+</file>
+
+<file path="src/lib/ProximityContext.tsx">
+import React, { createContext, useContext, ReactNode } from "react";
+
+export interface GlobalProximityConfig {
+  defaultFont?: string;
+}
+
+const ProximityContext = createContext<GlobalProximityConfig>({
+  defaultFont: "'Georama', sans-serif",
+});
+
+interface ProximityProviderProps {
+  children: ReactNode;
+  config?: GlobalProximityConfig;
+}
+
+export const ProximityProvider: React.FC<ProximityProviderProps> = ({ children, config }) => {
+  return (
+    <ProximityContext.Provider value={{ ...config }}>
+      {children}
+    </ProximityContext.Provider>
+  );
+};
+
+export const useProximityConfig = () => useContext(ProximityContext);
+</file>
+
+<file path="src/main.tsx">
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
+</file>
+
+<file path="vercel.json">
+{
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
+</file>
+
+<file path="vite.config.ts">
+import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import dts from 'vite-plugin-dts';
+import { resolve } from 'path';
+
+export default defineConfig(({ mode }) => {
+  const isLib = mode === 'lib';
+
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      isLib && dts({ 
+        insertTypesEntry: true, 
+        include: ['src/lib']
+      })
+    ].filter(Boolean),
+
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      ...(isLib ? {
+        // --- LIBRARY CONFIG ---
+        lib: {
+          entry: resolve(__dirname, 'src/lib/index.ts'),
+          name: 'ZProximityEngine',
+          formats: ['es', 'umd'],
+          fileName: (format) => `index.${format}.js`,
+        },
+        rollupOptions: {
+          external: ['react', 'react-dom', 'gsap', '@gsap/react'],
+          output: {
+            globals: {
+              react: 'React',
+              'react-dom': 'ReactDOM',
+              gsap: 'gsap',
+              '@gsap/react': 'gsapReact'
+            },
+          },
+        },
+      } : {
+      })
+    },
+  };
+});
+</file>
+
 <file path="src/App.tsx">
 import React, { useState, useEffect } from 'react';
 import gsap from 'gsap';
@@ -554,251 +799,6 @@ export default function App() {
 }
 </file>
 
-<file path="src/components/TextReveal.tsx">
-import React, { useRef, useMemo } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
-import SplitType from 'split-type';
-
-gsap.registerPlugin(ScrollTrigger);
-
-export interface TextRevealProps {
-  children: React.ReactNode;
-  animateOnScroll?: boolean;
-  delay?: number;
-  duration?: number;
-  stagger?: number;
-  className?: string;
-  once?: boolean;
-}
-
-export default function TextReveal({
-  children,
-  animateOnScroll = true,
-  delay = 0,
-  duration = 1.2,
-  stagger = 0.1,
-  className = "",
-  once = true
-}: TextRevealProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    if (!containerRef.current) return;
-
-    const initReveal = () => {
-      const container = containerRef.current;
-      if (!container) return null;
-
-      // Ensure content is visible
-      gsap.set(container, { visibility: 'visible' });
-
-      // Split text into words
-      const text = new SplitType(container, { 
-        types: 'words',
-        tagName: 'span'
-      });
-
-      if (!text.words || text.words.length === 0) {
-        gsap.to(container, { y: 0, duration: 0.5 });
-        return text;
-      }
-
-      // Wrap each word in a mask container
-      text.words.forEach(word => {
-        const wrapper = document.createElement('span');
-        wrapper.style.overflow = 'hidden';
-        wrapper.style.display = 'inline-block';
-        wrapper.style.verticalAlign = 'bottom';
-        wrapper.style.paddingBottom = '0.3em';
-        wrapper.style.marginBottom = '-0.3em';
-        wrapper.style.paddingRight = '0.2em';
-        wrapper.style.marginRight = '-0.2em';
-        wrapper.style.paddingLeft = '0.2em';
-        wrapper.style.marginLeft = '-0.2em';
-        wrapper.style.paddingTop = '0.1em';
-        wrapper.style.marginTop = '-0.1em';
-        wrapper.className = 'word-mask';
-        word.parentNode?.insertBefore(wrapper, word);
-        wrapper.appendChild(word);
-        
-        // Ensure the word itself is block/inline-block for transform
-        word.style.display = 'inline-block';
-      });
-
-      // Position words below the mask
-      gsap.set(text.words, { y: '150%' });
-
-      const tweenProps: gsap.TweenVars = {
-        y: '0%',
-        duration: duration,
-        stagger: stagger,
-        ease: 'power4.out',
-        delay: delay,
-      };
-
-      if (animateOnScroll) {
-        gsap.to(text.words, {
-          ...tweenProps,
-          scrollTrigger: {
-            trigger: container,
-            start: "top 95%",
-            once: once,
-          }
-        });
-      } else {
-        gsap.to(text.words, tweenProps);
-      }
-      return text;
-    };
-
-    // Small delay to ensure layout and fonts are ready
-    const timeoutId = setTimeout(() => {
-      let splitInstance = initReveal();
-      
-      const handleResize = () => {
-        if (splitInstance) splitInstance.revert();
-        splitInstance = initReveal();
-      };
-
-      window.addEventListener('resize', handleResize);
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, { scope: containerRef, dependencies: [children, animateOnScroll, delay] });
-
-  return (
-    <div ref={containerRef} className={`relative ${className}`}>
-      {children}
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/index.ts">
-export * from './Proximity';
-export * from './ProximityText';
-export * from './ProximityContext';
-</file>
-
-<file path="src/lib/ProximityContext.tsx">
-import React, { createContext, useContext, ReactNode } from "react";
-
-export interface GlobalProximityConfig {
-  defaultFont?: string;
-}
-
-const ProximityContext = createContext<GlobalProximityConfig>({
-  defaultFont: "'Georama', sans-serif",
-});
-
-interface ProximityProviderProps {
-  children: ReactNode;
-  config?: GlobalProximityConfig;
-}
-
-export const ProximityProvider: React.FC<ProximityProviderProps> = ({ children, config }) => {
-  return (
-    <ProximityContext.Provider value={{ ...config }}>
-      {children}
-    </ProximityContext.Provider>
-  );
-};
-
-export const useProximityConfig = () => useContext(ProximityContext);
-</file>
-
-<file path="src/main.tsx">
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
-</file>
-
-<file path="vercel.json">
-{
-  "cleanUrls": true,
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-      ]
-    },
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ]
-}
-</file>
-
-<file path="vite.config.ts">
-import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import dts from 'vite-plugin-dts';
-import { resolve } from 'path';
-
-export default defineConfig(({ mode }) => {
-  const isLib = mode === 'lib';
-
-  return {
-    plugins: [
-      react(),
-      tailwindcss(),
-      isLib && dts({ 
-        insertTypesEntry: true, 
-        include: ['src/lib']
-      })
-    ].filter(Boolean),
-
-    build: {
-      outDir: 'dist',
-      emptyOutDir: true,
-      ...(isLib ? {
-        // --- LIBRARY CONFIG ---
-        lib: {
-          entry: resolve(__dirname, 'src/lib/index.ts'),
-          name: 'ZProximityEngine',
-          formats: ['es', 'umd'],
-          fileName: (format) => `index.${format}.js`,
-        },
-        rollupOptions: {
-          external: ['react', 'react-dom', 'gsap', '@gsap/react'],
-          output: {
-            globals: {
-              react: 'React',
-              'react-dom': 'ReactDOM',
-              gsap: 'gsap',
-              '@gsap/react': 'gsapReact'
-            },
-          },
-        },
-      } : {
-      })
-    },
-  };
-});
-</file>
-
 <file path="tsconfig.json">
 {
   "compilerOptions": {
@@ -1088,6 +1088,77 @@ dist-ssr
 </html>
 </file>
 
+<file path="package.json">
+{
+  "name": "z-proximity-engine",
+  "version": "1.6.0",
+  "description": "High-performance proximity-based motion engine for React.",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "react",
+    "gsap",
+    "animation",
+    "proximity",
+    "ui",
+    "motion",
+    "creative-coding"
+  ],
+  "author": "Yousef Zedan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YoussefZidan-1/ZProximityEngine"
+  },
+  "bugs": {
+    "url": "https://github.com/YoussefZidan-1/ZProximityEngine/issues"
+  },
+  "homepage": "https://z-proximity-engine.vercel.app/",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:lib": "vite build --mode lib",
+    "prepublishOnly": "npm run build:lib",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.15.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.4",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "lucide-react": "^1.11.0",
+    "split-type": "^0.3.4",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "dependencies": {
+    "motion": "^12.38.0",
+    "tailwindcss": "^4.2.4"
+  }
+}
+</file>
+
 <file path="src/lib/Proximity.tsx">
 import React, { useRef, useMemo, ReactNode, CSSProperties } from "react";
 import gsap from "gsap";
@@ -1107,6 +1178,15 @@ export type ProximityPreset =
 
 export type ProximityMode = "pointer" | "scroll";
 
+export interface ProximityScrollConfig {
+  start?: "appear" | "top" | "center" | "middle" | "bottom" | (string & {});
+  end?: "top" | "center" | "middle" | "bottom" | "disappear" | (string & {});
+  focus?: "appear" | "top" | "center" | "middle" | "bottom" | "disappear" | number;
+  scroller?: string | Element | Window;
+  scrub?: boolean | number;
+  markers?: boolean;
+}
+
 export interface ProximityTimelineConfig {
   duration?: number;
   resetDuration?: number;
@@ -1118,9 +1198,10 @@ export interface ProximityTimelineConfig {
 
 export interface ProximityConfig {
   mode?: ProximityMode;
-  scrollFocus?: "top" | "center" | "middle" | "bottom" | number;
-  scrollStart?: string;
-  scrollEnd?: string;
+  scroll?: ProximityScrollConfig;
+  scrollFocus?: "top" | "center" | "middle" | "bottom" | number; 
+  scrollStart?: string; 
+  scrollEnd?: string; 
   reach?: number; falloff?: number; duration?: number; resetDuration?: number;
   global?: boolean; explicit?: boolean; 
   preset?: ProximityPreset; 
@@ -1132,7 +1213,7 @@ export interface ProximityConfig {
   scale?:[number, number]; y?:[number, number]; x?:[number, number]; opacity?:[number, number];
   blur?:[number, number]; rotate?:[number, number]; weight?:[number, number];
   skew?:[number, number]; magnetic?:[number, number]; tilt?:[number, number]; tiltCard?:[number, number]; repel?: [number, number];
-  cipher?:[number, number]; reveal?: [number, number];
+  cipher?:[number, number]; reveal?:[number, number];
   onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
   onReset?: () => gsap.TweenVars;
 }
@@ -1246,11 +1327,15 @@ export const Proximity: React.FC<ProximityProps> = ({
   duration = 0.2, resetDuration = 0.4, global = false, explicit = false, mode = "pointer", 
   scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top",
   maxTravel, onCalculate, onReset, ease, resetEase,
-  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal, ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
+  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal,
+  scroll, timeline, // <-- Now properly destructured
+  ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
 
+  // Ultimate DX: Fallback chain checks `config.prop` FIRST, then `prop` direct
+  const activeMode = config.mode ?? mode;
   const activeReach = config.reach ?? reach; 
   const activeFalloff = config.falloff ?? falloff;
   const activeDuration = config.duration ?? duration; 
@@ -1263,14 +1348,18 @@ export const Proximity: React.FC<ProximityProps> = ({
   const activeMaxTravel = config.maxTravel ?? maxTravel;
   const activeOnCalculate = config.onCalculate ?? onCalculate; 
   const activeOnReset = config.onReset ?? onReset;
-  const activeScrollFocus = config.scrollFocus ?? scrollFocus;
+  
   const activeScrollStart = config.scrollStart ?? scrollStart;
   const activeScrollEnd = config.scrollEnd ?? scrollEnd;
+  const activeScrollFocus = config.scrollFocus ?? scrollFocus;
 
   const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
 
-  const timelineConfigStr = JSON.stringify(config.timeline || {});
+  // Check config obj first, fallback to direct prop, then default {}
+  const timelineConfigStr = JSON.stringify(config.timeline ?? timeline ?? {});
+  const scrollConfigStr = JSON.stringify(config.scroll ?? scroll ?? {}); 
+  
   const mergedBoundsStr = JSON.stringify({
     scale: config.scale ?? scale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
@@ -1279,17 +1368,28 @@ export const Proximity: React.FC<ProximityProps> = ({
   
   const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr), [mergedBoundsStr]);
   const activeTimeline = useMemo(() => JSON.parse(timelineConfigStr),[timelineConfigStr]);
+  const activeScrollConfig = useMemo(() => JSON.parse(scrollConfigStr),[scrollConfigStr]);
+
   const allPresetsStr = useMemo(() => {
     return Array.from(new Set([activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap(p => p.split('-')))).join('-');
   },[activePreset, activeNearestPreset, activeNeighborPreset]);
 
+  const parseScrollPosition = (pos: string, isStart: boolean) => {
+    if (pos === "appear") return "top bottom";
+    if (pos === "disappear") return "bottom top";
+    const mapped: Record<string, string> = { top: "top top", center: "center center", middle: "center center", bottom: "bottom bottom" };
+    return mapped[pos] || pos || (isStart ? "top bottom" : "bottom top");
+  };
+
   const getScrollFocusValue = (focus: string | number) => {
     if (typeof focus === 'number') return focus / 100;
     switch (focus) {
-        case "top": return 0;
-        case "bottom": return 1;
+        case "appear": return 0;
+        case "top": return 0.25;
         case "middle":
         case "center": return 0.5;
+        case "bottom": return 0.75;
+        case "disappear": return 1;
         default: return 0.5;
     }
   };
@@ -1298,11 +1398,12 @@ export const Proximity: React.FC<ProximityProps> = ({
     const container = containerRef.current;
     if (!container || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    let isCancelled = false;
     let items: HTMLElement[] = []; 
     let centers: any[] = [];
-    let states: any[] = [];
-    let setters: any[] = [];
-    let scrollTriggers: any[] = [];
+    let states: any[] =[];
+    let setters: any[] =[];
+    let scrollTriggers: any[] =[];
 
     const updateCenters = () => {
       centers = items.map((item) => {
@@ -1340,24 +1441,65 @@ export const Proximity: React.FC<ProximityProps> = ({
       const hasNewElements = mutations.some(m => Array.from(m.addedNodes).some(n => n.nodeType === 1) || Array.from(m.removedNodes).some(n => n.nodeType === 1));
       if (hasNewElements) initItems();
     });
-    const resizeObserver = new ResizeObserver(() => { updateCenters(); if(mode === "scroll") ScrollTrigger.refresh(); });
+    const resizeObserver = new ResizeObserver(() => { updateCenters(); if(activeMode === "scroll") ScrollTrigger.refresh(); });
     mutationObserver.observe(container, { childList: true, subtree: true });
     resizeObserver.observe(container);
 
-    if (mode === "scroll") {
+    if (activeMode === "scroll") {
+        const scrollerTarget = activeScrollConfig.scroller || window;
+        const parsedStart = parseScrollPosition(activeScrollConfig.start || activeScrollStart, true);
+        const parsedEnd = parseScrollPosition(activeScrollConfig.end || activeScrollEnd, false);
+        const focusPoint = getScrollFocusValue(activeScrollConfig.focus || activeScrollFocus);
+        const scrubValue = activeScrollConfig.scrub ?? activeDuration ?? true; 
+
         const setupScroll = () => {
+            if (isCancelled) return;
+            
             initItems();
             scrollTriggers.forEach(t => t.kill());
-            const focusPoint = getScrollFocusValue(activeScrollFocus);
+            scrollTriggers =[];
+
             items.forEach((item, i) => {
               scrollTriggers.push(ScrollTrigger.create({
-                trigger: item, start: activeScrollStart, end: activeScrollEnd,
+                trigger: item, 
+                scroller: scrollerTarget,
+                start: parsedStart, 
+                end: parsedEnd,
+                scrub: scrubValue,
+                markers: activeScrollConfig.markers || false,
                 onUpdate: (self) => {
-                  const intensity = Math.pow(Math.max(0, 1 - Math.abs(self.progress - focusPoint)), activeFalloff);
-                  const gp = activeOnCalculate ? { custom: activeOnCalculate(intensity, 0, 0, 0, true) } : calculatePresetValues(activePreset, allPresetsStr, intensity, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
+                  let normalizedDist = 0;
+                  if (focusPoint === 0) {
+                      normalizedDist = 1 - self.progress; 
+                  } else if (focusPoint === 1) {
+                      normalizedDist = self.progress; 
+                  } else {
+                      if (self.progress < focusPoint) {
+                          normalizedDist = self.progress / focusPoint;
+                      } else {
+                          normalizedDist = (1 - self.progress) / (1 - focusPoint);
+                      }
+                  }
+                  
+                  const intensity = Math.pow(normalizedDist, activeFalloff);
+                  const velocity = self.getVelocity(); 
+                  const simulatedDy = Math.min(Math.max(velocity * 0.05, -100), 100); 
+                  const simulatedDx = 0; 
+
+                  const gp = activeOnCalculate 
+                    ? { custom: activeOnCalculate(intensity, 0, simulatedDx, simulatedDy, true) } 
+                    : calculatePresetValues(activePreset, allPresetsStr, intensity, mergedBounds, simulatedDx, simulatedDy, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel);
+                  
                   Object.keys(gp).forEach(key => {
                       const tl = activeTimeline?.[key] || {};
-                      gsap.to(item, { ...gp[key], duration: tl.duration || 0.1, delay: tl.delay || 0, ease: EASE_MAP[tl.ease as string] || tl.ease || "none", overwrite: "auto", onUpdate: key === "cipher" ? cipherUpdate : undefined });
+                      gsap.to(item, { 
+                          ...gp[key], 
+                          duration: tl.duration || 0.1, 
+                          delay: tl.delay || 0, 
+                          ease: EASE_MAP[tl.ease as string] || tl.ease || "none", 
+                          overwrite: "auto", 
+                          onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                      });
                   });
                   setters[i].intensity(intensity.toFixed(3));
                 }
@@ -1366,7 +1508,6 @@ export const Proximity: React.FC<ProximityProps> = ({
         };
         if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
     } else {
-        // --- POINTER MODE ---
         if (document.fonts) document.fonts.ready.then(initItems); else initItems();
         const actualSpread = activeReach * 10000; 
         const maxDistance = activeReach * 200;
@@ -1451,6 +1592,7 @@ export const Proximity: React.FC<ProximityProps> = ({
     }
 
     return () => {
+        isCancelled = true;
         mutationObserver.disconnect(); resizeObserver.disconnect();
         scrollTriggers.forEach(t => t.kill());
         gsap.killTweensOf(items);
@@ -1458,7 +1600,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   }, { 
     dependencies:[
       selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset, activeReach, activeFalloff, activeDuration, activeMaxTravel,
-      activeResetDuration, activeGlobal, activeExplicit, mergedBoundsStr, allPresetsStr, timelineConfigStr, ignoreSelectors.join(','), targetEase, targetResetEase, mode, 
+      activeResetDuration, activeGlobal, activeExplicit, mergedBoundsStr, allPresetsStr, timelineConfigStr, scrollConfigStr, ignoreSelectors.join(','), targetEase, targetResetEase, activeMode, 
       activeScrollFocus, activeScrollStart, activeScrollEnd
     ],
     scope: containerRef
@@ -1470,77 +1612,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     </div>
   );
 };
-</file>
-
-<file path="package.json">
-{
-  "name": "z-proximity-engine",
-  "version": "1.5.5",
-  "description": "High-performance proximity-based motion engine for React.",
-  "type": "module",
-  "main": "./dist/index.umd.js",
-  "module": "./dist/index.es.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.umd.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "react",
-    "gsap",
-    "animation",
-    "proximity",
-    "ui",
-    "motion",
-    "creative-coding"
-  ],
-  "author": "Yousef Zedan",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/YoussefZidan-1/ZProximityEngine"
-  },
-  "bugs": {
-    "url": "https://github.com/YoussefZidan-1/ZProximityEngine/issues"
-  },
-  "homepage": "https://z-proximity-engine.vercel.app/",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:lib": "vite build --mode lib",
-    "prepublishOnly": "npm run build:lib",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "peerDependencies": {
-    "@gsap/react": "^2.1.2",
-    "gsap": "^3.15.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.2.4",
-    "@types/node": "^25.6.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.0.0",
-    "lucide-react": "^1.11.0",
-    "split-type": "^0.3.4",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0",
-    "vite-plugin-dts": "^4.5.4"
-  },
-  "dependencies": {
-    "motion": "^12.38.0",
-    "tailwindcss": "^4.2.4"
-  }
-}
 </file>
 
 <file path="README.md">
