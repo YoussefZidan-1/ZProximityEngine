@@ -7,7 +7,6 @@ import {
   ArrowRight, 
   Terminal, 
   Layers,
-  ChevronRight,
   ShieldCheck,
   Moon,
   Sun
@@ -144,7 +143,7 @@ export default function App() {
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
               <TextReveal animateOnScroll={false} delay={0.5}>
-                <span className="text-[10px] font-mono opacity-50 hidden sm:block">v1.5.5 — BUILD STABLE</span>
+                <span className="text-[10px] font-mono opacity-50 hidden sm:block">v2.0.0 — BUILD STABLE</span>
               </TextReveal>
               <TextReveal animateOnScroll={false} delay={0.6}>
                 <div className="px-5 py-2.5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-mono flex items-center gap-2">
@@ -197,9 +196,9 @@ export default function App() {
               
               <div className="space-y-4 pt-10 border-t border-black/10 dark:border-white/10">
                 <div className="flex justify-between items-end text-right">
-                  <Badge>Engine Weight</Badge>
+                  <Badge>Core Engine Weight</Badge>
                   <TextReveal delay={0.8} stagger={0.05} duration={0.8}>
-                    <span className="text-3xl font-black tabular-nums">4.2KB</span>
+                    <span className="text-3xl font-black tabular-nums">2.96KB</span>
                   </TextReveal>
                 </div>
                 <div className="flex justify-between items-end text-right">

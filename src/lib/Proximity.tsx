@@ -8,7 +8,8 @@ gsap.registerPlugin(ScrollTrigger);
 export type EasePreset = 
   | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic" 
   | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost" 
-  | "expo" | "circus" | "glitch" | "slowmo" | "spring" | (string & {});
+  | "expo" | "circus" | "glitch" | "slowmo" | "spring" | "heavySpring"
+  | "anticipate" | "launch" | "drift" | "whiplash" | (string & {});
 
 export type ProximityPreset = 
   | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel" | "cipher" | "reveal"
@@ -73,7 +74,8 @@ const EASE_MAP: Record<string, string> = {
   bounce: "bounce.out", swing: "back.inOut(3)", vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
   robot: "steps(8)", ghost: "slow(0.6, 0.8, false)", expo: "expo.inOut", circus: "back.out(4)",
   glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })", slowmo: "slow(0.7, 0.7, false)",
-  spring: "elastic.out(1, 0.75)",
+  spring: "elastic.out(1, 0.75)", heavySpring: "elastic.out(1.2, 0.3)", anticipate: "back.inOut(2)", launch: "slow(0.3, 0.4, false)",
+  drift: "rough({ template: none, strength: 0.5, points: 10, taper: none, randomize: true, clamp: true })", whiplash: "back.out(4)"
 };
 
 const calculatePresetValues = (

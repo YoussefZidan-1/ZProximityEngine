@@ -394,6 +394,110 @@ export default defineConfig(({ mode }) => {
 }
 </file>
 
+<file path="src/index.css">
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Source Serif 4", serif;
+}
+
+@layer base {
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --border-color: #000000;
+    --grid-dot: #e5e7eb;
+  }
+
+  .dark {
+    --bg-color: #000000;
+    --text-color: #ffffff;
+    --border-color: #ffffff;
+    --grid-dot: #1f2937;
+  }
+
+  body {
+    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-700 ease-in-out;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  * {
+    @apply border-[var(--border-color)] transition-colors duration-700 ease-in-out;
+  }
+}
+
+.mono-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@layer utilities {
+  .smooth-strike {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-strike::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-strike:hover::after {
+    width: 100%;
+  }
+
+  .smooth-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-underline:hover::after {
+    width: 100%;
+  }
+}
+</file>
+
+<file path=".gitignore">
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.npmrc
+*.tgz
+</file>
+
 <file path="src/App.tsx">
 import React, { useState, useEffect } from 'react';
 import gsap from 'gsap';
@@ -566,20 +670,22 @@ export default function App() {
                 <ProximityText 
                     text="Spatial awareness for the modern web."
                     mode="scroll"
-                    preset="reveal-blur"
+                    preset="reveal-opacity"
                     splitBy="letter"
                     textClassName="text-5xl font-serif text-align-left italic leading-[1.1] tracking-tight origin-left"
                     wordSpacing={0.5}
                     config={{
                       reveal: [150, 0],
-                      blur: [5, 0],
                       duration: 1.2,
-                      ease: "heavy",
+                      resetDuration: 1.2,
+                      ease: "spring",
+                      resetEase: "spring",
                       scroll: {
                         scrub: false,
                         once: false,
                         start: "appear",
-                        end: "top 20%"
+                        end: "top 30%",
+                        markers: true
                       }
                     }}
                   />
@@ -843,108 +949,53 @@ export default function App() {
 }
 </file>
 
-<file path="src/index.css">
-@import "tailwindcss";
-
-@theme {
-  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-serif: "Source Serif 4", serif;
-}
-
-@layer base {
-  :root {
-    --bg-color: #ffffff;
-    --text-color: #000000;
-    --border-color: #000000;
-    --grid-dot: #e5e7eb;
-  }
-
-  .dark {
-    --bg-color: #000000;
-    --text-color: #ffffff;
-    --border-color: #ffffff;
-    --grid-dot: #1f2937;
-  }
-
-  body {
-    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-700 ease-in-out;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-  }
-
-  * {
-    @apply border-[var(--border-color)] transition-colors duration-700 ease-in-out;
-  }
-}
-
-.mono-grid {
-  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
-  background-size: 24px 24px;
-}
-
-@layer utilities {
-  .smooth-strike {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-strike::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 0;
-    height: 1.5px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-strike:hover::after {
-    width: 100%;
-  }
-
-  .smooth-underline {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-underline::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-underline:hover::after {
-    width: 100%;
-  }
-}
-</file>
-
-<file path=".gitignore">
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-dist
-dist-ssr
-*.local
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.npmrc
-*.tgz
+<file path="index.html">
+<!doctype html>
+<html lang="en">
+    <head>
+            <meta charset="UTF-8" />
+            <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            
+            <!-- Primary Meta Tags -->
+            <title>ZProximity Engine | Interactive Motion Design</title>
+            <meta name="title" content="ZProximity Engine | Interactive Motion Design" />
+            <meta name="description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
+            <meta name="author" content="Yousef Zedan" />
+            <meta name="keywords" content="React, GSAP, Animation, Proximity, Physics, Frontend, Engine, UI/UX" />
+    
+            <!-- Open Graph / Facebook -->
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
+            <meta property="og:title" content="ZProximity Engine | Interactive Motion Design" />
+            <meta property="og:description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
+            <!-- NOTE: You should upload a cool screenshot of your app to your public folder named 'og-image.jpg' -->
+            <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
+    
+            <!-- Twitter -->
+            <meta property="twitter:card" content="summary_large_image" />
+            <meta property="twitter:url" content="https://z-proximity-engine.vercel.app/" />
+            <meta property="twitter:title" content="ZProximity Engine | Interactive Motion Design" />
+            <meta property="twitter:description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
+            <meta property="twitter:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
+    
+            <!-- Fonts optimization -->
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+            <link
+                href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap"
+                rel="stylesheet"
+            />
+            
+            <style>
+                html {scroll-behavior: smooth;}
+            </style>
+        </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+    </body>
+</html>
 </file>
 
 <file path="src/lib/ProximityText.tsx">
@@ -1054,55 +1105,6 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
     </Proximity>
   );
 };
-</file>
-
-<file path="index.html">
-<!doctype html>
-<html lang="en">
-    <head>
-            <meta charset="UTF-8" />
-            <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            
-            <!-- Primary Meta Tags -->
-            <title>ZProximity Engine | Interactive Motion Design</title>
-            <meta name="title" content="ZProximity Engine | Interactive Motion Design" />
-            <meta name="description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
-            <meta name="author" content="Yousef Zedan" />
-            <meta name="keywords" content="React, GSAP, Animation, Proximity, Physics, Frontend, Engine, UI/UX" />
-    
-            <!-- Open Graph / Facebook -->
-            <meta property="og:type" content="website" />
-            <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
-            <meta property="og:title" content="ZProximity Engine | Interactive Motion Design" />
-            <meta property="og:description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
-            <!-- NOTE: You should upload a cool screenshot of your app to your public folder named 'og-image.jpg' -->
-            <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
-    
-            <!-- Twitter -->
-            <meta property="twitter:card" content="summary_large_image" />
-            <meta property="twitter:url" content="https://z-proximity-engine.vercel.app/" />
-            <meta property="twitter:title" content="ZProximity Engine | Interactive Motion Design" />
-            <meta property="twitter:description" content="A high-performance React engine for proximity-based interactive motion design. Create organic, reactive animations with a single prop." />
-            <meta property="twitter:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
-    
-            <!-- Fonts optimization -->
-            <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-            <link
-                href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap"
-                rel="stylesheet"
-            />
-            
-            <style>
-                html {scroll-behavior: smooth;}
-            </style>
-        </head>
-    <body>
-        <div id="root"></div>
-        <script type="module" src="/src/main.tsx"></script>
-    </body>
-</html>
 </file>
 
 <file path="README.md">
@@ -1349,7 +1351,8 @@ gsap.registerPlugin(ScrollTrigger);
 export type EasePreset = 
   | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic" 
   | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost" 
-  | "expo" | "circus" | "glitch" | "slowmo" | (string & {});
+  | "expo" | "circus" | "glitch" | "slowmo" | "spring" | "heavySpring"
+  | "anticipate" | "launch" | "drift" | "whiplash" | (string & {});
 
 export type ProximityPreset = 
   | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel" | "cipher" | "reveal"
@@ -1413,7 +1416,9 @@ const EASE_MAP: Record<string, string> = {
   bouncy: "back.out(1.7)", elastic: "elastic.out(1, 0.3)", jello: "elastic.out(1.5, 0.2)",
   bounce: "bounce.out", swing: "back.inOut(3)", vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
   robot: "steps(8)", ghost: "slow(0.6, 0.8, false)", expo: "expo.inOut", circus: "back.out(4)",
-  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })", slowmo: "slow(0.7, 0.7, false)"
+  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })", slowmo: "slow(0.7, 0.7, false)",
+  spring: "elastic.out(1, 0.75)", heavySpring: "elastic.out(1.2, 0.3)", anticipate: "back.inOut(2)", launch: "slow(0.3, 0.4, false)",
+  drift: "rough({ template: none, strength: 0.5, points: 10, taper: none, randomize: true, clamp: true })", whiplash: "back.out(4)"
 };
 
 const calculatePresetValues = (
