@@ -183,7 +183,6 @@ export default function App() {
                         once: false,
                         start: "appear",
                         end: "top 30%",
-                        markers: true
                       }
                     }}
                   />
