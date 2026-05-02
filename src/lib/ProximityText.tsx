@@ -23,16 +23,19 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
 }) => {
   const globalConfig = useProximityConfig();
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
+  
+  // Parity Logic: Check config object first, then direct prop
+  const activeSplitBy = proximityProps.config?.splitBy ?? splitBy;
 
   const containerStyle = useMemo<CSSProperties>(() => {
     const base: CSSProperties = { 
       display: "flex", fontFamily: actualFontFamily, lineHeight: lineHeight,
       letterSpacing: `${letterSpacing}em`, textAlign: textAlign, justifyContent: justifyContent
     };
-    if (splitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
-    if (splitBy === "line") return { ...base, display: "block" };
-    return { ...base, flexWrap: "wrap" };
-  },[splitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing, textAlign, justifyContent]);
+    if (activeSplitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
+    if (activeSplitBy === "line") return { ...base, display: "block" };
+    return { ...base, flexWrap: "wrap", rowGap: "0.1em" }; 
+  },[activeSplitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing, textAlign, justifyContent]);
 
   const renderedContent = useMemo(() => {
     const getStyles = (ignored: boolean): CSSProperties => ({
@@ -52,30 +55,30 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
 
     const lines = text.split("\n");
 
-    if (splitBy === "word") {
+    if (activeSplitBy === "word") {
       return lines.map((line, lineIdx) => (
         <Fragment key={`line-group-${lineIdx}`}>
           {line.split(" ").map((word, i) => {
             const isIgnored = checkIgnore(word);
             const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
             return (
-              <span key={`word-${lineIdx}-${i}`} aria-hidden="true" className={partClass} style={getStyles(isIgnored)}>
+              <span key={`word-${lineIdx}-${i}`} aria-hidden="true" className={partClass} style={{ ...getStyles(isIgnored), whiteSpace: "nowrap" }}>
                 {word}
               </span>
             );
           })}
-          {lineIdx < lines.length - 1 && <div style={{ width: "100%" }} />}
+          {lineIdx < lines.length - 1 && <div style={{ width: "100%", height: 0 }} />}
         </Fragment>
       ));
     }
 
-    if (splitBy === "line") {
+    if (activeSplitBy === "line") {
       return lines.map((line, i) => {
         const isIgnored = checkIgnore(line);
         const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
         return (
           <Fragment key={`line-${i}`}>
-            <span aria-hidden="true" className={partClass} style={getStyles(isIgnored)}>
+            <span aria-hidden="true" className={partClass} style={{ ...getStyles(isIgnored), whiteSpace: "nowrap" }}>
               {line}
             </span>
             {i < lines.length - 1 && <br />}
@@ -84,17 +87,38 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       });
     }
 
-    return [...text].map((char, i) => {
-      if (char === "\n") return <div key={`br-${i}`} style={{ width: "100%", height: 0 }} />;
-      const isIgnored = checkIgnore(char);
-      const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
+    return lines.map((line, lineIdx) => {
+      const words = line.split(" ");
       return (
-        <span aria-hidden="true" key={`char-${i}`} className={partClass} style={{ ...getStyles(isIgnored), whiteSpace: char === " " ? "pre" : "normal" }}>
-          {char}
-        </span>
+        <Fragment key={`line-${lineIdx}`}>
+          {words.map((word, wordIdx) => (
+            <span key={`word-wrapper-${lineIdx}-${wordIdx}`} style={{ display: "inline-block", whiteSpace: "nowrap" }}>
+              {[...word].map((char, charIdx) => {
+                const isIgnored = checkIgnore(char);
+                const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
+                return (
+                  <span 
+                    aria-hidden="true" 
+                    key={`char-${charIdx}`} 
+                    className={partClass} 
+                    style={{ ...getStyles(isIgnored) }}
+                  >
+                    {char}
+                  </span>
+                );
+              })}
+              {wordIdx < words.length - 1 && (
+                <span aria-hidden="true" className={textClassName} style={{ ...getStyles(true), whiteSpace: "pre" }}>
+                  {" "}
+                </span>
+              )}
+            </span>
+          ))}
+          {lineIdx < lines.length - 1 && <div style={{ width: "100%", height: 0 }} />}
+        </Fragment>
       );
     });
-  },[text, splitBy, textClassName, clipFix, ignoreText]);
+  },[text, activeSplitBy, textClassName, clipFix, ignoreText]);
 
   return (
     <Proximity selector=".prox-part" className={className} {...proximityProps}>
