@@ -181,7 +181,7 @@ export default function App() {
                   <Moon size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-100 dark:opacity-0" />
                   <Sun size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-0 dark:opacity-100" />
                 </button>
-                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.0.0 — BUILD STABLE</span>
+                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.2.0 — BUILD STABLE</span>
                 <div className="reveal-item px-5 py-2.5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-mono flex items-center gap-2">
                   <Terminal size={12} />
                   npm i z-proximity-engine
