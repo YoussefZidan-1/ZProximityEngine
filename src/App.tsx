@@ -285,7 +285,7 @@ export default function App() {
                   )}
                   <PresetCard preset="x" title="Horizontal" description="Linear X-axis translation based on proximity." config={{ x: [0, 50] }} viewMode={viewMode} splitMode={splitMode} />
                   <PresetCard preset="y" title="Vertical" description="Linear Y-axis translation based on proximity." config={{ y: [0, -50] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="repel" title="Repel" description="Active avoidance physics pushing away from pointer." config={{ repel: [0, 0.6] }} viewMode={viewMode} splitMode={splitMode} />
+                  <PresetCard preset="repel" title="Repel" description="Active avoidance physics pushing away from pointer." config={{ repel: [0, 0.4] }} viewMode={viewMode} splitMode={splitMode} />
                   <PresetCard preset="opacity" title="Opacity" description="Visibility modulation for ghosting and focus effects." config={{ opacity:[0.1, 1] }} viewMode={viewMode} splitMode={splitMode} />
                   <PresetCard preset="reveal" title="Hover Reveal" description="Starts hidden. Slides up and fades in seamlessly as the cursor approaches." viewMode={viewMode} splitMode={splitMode} />
                 </div>
