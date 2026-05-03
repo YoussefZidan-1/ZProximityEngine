@@ -736,7 +736,7 @@ export default function App() {
                   <Moon size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-100 dark:opacity-0" />
                   <Sun size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-0 dark:opacity-100" />
                 </button>
-                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.2.0 — BUILD STABLE</span>
+                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.3.0 — BUILD STABLE</span>
                 <div className="reveal-item px-5 py-2.5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-mono flex items-center gap-2">
                   <Terminal size={12} />
                   npm i z-proximity-engine
@@ -1091,7 +1091,7 @@ MIT © [Yousef Zedan](https://github.com/yousef-zedan)
 <file path="package.json">
 {
   "name": "z-proximity-engine",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -1175,7 +1175,7 @@ export type EasePreset =
   | "anticipate" | "launch" | "drift" | "whiplash" | (string & {});
 
 export type ProximityPreset = 
-  | "scale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel" | "cipher" | "reveal"
+  | "scale" | "flexScale" | "y" | "x" | "opacity" | "blur" | "rotate" | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel" | "cipher" | "reveal"
   | (string & {});
 
 export type ProximityMode = "pointer" | "scroll";
@@ -1251,7 +1251,7 @@ export interface ProximityConfig {
   splitBy?: "letter" | "word" | "line";
   targets?: ProximityTargetOverride[];
   timeline?: Record<string, ProximityTimelineConfig>;
-  scale?: [number, number]; y?: [number, number]; x?: [number, number]; opacity?: [number, number];
+  scale?: [number, number]; y?: [number, number]; x?: [number, number]; opacity?: [number, number]; flexScale?: [number, number];
   blur?: [number, number]; rotate?: [number, number]; weight?: [number, number];
   skew?: [number, number]; magnetic?: [number, number]; tilt?: [number, number]; tiltCard?: [number, number]; repel?: [number, number];
   cipher?: [number, number]; reveal?: [number, number];
@@ -1282,6 +1282,7 @@ interface ProxHTMLElement extends HTMLElement {
 interface ItemCenter {
   left: number; right: number; top: number; bottom: number;
   x: number; y: number; w: number; h: number;
+  ml: number; mr: number; mt: number; mb: number;
 }
 
 interface ItemState {
@@ -1300,7 +1301,7 @@ interface ContainerBounds {
 }
 
 const PRESET_DEFAULTS: Record<string, [number, number]> = {
-  scale:[1, 1.5], y: [0, -30], x:[0, 30], opacity: [0.2, 1], blur: [8, 0], rotate:[0, 90], weight: [100, 900],
+  scale:[1, 1.5], flexScale:[1, 1.5], y: [0, -30], x:[0, 30], opacity: [0.2, 1], blur: [8, 0], rotate:[0, 90], weight: [100, 900],
   skew:[0, 20], magnetic: [0, 0.1], tilt: [0, 30], tiltCard:[0, 15], repel: [0, 0.4], cipher:[0, 1], reveal:[110, 0]
 };
 
@@ -1316,7 +1317,7 @@ const EASE_MAP: Record<string, string> = {
 
 const calculatePresetValues = (
   activePresetString: string, allPresetsString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, 
-  dx: number, dy: number, w: number, h: number, isReset: boolean = false, maxTravel?: number | [number, number] | { x: number, y: number },
+  dx: number, dy: number, center: ItemCenter | undefined | null, isReset: boolean = false, maxTravel?: number | [number, number] | { x: number, y: number },
   lockAxis?: AxisLock, startStyles?: gsap.TweenVars, endStyles?: gsap.TweenVars
 ): Record<string, gsap.TweenVars> => {
   const activeProps = new Set(activePresetString.split("-").filter(Boolean));
@@ -1325,6 +1326,14 @@ const calculatePresetValues = (
 
   const lockX = lockAxis === "y"; // If locked to Y, nullify X physics
   const lockY = lockAxis === "x"; // If locked to X, nullify Y physics
+
+  // Safely extract center data or default to 0/1
+  const w = center?.w || 1;
+  const h = center?.h || 1;
+  const ml = center?.ml || 0;
+  const mr = center?.mr || 0;
+  const mt = center?.mt || 0;
+  const mb = center?.mb || 0;
 
   const clampTravel = (val: number, axis: 'x' | 'y') => {
     if (maxTravel == null) return val; 
@@ -1378,14 +1387,30 @@ const calculatePresetValues = (
         result[prop].y = useBase || lockY ? 0 : clampTravel(-(safeDy / distanceOffset) * pushFactor, 'y');
     }
     else if (prop === "tilt") {
-        result[prop].rotateX = useBase || lockY ? 0 : -dy * currentIntensity * (max / 10);
-        result[prop].rotateY = useBase || lockX ? 0 : dx * currentIntensity * (max / 10);
+        result[prop].rotationX = useBase || lockY ? 0 : -dy * currentIntensity * (max / 10);
+        result[prop].rotationY = useBase || lockX ? 0 : dx * currentIntensity * (max / 10);
         result[prop].transformPerspective = 1000;
     }
     else if (prop === "tiltCard") {
-        result[prop].rotateX = useBase || lockY ? 0 : (dy / (h / 2)) * -max * currentIntensity;
-        result[prop].rotateY = useBase || lockX ? 0 : (dx / (w / 2)) * max * currentIntensity;
+        result[prop].rotationX = useBase || lockY ? 0 : (dy / (h / 2)) * -max * currentIntensity;
+        result[prop].rotationY = useBase || lockX ? 0 : (dx / (w / 2)) * max * currentIntensity;
         result[prop].transformPerspective = 1000;
+    }
+    else if (prop === "scale") {
+        result[prop].scaleX = currentValue;
+        result[prop].scaleY = currentValue;
+    }
+    else if (prop === "flexScale") {
+        result[prop].scaleX = currentValue;
+        result[prop].scaleY = currentValue;
+        
+        const extraWidth = (w * (currentValue - 1)) / 2;
+        const extraHeight = (h * (currentValue - 1)) / 2;
+        
+        result[prop].marginLeft = ml + extraWidth;
+        result[prop].marginRight = mr + extraWidth;
+        result[prop].marginTop = mt + extraHeight;
+        result[prop].marginBottom = mb + extraHeight;
     }
     else result[prop][prop] = currentValue; 
   });
@@ -1438,7 +1463,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   duration = 0.2, resetDuration = 0.4, global = false, explicit = false, mode = "pointer", scrollerRef,
   scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top", lockAxis,
   maxTravel, onCalculate, onReset, ease, resetEase,
-  scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal,
+  scale, flexScale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal,
   scroll, timeline, delay, resetDelay, scrub, resetScrub, start, end, stagger, resetStagger, targets,
   ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
@@ -1485,7 +1510,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   const maxTravelStr = JSON.stringify(activeMaxTravel);
   
   const mergedBoundsStr = JSON.stringify({
-    scale: config.scale ?? scale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
+    scale: config.scale ?? scale, flexScale: config.flexScale ?? flexScale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
     skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard, repel: config.repel ?? repel, cipher: config.cipher ?? cipher, reveal: config.reveal ?? reveal
   });
@@ -1536,39 +1561,53 @@ export const Proximity: React.FC<ProximityProps> = ({
     let targetMap = new Map<ProxHTMLElement, ProximityTargetOverride>();
     let containerBounds: ContainerBounds | null = null;
 
-    const getBaseProps = (w = 1, h = 1) => {
+    const getBaseProps = (center?: ItemCenter) => {
         if (activeOnReset) return { custom: activeOnReset() };
         if (activeOnCalculate) return { custom: activeOnCalculate(0, Infinity, 0, 0, false) };
-        return calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, w, h, true, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
+        return calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, center, true, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
     };
 
     const updateCenters = () => {
-      if (!container) return;
-      const cRect = container.getBoundingClientRect();
-      const sx = scrollerRef?.current ? scrollerRef.current.scrollLeft : window.scrollX;
-      const sy = scrollerRef?.current ? scrollerRef.current.scrollTop : window.scrollY;
-
-      containerBounds = {
-          left: cRect.left + sx,
-          right: cRect.right + sx,
-          top: cRect.top + sy,
-          bottom: cRect.bottom + sy
-      };
-
-      centers = items.map((item) => {
-        const rect = item.getBoundingClientRect();
-        return {
-          left: rect.left + sx, 
-          right: rect.right + sx, 
-          top: rect.top + sy, 
-          bottom: rect.bottom + sy,
-          x: rect.left + sx + rect.width / 2, 
-          y: rect.top + sy + rect.height / 2, 
-          w: rect.width, 
-          h: rect.height
+          if (!container) return;
+          const cRect = container.getBoundingClientRect();
+          const sx = scrollerRef?.current ? scrollerRef.current.scrollLeft : window.scrollX;
+          const sy = scrollerRef?.current ? scrollerRef.current.scrollTop : window.scrollY;
+    
+          containerBounds = {
+              left: cRect.left + sx, right: cRect.right + sx, top: cRect.top + sy, bottom: cRect.bottom + sy
+          };
+    
+          centers = items.map((item) => {
+            // Cache and strip GSAP inline transforms/margins to read absolute resting CSS layout
+            const inlineState = {
+                ml: item.style.marginLeft, mr: item.style.marginRight,
+                mt: item.style.marginTop, mb: item.style.marginBottom,
+                tf: item.style.transform
+            };
+    
+            item.style.marginLeft = ""; item.style.marginRight = "";
+            item.style.marginTop = ""; item.style.marginBottom = "";
+            item.style.transform = "";
+    
+            const rect = item.getBoundingClientRect();
+            const comp = window.getComputedStyle(item);
+            
+            const centerData = {
+              left: rect.left + sx, right: rect.right + sx, top: rect.top + sy, bottom: rect.bottom + sy,
+              x: rect.left + sx + rect.width / 2, y: rect.top + sy + rect.height / 2, 
+              w: rect.width, h: rect.height,
+              ml: parseFloat(comp.marginLeft) || 0, mr: parseFloat(comp.marginRight) || 0,
+              mt: parseFloat(comp.marginTop) || 0, mb: parseFloat(comp.marginBottom) || 0,
+            };
+    
+            // Restore immediately - Browser rendering batches prevent flicker
+            item.style.marginLeft = inlineState.ml; item.style.marginRight = inlineState.mr;
+            item.style.marginTop = inlineState.mt; item.style.marginBottom = inlineState.mb;
+            item.style.transform = inlineState.tf;
+    
+            return centerData;
+          });
         };
-      });
-    };
 
     const initItems = () => {
       if (items.length > 0) gsap.killTweensOf(items);
@@ -1658,7 +1697,7 @@ export const Proximity: React.FC<ProximityProps> = ({
                         if (isTriggerMode) {
                             const gp = activeOnCalculate 
                                 ? { custom: activeOnCalculate(1, 0, 0, 0, true) }
-                                : calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w || 1, centers[i]?.h || 1, false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
+                                : calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i], false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
                             
                             Object.keys(gp).forEach(key => {
                                 const tl = activeTimeline?.[key] || {};
@@ -1676,7 +1715,7 @@ export const Proximity: React.FC<ProximityProps> = ({
         
                     onLeave: () => {
                         if (isTriggerMode && !isOnce) {
-                            const gp = getBaseProps(centers[i]?.w || 1, centers[i]?.h || 1);
+                            const gp = getBaseProps(centers[i]); 
                             Object.keys(gp).forEach(key => {
                                 const tl = activeTimeline?.[key] || {};
                                 gsap.to(item, { 
@@ -1695,7 +1734,7 @@ export const Proximity: React.FC<ProximityProps> = ({
                         if (isTriggerMode && !isOnce) {
                             const gp = activeOnCalculate 
                                 ? { custom: activeOnCalculate(1, 0, 0, 0, true) }
-                                : calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w || 1, centers[i]?.h || 1, false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
+                                : calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i], false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
                             Object.keys(gp).forEach(key => {
                                 const tl = activeTimeline?.[key] || {};
                                 gsap.to(item, { 
@@ -1712,7 +1751,7 @@ export const Proximity: React.FC<ProximityProps> = ({
         
                     onLeaveBack: () => {
                         if (isTriggerMode && !isOnce) {
-                            const gp = getBaseProps(centers[i]?.w || 1, centers[i]?.h || 1);
+                            const gp = getBaseProps(centers[i]); 
                             Object.keys(gp).forEach(key => {
                                 const tl = activeTimeline?.[key] || {};
                                 gsap.to(item, { 
@@ -1739,7 +1778,7 @@ export const Proximity: React.FC<ProximityProps> = ({
         
                         const gp = activeOnCalculate 
                         ? { custom: activeOnCalculate(intensity, 0, 0, simulatedDy, true) } 
-                        : calculatePresetValues(localPreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centers[i]?.w || 1, centers[i]?.h || 1, false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
+                        : calculatePresetValues(localPreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centers[i], false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
                         
                         Object.keys(gp).forEach(key => {
                             const tl = activeTimeline?.[key] || {};
@@ -1757,6 +1796,7 @@ export const Proximity: React.FC<ProximityProps> = ({
                                 Object.keys(vars).forEach(cssProp => {
                                     const qtKey = `${key}_${cssProp}`;
                                     if (!item._quickTos![qtKey]) {
+                                        gsap.killTweensOf(item, cssProp); 
                                         item._quickTos![qtKey] = gsap.quickTo(item, cssProp, { duration: dur, ease: ez });
                                     }
                                     item._quickTos![qtKey](vars[cssProp] as number);
@@ -1817,12 +1857,15 @@ export const Proximity: React.FC<ProximityProps> = ({
             
             if (d > maxDistance) {
               if (!states[i].isOutside) {
-                const gr = getBaseProps(centers[i].w, centers[i].h);
+                const gr = getBaseProps(centers[i]); 
                 gsap.to(item, { "--prox-intensity": 0, duration: activeResetDuration, delay: activeResetDelay, ease: targetResetEase, overwrite: "auto" });
                 Object.keys(gr).forEach(k => {
                   const tl = activeTimeline?.[k] || {};
                   gsap.to(item, { ...gr[k], duration: tl.resetDuration ?? activeResetDuration, delay: tl.resetDelay ?? activeResetDelay, ease: EASE_MAP[tl.resetEase as string] || tl.resetEase || targetResetEase, overwrite: "auto", onUpdate: k === "cipher" ? cipherUpdate : undefined });
                 });
+                
+                item._quickTos = {}; 
+            
                 states[i].isOutside = true; states[i].lastIntensity = 0;
               }
               return;
@@ -1841,7 +1884,7 @@ export const Proximity: React.FC<ProximityProps> = ({
               if (isNearest && nearestP) cp = cp ? `${cp}-${nearestP}` : nearestP; 
               else if (!isNearest && neighborP) cp = cp ? `${cp}-${neighborP}` : neighborP;
               
-              const gp = activeOnCalculate ? { custom: activeOnCalculate(intensity, d, dx, dy, isNearest) } : calculatePresetValues(cp as string, allPresetsStr, intensity, mergedBounds, dx, dy, centers[i].w, centers[i].h, false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
+              const gp = activeOnCalculate ? { custom: activeOnCalculate(intensity, d, dx, dy, isNearest) } : calculatePresetValues(cp as string, allPresetsStr, intensity, mergedBounds, dx, dy, centers[i], false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles);
               
               Object.keys(gp).forEach(k => {
                   const tl = activeTimeline?.[k] || {};
@@ -1859,6 +1902,7 @@ export const Proximity: React.FC<ProximityProps> = ({
                       Object.keys(vars).forEach(cssProp => {
                           const qtKey = `${k}_${cssProp}`;
                           if (!item._quickTos![qtKey]) {
+                              gsap.killTweensOf(item, cssProp);
                               item._quickTos![qtKey] = gsap.quickTo(item, cssProp, { duration: dur, ease: ez });
                           }
                           item._quickTos![qtKey](vars[cssProp] as number);
@@ -1880,9 +1924,10 @@ export const Proximity: React.FC<ProximityProps> = ({
         const handleReset = () => {
           pointer.current.active = false;
           items.forEach((item, i) => {
-            const gr = getBaseProps(centers[i]?.w || 1, centers[i]?.h || 1);
+            const gr = getBaseProps(centers[i]); 
             gsap.to(item, { "--prox-intensity": 0, duration: activeResetDuration, delay: activeResetDelay, ease: targetResetEase, overwrite: "auto" });
             Object.keys(gr).forEach(k => gsap.to(item, { ...gr[k], duration: activeResetDuration, delay: activeResetDelay, ease: targetResetEase, overwrite: "auto", onUpdate: k === "cipher" ? cipherUpdate : undefined }));
+            item._quickTos = {};
           });
           states.forEach(s => { s.isOutside = true; s.lastIntensity = 0; });
         };
