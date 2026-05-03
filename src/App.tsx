@@ -267,7 +267,7 @@ export default function App() {
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-10">Hover elements below to simulate spatial reaction.</p>
                 
                 <div className="grid grid-cols-2 gap-px bg-[var(--border-color)] border border-[var(--border-color)] overflow-hidden shadow-2xl">
-                  <PresetCard preset="scale" title="Fluid Scale" description="Size adjustment based on pointer Euclidean distance." viewMode={viewMode} splitMode={splitMode} />
+                  <PresetCard preset={viewMode === 'elements' ? 'flexScale' : 'scale'} title="Fluid Scale" description="Size adjustment based on pointer Euclidean distance." viewMode={viewMode} splitMode={splitMode} />
                   <PresetCard preset="blur" title="Deep Blur" description="Gaussian focus shift driving depth-of-field effects." config={{ blur:[12, 0] }} viewMode={viewMode} splitMode={splitMode} />
                   <PresetCard preset="magnetic" title="Magnetic" description="Inverse square attraction to pointer origin." config={{ magnetic:[0, 0.4], reach: 1.5 }} viewMode={viewMode} splitMode={splitMode} />
                   <PresetCard preset="tilt" title="3D Tilt" description="Quaternion-based rotation on the local X/Y axes." config={{ tilt: [0, 40] }} viewMode={viewMode} splitMode={splitMode} />
