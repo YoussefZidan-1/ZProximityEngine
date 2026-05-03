@@ -304,6 +304,10 @@ export default function App() {
                         scale: 1 + intensity * 0.05,
                         rotate: intensity * 2,
                         filter: `blur(${10 - intensity * 10}px)`
+                    })}
+                    onReset={() => ({
+                      rotate: 0,
+                      filter: `blur(0px)`
                       })}
                       reach={1.2}
                       className="flex flex-col items-center justify-center gap-4 py-8"

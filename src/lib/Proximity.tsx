@@ -43,43 +43,90 @@ export interface ProximityTargetOverride extends ProximityConfig {
 }
 
 export interface ProximityConfig {
+  /** Switches engine between tracking cursor vs tracking view scroll. */
   mode?: ProximityMode;
+  /** Custom scroll logic for scroll-driven animations */
   scroll?: ProximityScrollConfig;
   scrollFocus?: "top" | "center" | "middle" | "bottom" | number; 
   scrollStart?: string; 
   scrollEnd?: string; 
-  reach?: number; falloff?: number; duration?: number; resetDuration?: number;
-  delay?: number; resetDelay?: number;
+  /** Euclidean radius of the mouse tracking influence. Default is 2. */
+  reach?: number; 
+  /** Power curve of the proximity ease. Default is 2.4. */
+  falloff?: number; 
+  /** Physics entry mapping duration. Default is 0.2. */
+  duration?: number; 
+  /** Physics reset mapping duration when pointer leaves bounds. Default is 0.4. */
+  resetDuration?: number;
+  delay?: number; 
+  resetDelay?: number;
   stagger?: number | gsap.StaggerVars;
   resetStagger?: number | gsap.StaggerVars;
-  scrub?: boolean | number; resetScrub?: boolean | number;
+  scrub?: boolean | number; 
+  resetScrub?: boolean | number;
   start?: Record<string, any>;
   end?: Record<string, any>;
-  global?: boolean; explicit?: boolean; 
+  /** Track cursor constantly throughout document, not just over container. */
+  global?: boolean; 
+  /** Demands strict interaction (bounding box true hover) to activate element. */
+  explicit?: boolean; 
+  /** Chain multiple string presets by dash (e.g., 'blur-scale-rotate') */
   preset?: ProximityPreset; 
+  /** Separate physics preset for the item closest to cursor */
   nearestPreset?: ProximityPreset; 
+  /** Separate physics preset for items neighboring the targeted item */
   neighborPreset?: ProximityPreset;
-  ease?: EasePreset; resetEase?: EasePreset;
-  maxTravel?: number;
+  /** Motion easing type. Auto-completes to standard motion types. */
+  ease?: EasePreset; 
+  resetEase?: EasePreset;
+  /** Clamp physical bounding movement. Accepts[x, y], {x, y}, or global number limit. */
+  maxTravel?: number | [number, number] | { x: number, y: number };
   splitBy?: "letter" | "word" | "line";
   targets?: ProximityTargetOverride[];
   timeline?: Record<string, ProximityTimelineConfig>;
-  scale?:[number, number]; y?:[number, number]; x?:[number, number]; opacity?:[number, number];
-  blur?:[number, number]; rotate?:[number, number]; weight?:[number, number];
-  skew?:[number, number]; magnetic?:[number, number]; tilt?:[number, number]; tiltCard?:[number, number]; repel?: [number, number];
+  scale?:[number, number]; y?: [number, number]; x?:[number, number]; opacity?: [number, number];
+  blur?: [number, number]; rotate?:[number, number]; weight?: [number, number];
+  skew?: [number, number]; magnetic?: [number, number]; tilt?:[number, number]; tiltCard?:[number, number]; repel?: [number, number];
   cipher?:[number, number]; reveal?:[number, number];
+  /** Escape hatch function to write your own return-based custom physical mapping variables per frame */
   onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
   onReset?: () => gsap.TweenVars;
 }
 
 export interface ProximityProps extends ProximityConfig {
-  children?: React.ReactNode; selector?: string; config?: ProximityConfig;
-  ignoreSelectors?: string[]; excludeElements?: string; className?: string; style?: CSSProperties;
+  children?: React.ReactNode; 
+  selector?: string; 
+  config?: ProximityConfig;
+  ignoreSelectors?: string[]; 
+  excludeElements?: string; 
+  className?: string; 
+  style?: CSSProperties;
+  /** Optional scrolling container ref to explicitly map context against (fixes nested modals/sidebars) */
+  scrollerRef?: React.RefObject<HTMLElement | null>;
 }
 
-const PRESET_DEFAULTS: Record<string, [number, number]> = {
-  scale:[1, 1.5], y: [0, -30], x:[0, 30], opacity:[0.2, 1], blur: [8, 0], rotate:[0, 90], weight:[100, 900],
-  skew:[0, 20], magnetic:[0, 0.1], tilt:[0, 30], tiltCard:[0, 15], repel: [0, 0.4], cipher: [0, 1], reveal:[110, 0]
+// Internal TS strict types
+interface ProxHTMLElement extends HTMLElement {
+  proxCipher?: number;
+  _lastCipherUpdate?: number;
+}
+
+interface ItemCenter {
+  left: number; right: number; top: number; bottom: number;
+  x: number; y: number; w: number; h: number;
+}
+
+interface ItemState {
+  isOutside: boolean; lastIntensity: number; lastDx: number; lastDy: number;
+}
+
+interface ContainerBounds {
+  left: number; right: number; top: number; bottom: number;
+}
+
+const PRESET_DEFAULTS: Record<string,[number, number]> = {
+  scale: [1, 1.5], y:[0, -30], x: [0, 30], opacity:[0.2, 1], blur:[8, 0], rotate: [0, 90], weight:[100, 900],
+  skew: [0, 20], magnetic:[0, 0.1], tilt:[0, 30], tiltCard: [0, 15], repel:[0, 0.4], cipher: [0, 1], reveal:[110, 0]
 };
 
 const EASE_MAP: Record<string, string> = {
@@ -93,17 +140,23 @@ const EASE_MAP: Record<string, string> = {
 };
 
 const calculatePresetValues = (
-  activePresetString: string, allPresetsString: string, intensity: number, userConfig: Record<string, [number, number] | undefined>, 
-  dx: number, dy: number, w: number, h: number, isReset: boolean = false, maxTravel?: number,
+  activePresetString: string, allPresetsString: string, intensity: number, userConfig: Record<string,[number, number] | undefined>, 
+  dx: number, dy: number, w: number, h: number, isReset: boolean = false, maxTravel?: number | [number, number] | { x: number, y: number },
   startStyles?: Record<string, any>, endStyles?: Record<string, any>
 ): Record<string, gsap.TweenVars> => {
   const activeProps = new Set(activePresetString.split("-").filter(Boolean));
   const allProps = Array.from(new Set(allPresetsString.split("-").filter(Boolean)));
   const result: Record<string, gsap.TweenVars> = {};
 
-  const clampTravel = (val: number) => {
-    if (maxTravel === undefined || maxTravel === Infinity) return val;
-    return Math.max(-maxTravel, Math.min(val, maxTravel));
+  const clampTravel = (val: number, axis: 'x' | 'y') => {
+    if (maxTravel == null) return val; 
+    let limit = Infinity;
+    if (typeof maxTravel === 'number') limit = maxTravel;
+    else if (Array.isArray(maxTravel)) limit = axis === 'x' ? maxTravel[0] : maxTravel[1];
+    else if (typeof maxTravel === 'object') limit = axis === 'x' ? (maxTravel as any).x : (maxTravel as any).y;
+    
+    if (limit == null || limit === Infinity) return val;
+    return Math.max(-limit, Math.min(val, limit));
   };
 
   allProps.forEach((prop) => {
@@ -112,9 +165,11 @@ const calculatePresetValues = (
     const isActive = activeProps.has(prop);
     const useBase = isReset || !isActive;
     const currentIntensity = useBase ? 0 : intensity;
-    const[base, max] = bounds;
+    const [base, max] = bounds;
     const currentValue = base + (max - base) * currentIntensity;
+    
     result[prop] = {}; 
+    
     if (prop === "blur") result[prop].filter = `blur(${currentValue}px)`;
     else if (prop === "weight") {
       const weightVal = Math.round(currentValue);
@@ -131,24 +186,29 @@ const calculatePresetValues = (
     else if (prop === "magnetic") {
         const pullX = dx * currentIntensity * max;
         const pullY = dy * currentIntensity * max;
-        result[prop].x = useBase ? 0 : clampTravel(pullX);
-        result[prop].y = useBase ? 0 : clampTravel(pullY);
-        result[prop].rotation = useBase ? 0 : clampTravel(pullX) * 0.05;
+        result[prop].x = useBase ? 0 : clampTravel(pullX, 'x');
+        result[prop].y = useBase ? 0 : clampTravel(pullY, 'y');
+        result[prop].rotation = useBase ? 0 : pullX * 0.05; // decoupled from clamp limit
     }
     else if (prop === "repel") {
-        const pushX = -dx * currentIntensity * max;
-        const pushY = -dy * currentIntensity * max;
-        result[prop].x = useBase ? 0 : clampTravel(pushX);
-        result[prop].y = useBase ? 0 : clampTravel(pushY);
+        // Optimized: Normalized vectors ensure a perfect 360-degree push bubble
+        const distanceOffset = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+        const safeDx = dx === 0 ? 0.1 : dx; // Prevent dead-center snap
+        const safeDy = dy === 0 ? 0.1 : dy;
+        const pushFactor = (max * 100 * currentIntensity); 
+        
+        result[prop].x = useBase ? 0 : clampTravel(-(safeDx / distanceOffset) * pushFactor, 'x');
+        result[prop].y = useBase ? 0 : clampTravel(-(safeDy / distanceOffset) * pushFactor, 'y');
     }
     else if (prop === "tilt") {
-        result[prop].rotateX = useBase ? 0 : clampTravel(-dy * currentIntensity * (max / 10));
-        result[prop].rotateY = useBase ? 0 : clampTravel(dx * currentIntensity * (max / 10));
+        // Decoupled from clamp limit for smooth 3D depths
+        result[prop].rotateX = useBase ? 0 : -dy * currentIntensity * (max / 10);
+        result[prop].rotateY = useBase ? 0 : dx * currentIntensity * (max / 10);
         result[prop].transformPerspective = 1000;
     }
     else if (prop === "tiltCard") {
-        result[prop].rotateX = useBase ? 0 : clampTravel((dy / (h / 2)) * -max * currentIntensity);
-        result[prop].rotateY = useBase ? 0 : clampTravel((dx / (w / 2)) * max * currentIntensity);
+        result[prop].rotateX = useBase ? 0 : (dy / (h / 2)) * -max * currentIntensity;
+        result[prop].rotateY = useBase ? 0 : (dx / (w / 2)) * max * currentIntensity;
         result[prop].transformPerspective = 1000;
     }
     else result[prop][prop] = currentValue; 
@@ -174,8 +234,8 @@ const calculatePresetValues = (
   return result;
 };
 
-function cipherUpdate(this: any) {
-  const item = this.targets()[0];
+function cipherUpdate(this: gsap.core.Tween) {
+  const item = this.targets()[0] as ProxHTMLElement;
   if (!item || item.children.length > 0) return; 
   const val = item.proxCipher;
   if (val === undefined) return;
@@ -199,7 +259,7 @@ function cipherUpdate(this: any) {
 
 export const Proximity: React.FC<ProximityProps> = ({
   children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "", reach = 2, falloff = 2.4,
-  duration = 0.2, resetDuration = 0.4, global = false, explicit = false, mode = "pointer", 
+  duration = 0.2, resetDuration = 0.4, global = false, explicit = false, mode = "pointer", scrollerRef,
   scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top",
   maxTravel, onCalculate, onReset, ease, resetEase,
   scale, y, x, opacity, blur, rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal,
@@ -224,13 +284,12 @@ export const Proximity: React.FC<ProximityProps> = ({
   const activeMaxTravel = config.maxTravel ?? maxTravel;
   const activeOnCalculate = config.onCalculate ?? onCalculate; 
   const activeOnReset = config.onReset ?? onReset;
-  const activeTargets = config.targets ?? targets ?? [];
+  const activeTargets = config.targets ?? targets ??[];
   
   const activeScrollStart = config.scrollStart ?? scrollStart;
   const activeScrollEnd = config.scrollEnd ?? scrollEnd;
   const activeScrollFocus = config.scrollFocus ?? scrollFocus;
 
-  // RE-ENABLE DEFAULTS: Reveal = 0.1, Hide = 0
   const activeStagger = config.scroll?.stagger ?? config.stagger ?? stagger ?? 0.1;
   const activeResetStagger = config.scroll?.resetStagger ?? config.resetStagger ?? resetStagger ?? 0;
   
@@ -245,6 +304,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   const startStylesStr = JSON.stringify(config.start ?? start ?? {});
   const endStylesStr = JSON.stringify(config.end ?? end ?? {});
   const targetsStr = JSON.stringify(activeTargets);
+  const maxTravelStr = JSON.stringify(activeMaxTravel);
   
   const mergedBoundsStr = JSON.stringify({
     scale: config.scale ?? scale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
@@ -255,12 +315,13 @@ export const Proximity: React.FC<ProximityProps> = ({
   const mergedBounds = useMemo(() => JSON.parse(mergedBoundsStr),[mergedBoundsStr]);
   const activeTimeline = useMemo(() => JSON.parse(timelineConfigStr),[timelineConfigStr]);
   const activeScrollConfig = useMemo(() => JSON.parse(scrollConfigStr),[scrollConfigStr]);
-  const activeStartStyles = useMemo(() => JSON.parse(startStylesStr), [startStylesStr]);
-  const activeEndStyles = useMemo(() => JSON.parse(endStylesStr), [endStylesStr]);
+  const activeStartStyles = useMemo(() => JSON.parse(startStylesStr),[startStylesStr]);
+  const activeEndStyles = useMemo(() => JSON.parse(endStylesStr),[endStylesStr]);
+  const parsedMaxTravel = useMemo(() => JSON.parse(maxTravelStr ?? "null"), [maxTravelStr]);
 
   const allPresetsStr = useMemo(() => {
-    const basePresets = [activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap(p => p.split('-'));
-    const targetPresets = activeTargets.flatMap(t => [t.preset, t.nearestPreset, t.neighborPreset]).filter(Boolean).flatMap(p => (p as string).split('-'));
+    const basePresets =[activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap(p => p.split('-'));
+    const targetPresets = activeTargets.flatMap(t =>[t.preset, t.nearestPreset, t.neighborPreset]).filter(Boolean).flatMap(p => (p as string).split('-'));
     return Array.from(new Set([...basePresets, ...targetPresets])).join('-');
   },[activePreset, activeNearestPreset, activeNeighborPreset, targetsStr]);
 
@@ -289,19 +350,45 @@ export const Proximity: React.FC<ProximityProps> = ({
     if (!container || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let isCancelled = false;
-    let items: HTMLElement[] = []; 
-    let centers: any[] = [];
-    let states: any[] =[];
-    let setters: any[] =[];
-    let scrollTriggers: any[] =[];
-    let targetMap = new Map<HTMLElement, ProximityTargetOverride>();
+    let items: ProxHTMLElement[] =[]; 
+    let centers: ItemCenter[] = [];
+    let states: ItemState[] =[];
+    let setters: { intensity: any, dx: any, dy: any }[] =[];
+    let scrollTriggers: ScrollTrigger[] =[];
+    let targetMap = new Map<ProxHTMLElement, ProximityTargetOverride>();
+    let containerBounds: ContainerBounds | null = null;
+
+    // Smart inference for missing onReset bounds to fix "hover-to-apply" bug
+    const getBaseProps = (w = 1, h = 1) => {
+        if (activeOnReset) return { custom: activeOnReset() };
+        if (activeOnCalculate) return { custom: activeOnCalculate(0, Infinity, 0, 0, false) };
+        return calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, w, h, true, parsedMaxTravel, activeStartStyles, activeEndStyles);
+    };
 
     const updateCenters = () => {
+      if (!container) return;
+      const cRect = container.getBoundingClientRect();
+      const sx = scrollerRef?.current ? scrollerRef.current.scrollLeft : window.scrollX;
+      const sy = scrollerRef?.current ? scrollerRef.current.scrollTop : window.scrollY;
+
+      containerBounds = {
+          left: cRect.left + sx,
+          right: cRect.right + sx,
+          top: cRect.top + sy,
+          bottom: cRect.bottom + sy
+      };
+
       centers = items.map((item) => {
         const rect = item.getBoundingClientRect();
         return {
-          left: rect.left + window.scrollX, right: rect.right + window.scrollX, top: rect.top + window.scrollY, bottom: rect.bottom + window.scrollY,
-          x: rect.left + window.scrollX + rect.width / 2, y: rect.top + window.scrollY + rect.height / 2, w: rect.width, h: rect.height
+          left: rect.left + sx, 
+          right: rect.right + sx, 
+          top: rect.top + sy, 
+          bottom: rect.bottom + sy,
+          x: rect.left + sx + rect.width / 2, 
+          y: rect.top + sy + rect.height / 2, 
+          w: rect.width, 
+          h: rect.height
         };
       });
     };
@@ -309,27 +396,27 @@ export const Proximity: React.FC<ProximityProps> = ({
     const initItems = () => {
       if (items.length > 0) gsap.killTweensOf(items);
       const targetSelector = excludeElements && excludeElements.trim() !== "" ? selector.split(',').map(s => `${s.trim()}:not(${excludeElements})`).join(', ') : selector;
-      items = Array.from(container.querySelectorAll(targetSelector));
+      items = Array.from(container.querySelectorAll(targetSelector)) as ProxHTMLElement[];
       
       targetMap.clear();
       activeTargets.forEach(targetConfig => {
         const matchingElements = Array.from(container.querySelectorAll(targetConfig.selector));
-        matchingElements.forEach(el => targetMap.set(el as HTMLElement, targetConfig));
+        matchingElements.forEach(el => targetMap.set(el as ProxHTMLElement, targetConfig));
       });
 
       items.forEach(item => {
           if (item.dataset.proxOriginal === undefined) item.dataset.proxOriginal = item.textContent || "";
-          if ((item as any).proxCipher === undefined) (item as any).proxCipher = 0;
+          if (item.proxCipher === undefined) item.proxCipher = 0;
       });
       states = items.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
       setters = items.map(item => ({
-        intensity: gsap.quickSetter(item, "--prox-intensity") as (val: any) => void,
-        dx: gsap.quickSetter(item, "--prox-dx", "px") as (val: any) => void,
-        dy: gsap.quickSetter(item, "--prox-dy", "px") as (val: any) => void
+        intensity: gsap.quickSetter(item, "--prox-intensity"),
+        dx: gsap.quickSetter(item, "--prox-dx", "px"),
+        dy: gsap.quickSetter(item, "--prox-dy", "px")
       }));
       updateCenters();
       
-      const groupedProps = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, 1, 1, true, activeMaxTravel, activeStartStyles, activeEndStyles);
+      const groupedProps = getBaseProps();
       const flatProps: gsap.TweenVars = { willChange: "transform, filter, opacity, font-variation-settings, clip-path" };
       Object.values(groupedProps).forEach(v => Object.assign(flatProps, v));
       if (Object.keys(flatProps).length > 1 && items.length > 0) gsap.set(items, flatProps);
@@ -339,7 +426,17 @@ export const Proximity: React.FC<ProximityProps> = ({
       const hasNewElements = mutations.some(m => Array.from(m.addedNodes).some(n => n.nodeType === 1) || Array.from(m.removedNodes).some(n => n.nodeType === 1));
       if (hasNewElements) initItems();
     });
-    const resizeObserver = new ResizeObserver(() => { updateCenters(); if(activeMode === "scroll") ScrollTrigger.refresh(); });
+    
+    // Generous timeout fixes missing first letter on complex DOM layouts
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    const resizeObserver = new ResizeObserver(() => { 
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            updateCenters(); 
+            if(activeMode === "scroll") ScrollTrigger.refresh(); 
+        }, 150); 
+    });
+    
     mutationObserver.observe(container, { childList: true, subtree: true });
     resizeObserver.observe(container);
 
@@ -350,152 +447,178 @@ export const Proximity: React.FC<ProximityProps> = ({
     };
 
     if (activeMode === "scroll") {
-            const setupScroll = () => {
-                if (isCancelled) return;
-                initItems();
-                scrollTriggers.forEach(t => t.kill());
-                scrollTriggers =[];
-                
-                const isTriggerMode = activeScrollConfig.scrub === false;
-                const scrollerTarget = activeScrollConfig.scroller || window;
-                const parsedStart = parseScrollPosition(activeScrollConfig.start || activeScrollStart, true);
-                const parsedEnd = parseScrollPosition(activeScrollConfig.end || activeScrollEnd, false);
-                const focusPoint = getScrollFocusValue(activeScrollConfig.focus || activeScrollFocus);
-                const scrubValue = activeScrub; 
-                const isOnce = activeScrollConfig.once ?? true;
+        const setupScroll = () => {
+            if (isCancelled) return;
+            initItems();
+            scrollTriggers.forEach(t => t.kill());
+            scrollTriggers =[];
             
-                items.forEach((item, i) => {
-                    const localConfig = targetMap.get(item);
-                    const localPreset = localConfig?.preset ?? activePreset;
-                    const localDuration = localConfig?.duration ?? activeDuration;
-                    const localResetDuration = localConfig?.resetDuration ?? activeResetDuration;
-                    const localEase = EASE_MAP[localConfig?.ease as string] || localConfig?.ease || targetEase;
+            const isTriggerMode = activeScrollConfig.scrub === false;
+            const scrollerTarget = scrollerRef?.current || activeScrollConfig.scroller || window;
+            const parsedStart = parseScrollPosition(activeScrollConfig.start || activeScrollStart, true);
+            const parsedEnd = parseScrollPosition(activeScrollConfig.end || activeScrollEnd, false);
+            const focusPoint = getScrollFocusValue(activeScrollConfig.focus || activeScrollFocus);
+            const scrubValue = activeScrub; 
+            const isOnce = activeScrollConfig.once ?? true;
+        
+            items.forEach((item, i) => {
+                const localConfig = targetMap.get(item);
+                const localPreset = localConfig?.preset ?? activePreset;
+                const localDuration = localConfig?.duration ?? activeDuration;
+                const localResetDuration = localConfig?.resetDuration ?? activeResetDuration;
+                const localEase = EASE_MAP[localConfig?.ease as string] || localConfig?.ease || targetEase;
 
-                    scrollTriggers.push(ScrollTrigger.create({
-                        trigger: item, 
-                        scroller: scrollerTarget, 
-                        start: parsedStart,      
-                        end: parsedEnd,          
-                        scrub: isTriggerMode ? false : scrubValue, 
-                        once: isOnce,            
-                        markers: activeScrollConfig.markers || false,
-                        
-                        onEnter: () => {
-                            if (isTriggerMode) {
-                                const gp = calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel, activeStartStyles, activeEndStyles);
-                                Object.keys(gp).forEach(key => {
-                                    const tl = activeTimeline?.[key] || {};
-                                    gsap.to(item, { 
-                                        ...gp[key], 
-                                        duration: localDuration, 
-                                        delay: (tl.delay ?? activeDelay) + getStaggerValue(i, item, items, activeStagger), 
-                                        ease: localEase, 
-                                        overwrite: "auto", 
-                                        onUpdate: key === "cipher" ? cipherUpdate : undefined 
-                                    });
-                                });
-                            }
-                        },
-            
-                        onLeave: () => {
-                            if (isTriggerMode && !isOnce) {
-                                const gp = calculatePresetValues(localPreset, allPresetsStr, 0, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, true, activeMaxTravel, activeStartStyles, activeEndStyles);
-                                Object.keys(gp).forEach(key => {
-                                    const tl = activeTimeline?.[key] || {};
-                                    gsap.to(item, { 
-                                        ...gp[key], 
-                                        duration: localResetDuration, 
-                                        delay: (tl.resetDelay ?? activeResetDelay) + getStaggerValue(i, item, items, activeResetStagger), 
-                                        ease: targetResetEase, 
-                                        overwrite: "auto", 
-                                        onUpdate: key === "cipher" ? cipherUpdate : undefined 
-                                    });
-                                });
-                            }
-                        },
-            
-                        onEnterBack: () => {
-                            if (isTriggerMode && !isOnce) {
-                                const gp = calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel, activeStartStyles, activeEndStyles);
-                                Object.keys(gp).forEach(key => {
-                                    const tl = activeTimeline?.[key] || {};
-                                    gsap.to(item, { 
-                                        ...gp[key], 
-                                        duration: localDuration, 
-                                        delay: (tl.delay ?? activeDelay) + getStaggerValue(i, item, items, activeStagger), 
-                                        ease: localEase, 
-                                        overwrite: "auto", 
-                                        onUpdate: key === "cipher" ? cipherUpdate : undefined 
-                                    });
-                                });
-                            }
-                        },
-            
-                        onLeaveBack: () => {
-                            if (isTriggerMode && !isOnce) {
-                                const gp = calculatePresetValues(localPreset, allPresetsStr, 0, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, true, activeMaxTravel, activeStartStyles, activeEndStyles);
-                                Object.keys(gp).forEach(key => {
-                                    const tl = activeTimeline?.[key] || {};
-                                    gsap.to(item, { 
-                                        ...gp[key], 
-                                        duration: localResetDuration, 
-                                        delay: (tl.resetDelay ?? activeResetDelay) + getStaggerValue(i, item, items, activeResetStagger), 
-                                        ease: targetResetEase, 
-                                        overwrite: "auto", 
-                                        onUpdate: key === "cipher" ? cipherUpdate : undefined 
-                                    });
-                                });
-                            }
-                        },
-            
-                        onUpdate: isTriggerMode ? undefined : (self) => {
-                            let normalizedDist = 0;
-                            if (focusPoint === 0) normalizedDist = 1 - self.progress; 
-                            else if (focusPoint === 1) normalizedDist = self.progress; 
-                            else normalizedDist = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
-                            
-                            const intensity = Math.pow(normalizedDist, activeFalloff);
-                            const velocity = self.getVelocity(); 
-                            const simulatedDy = Math.min(Math.max(velocity * 0.05, -100), 100); 
-            
+                scrollTriggers.push(ScrollTrigger.create({
+                    trigger: item, 
+                    scroller: scrollerTarget, 
+                    start: parsedStart,      
+                    end: parsedEnd,          
+                    scrub: isTriggerMode ? false : scrubValue, 
+                    once: isOnce,            
+                    markers: activeScrollConfig.markers || false,
+                    
+                    onEnter: () => {
+                        if (isTriggerMode) {
                             const gp = activeOnCalculate 
-                            ? { custom: activeOnCalculate(intensity, 0, 0, simulatedDy, true) } 
-                            : calculatePresetValues(localPreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centers[i]?.w||1, centers[i]?.h||1, false, activeMaxTravel, activeStartStyles, activeEndStyles);
+                                ? { custom: activeOnCalculate(1, 0, 0, 0, true) }
+                                : calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w || 1, centers[i]?.h || 1, false, parsedMaxTravel, activeStartStyles, activeEndStyles);
                             
                             Object.keys(gp).forEach(key => {
                                 const tl = activeTimeline?.[key] || {};
                                 gsap.to(item, { 
                                     ...gp[key], 
-                                    duration: tl.duration || 0.1, 
-                                    delay: tl.delay || 0, 
-                                    ease: EASE_MAP[tl.ease as string] || tl.ease || "none", 
+                                    duration: localDuration, 
+                                    delay: (tl.delay ?? activeDelay) + getStaggerValue(i, item, items, activeStagger), 
+                                    ease: localEase, 
                                     overwrite: "auto", 
                                     onUpdate: key === "cipher" ? cipherUpdate : undefined 
                                 });
                             });
-                            setters[i].intensity(intensity.toFixed(3));
                         }
-                    }));
-                });
-            };
-    
-            if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
-        } else {
+                    },
+        
+                    onLeave: () => {
+                        if (isTriggerMode && !isOnce) {
+                            const gp = getBaseProps(centers[i]?.w || 1, centers[i]?.h || 1);
+                            Object.keys(gp).forEach(key => {
+                                const tl = activeTimeline?.[key] || {};
+                                gsap.to(item, { 
+                                    ...gp[key], 
+                                    duration: localResetDuration, 
+                                    delay: (tl.resetDelay ?? activeResetDelay) + getStaggerValue(i, item, items, activeResetStagger), 
+                                    ease: targetResetEase, 
+                                    overwrite: "auto", 
+                                    onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                                });
+                            });
+                        }
+                    },
+        
+                    onEnterBack: () => {
+                        if (isTriggerMode && !isOnce) {
+                            const gp = activeOnCalculate 
+                                ? { custom: activeOnCalculate(1, 0, 0, 0, true) }
+                                : calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0, centers[i]?.w || 1, centers[i]?.h || 1, false, parsedMaxTravel, activeStartStyles, activeEndStyles);
+                            Object.keys(gp).forEach(key => {
+                                const tl = activeTimeline?.[key] || {};
+                                gsap.to(item, { 
+                                    ...gp[key], 
+                                    duration: localDuration, 
+                                    delay: (tl.delay ?? activeDelay) + getStaggerValue(i, item, items, activeStagger), 
+                                    ease: localEase, 
+                                    overwrite: "auto", 
+                                    onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                                });
+                            });
+                        }
+                    },
+        
+                    onLeaveBack: () => {
+                        if (isTriggerMode && !isOnce) {
+                            const gp = getBaseProps(centers[i]?.w || 1, centers[i]?.h || 1);
+                            Object.keys(gp).forEach(key => {
+                                const tl = activeTimeline?.[key] || {};
+                                gsap.to(item, { 
+                                    ...gp[key], 
+                                    duration: localResetDuration, 
+                                    delay: (tl.resetDelay ?? activeResetDelay) + getStaggerValue(i, item, items, activeResetStagger), 
+                                    ease: targetResetEase, 
+                                    overwrite: "auto", 
+                                    onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                                });
+                            });
+                        }
+                    },
+        
+                    onUpdate: isTriggerMode ? undefined : (self) => {
+                        let normalizedDist = 0;
+                        if (focusPoint === 0) normalizedDist = 1 - self.progress; 
+                        else if (focusPoint === 1) normalizedDist = self.progress; 
+                        else normalizedDist = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
+                        
+                        const intensity = Math.pow(normalizedDist, activeFalloff);
+                        const velocity = self.getVelocity(); 
+                        const simulatedDy = Math.min(Math.max(velocity * 0.05, -100), 100); 
+        
+                        const gp = activeOnCalculate 
+                        ? { custom: activeOnCalculate(intensity, 0, 0, simulatedDy, true) } 
+                        : calculatePresetValues(localPreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centers[i]?.w || 1, centers[i]?.h || 1, false, parsedMaxTravel, activeStartStyles, activeEndStyles);
+                        
+                        Object.keys(gp).forEach(key => {
+                            const tl = activeTimeline?.[key] || {};
+                            gsap.to(item, { 
+                                ...gp[key], 
+                                duration: tl.duration || 0.1, 
+                                delay: tl.delay || 0, 
+                                ease: EASE_MAP[tl.ease as string] || tl.ease || "none", 
+                                overwrite: "auto", 
+                                onUpdate: key === "cipher" ? cipherUpdate : undefined 
+                            });
+                        });
+                        setters[i].intensity(intensity.toFixed(3));
+                    }
+                }));
+            });
+        };
+
+        if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
+    } else {
         if (document.fonts) document.fonts.ready.then(initItems); else initItems();
         const actualSpread = activeReach * 10000; 
         const maxDistance = activeReach * 200;
 
         const onTick = () => {
-          if (!pointer.current.active) return;
-          const pageX = pointer.current.x + window.scrollX; const pageY = pointer.current.y + window.scrollY;
+          if (!pointer.current.active || !container) return;
+          
+          const sx = scrollerRef?.current ? scrollerRef.current.scrollLeft : window.scrollX;
+          const sy = scrollerRef?.current ? scrollerRef.current.scrollTop : window.scrollY;
+
+          const pageX = pointer.current.x + sx; 
+          const pageY = pointer.current.y + sy;
           const isBlocked = ignoreSelectors.some((sel) => (pointer.current.target as HTMLElement)?.closest?.(sel));
+
+          // Broad Early-Exit Culling (Saves up to 99% CPU on idle)
+          if (containerBounds && !activeGlobal) {
+             const isMouseOutBroadBounds = 
+                 pageX < containerBounds.left - maxDistance ||
+                 pageX > containerBounds.right + maxDistance ||
+                 pageY < containerBounds.top - maxDistance ||
+                 pageY > containerBounds.bottom + maxDistance;
+
+             if (isMouseOutBroadBounds || isBlocked) {
+                 if (states.every(s => s.isOutside)) return;
+             }
+          }
+
           let nearestIndex = -1; let minDistance = Infinity;
 
           const dData = items.map((_, i) => {
             const b = centers[i]; if (!b) return { d: Infinity, dx: 0, dy: 0 };
             const dx = pageX - b.x; const dy = pageY - b.y;
             const isInside = pageX >= b.left && pageX <= b.right && pageY >= b.top && pageY <= b.bottom;
-            let d = (isBlocked || (activeExplicit && !isInside)) ? Infinity : Math.sqrt(Math.pow(Math.max(b.left - pageX, 0, pageX - b.right), 2) + Math.pow(Math.max(b.top - pageY, 0, pageY - b.bottom), 2));
+            let d = (isBlocked || (activeExplicit && !isInside)) 
+                ? Infinity 
+                : Math.sqrt(Math.pow(Math.max(b.left - pageX, 0, pageX - b.right), 2) + Math.pow(Math.max(b.top - pageY, 0, pageY - b.bottom), 2));
             if (d < minDistance) { minDistance = d; nearestIndex = i; }
             return { d, dx, dy };
           });
@@ -507,7 +630,7 @@ export const Proximity: React.FC<ProximityProps> = ({
             
             if (d > maxDistance) {
               if (!states[i].isOutside) {
-                const gr = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, centers[i].w, centers[i].h, true, activeMaxTravel, activeStartStyles, activeEndStyles);
+                const gr = getBaseProps(centers[i].w, centers[i].h);
                 gsap.to(item, { "--prox-intensity": 0, duration: activeResetDuration, delay: activeResetDelay, ease: targetResetEase, overwrite: "auto" });
                 Object.keys(gr).forEach(k => {
                   const tl = activeTimeline?.[k] || {};
@@ -519,7 +642,7 @@ export const Proximity: React.FC<ProximityProps> = ({
             }
             const intensity = Math.exp(-(Math.pow(d, activeFalloff)) / actualSpread);
             const hasMoved = Math.abs(intensity - states[i].lastIntensity) > 0.001 || Math.abs(dx - states[i].lastDx) > 0.5;
-            const isCipherActive = (item as any).proxCipher > 0.01;
+            const isCipherActive = item.proxCipher! > 0.01;
 
             if (hasMoved) {
               setters[i].intensity(intensity.toFixed(3)); setters[i].dx(dx); setters[i].dy(dy);
@@ -531,14 +654,22 @@ export const Proximity: React.FC<ProximityProps> = ({
               if (isNearest && nearestP) cp = cp ? `${cp}-${nearestP}` : nearestP; 
               else if (!isNearest && neighborP) cp = cp ? `${cp}-${neighborP}` : neighborP;
               
-              const gp = activeOnCalculate ? { custom: activeOnCalculate(intensity, d, dx, dy, isNearest) } : calculatePresetValues(cp as string, allPresetsStr, intensity, mergedBounds, dx, dy, centers[i].w, centers[i].h, false, activeMaxTravel, activeStartStyles, activeEndStyles);
+              const gp = activeOnCalculate ? { custom: activeOnCalculate(intensity, d, dx, dy, isNearest) } : calculatePresetValues(cp as string, allPresetsStr, intensity, mergedBounds, dx, dy, centers[i].w, centers[i].h, false, parsedMaxTravel, activeStartStyles, activeEndStyles);
+              
               Object.keys(gp).forEach(k => {
                   const tl = activeTimeline?.[k] || {};
-                  gsap.to(item, { ...gp[k], duration: tl.duration ?? (localConfig?.duration ?? activeDuration), delay: tl.delay ?? activeDelay, ease: EASE_MAP[tl.ease as string] || tl.ease || (localConfig?.ease ?? targetEase), overwrite: "auto", onUpdate: k === "cipher" ? cipherUpdate : undefined });
+                  gsap.to(item, { 
+                      ...gp[k], 
+                      duration: tl.duration ?? (localConfig?.duration ?? activeDuration), 
+                      delay: tl.delay ?? activeDelay, 
+                      ease: EASE_MAP[tl.ease as string] || tl.ease || (localConfig?.ease ?? targetEase), 
+                      overwrite: "auto", 
+                      onUpdate: k === "cipher" ? cipherUpdate : undefined 
+                  });
               });
               states[i].lastIntensity = intensity; states[i].lastDx = dx; states[i].lastDy = dy; states[i].isOutside = false;
             } else if (isCipherActive && allPresetsStr.includes('cipher')) {
-              cipherUpdate.call({ targets: () =>[item] });
+              cipherUpdate.call({ targets: () => [item] } as any);
             }
           });
         };
@@ -551,7 +682,7 @@ export const Proximity: React.FC<ProximityProps> = ({
         const handleReset = () => {
           pointer.current.active = false;
           items.forEach((item, i) => {
-            const gr = activeOnReset ? { custom: activeOnReset() } : calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0, centers[i]?.w||1, centers[i]?.h||1, true, activeMaxTravel, activeStartStyles, activeEndStyles);
+            const gr = getBaseProps(centers[i]?.w || 1, centers[i]?.h || 1);
             gsap.to(item, { "--prox-intensity": 0, duration: activeResetDuration, delay: activeResetDelay, ease: targetResetEase, overwrite: "auto" });
             Object.keys(gr).forEach(k => gsap.to(item, { ...gr[k], duration: activeResetDuration, delay: activeResetDelay, ease: targetResetEase, overwrite: "auto", onUpdate: k === "cipher" ? cipherUpdate : undefined }));
           });
@@ -574,12 +705,13 @@ export const Proximity: React.FC<ProximityProps> = ({
     return () => {
         isCancelled = true;
         mutationObserver.disconnect(); resizeObserver.disconnect();
+        clearTimeout(resizeTimeout);
         scrollTriggers.forEach(t => t.kill());
         gsap.killTweensOf(items);
     };
   }, { 
     dependencies:[
-      selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset, activeReach, activeFalloff, activeDuration, activeMaxTravel,
+      selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset, activeReach, activeFalloff, activeDuration, maxTravelStr,
       activeResetDuration, activeDelay, activeResetDelay, activeScrub, activeResetScrub, activeGlobal, activeExplicit, mergedBoundsStr, startStylesStr, endStylesStr, targetsStr, allPresetsStr, timelineConfigStr, scrollConfigStr, ignoreSelectors.join(','), targetEase, targetResetEase, activeMode, 
       activeScrollFocus, activeScrollStart, activeScrollEnd, JSON.stringify(activeStagger), JSON.stringify(activeResetStagger)
     ],
