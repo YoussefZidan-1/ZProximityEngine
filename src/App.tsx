@@ -13,7 +13,7 @@ import {
   Sun
 } from 'lucide-react';
 import { Proximity, ProximityText, ProximityProvider } from './lib';
-
+import PixelGridBackground from './components/PixelGridBackground';
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
 // =====================================================================
@@ -192,8 +192,9 @@ export default function App() {
 
           <main className="grow flex flex-col">
             
-            <section id="vision" className="border-b lg:border-b-0 lg:border-r border-[var(--border-color)] p-10 flex flex-col justify-between min-h-[500px]">
-              <div>
+            <section id="vision" className="relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[var(--border-color)] p-10 flex flex-col justify-between min-h-[500px]">
+              <PixelGridBackground />
+              <div className='relative z-10'>
                 <RevealGroup delay={0.1} duration={1}>
                   <Badge className="reveal-item mb-10">01 / The Vision</Badge>
                 </RevealGroup>
@@ -232,12 +233,22 @@ export default function App() {
                       <span className="reveal-item text-3xl font-black tabular-nums">120+</span>
                     </RevealGroup>
                   </div>
+                  <div className="flex justify-between items-end text-right">
+                    <Badge>Performs well even after many uses</Badge>
+                    <RevealGroup delay={0.6} duration={0.8}>
+                      <span className="reveal-item text-3xl font-black tabular-nums">100+ Elements</span>
+                    </RevealGroup>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-20">
-                <button className="w-full py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:invert transition-all group">
+              <div className="mt-20 flex gap-3">
+                <button className="w-1/2 py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:invert transition-all group">
                   Documentation
+                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button className="w-1/2 py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] gap-3 flex items-center justify-center hover:invert transition-all group">
+                  GitHub Repo
                   <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
