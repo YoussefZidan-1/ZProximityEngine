@@ -181,7 +181,7 @@ export default function App() {
                   <Moon size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-100 dark:opacity-0" />
                   <Sun size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-0 dark:opacity-100" />
                 </button>
-                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.3.0 — BETA STABLE</span>
+                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.4.0 — BETA STABLE</span>
                 <div className="reveal-item px-5 py-2.5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-mono flex items-center gap-2">
                   <Terminal size={12} />
                   npm i z-proximity-engine
@@ -207,7 +207,8 @@ export default function App() {
                       splitBy="letter"
                       textClassName="text-5xl font-serif text-align-left italic leading-[1.1] tracking-tight origin-left"
                       wordSpacing={0.5}
-                      config={{
+                    config={{
+                        waitForEnterAnimationEnd: true, waitForLeaveAnimationEnd: true,
                         reveal:[150, 0], opacity: [0, 1], duration: 1.2, resetDuration: 1.2, ease: "spring", resetEase: "spring",
                         scroll: { scrub: false, once: false, start: "appear", end: "top 30%", resetStagger: 0 }
                       }}
@@ -247,10 +248,12 @@ export default function App() {
                   Documentation
                   <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </button>
-                <button className="w-1/2 py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] gap-3 flex items-center justify-center hover:invert transition-all group">
-                  GitHub Repo
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </button>
+                <a href="https://github.com/YoussefZidan-1/ZProximityEngine" target="_blank">
+                  <button className="w-1/2 py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] gap-3 flex items-center justify-center hover:invert transition-all group">
+                    GitHub Repo
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </a>
               </div>
             </section>
 

@@ -9,19 +9,20 @@ const PixelGridBackground = () => {
     >
       <Proximity
         selector=".bg-pixel"
-        preset="scale-opacity-magnetic"
+        preset="scale-opacity-rotate-skew"
         reach={3.5}
         global={true}
         config={{
           scale: [0.7, 4],
           opacity:[0.1, 0.9],
-          magnetic: [0, 0.15],
+          rotate: [0, 360],
+          skew: [0, 5],
           duration: 2,
           resetDuration: 2,
           ease: "elastic",
           resetEase: "elastic"
         }}
-        className="w-full h-full flex flex-wrap gap-5 p-4 justify-center items-start"
+        className="w-full flex flex-wrap grow gap-5 p-4 justify-center items-start"
       >
         {pixels.map((_, i) => (
           <div 
