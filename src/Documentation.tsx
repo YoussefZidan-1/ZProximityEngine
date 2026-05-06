@@ -28,7 +28,7 @@ const PRESETS = {
   appearance:['opacity', 'blur', 'reveal'],
   physics:['magnetic', 'repel'],
   space:['tilt', 'tiltCard'],
-  text: ['weight', 'cipher'],
+  text:['weight', 'cipher'],
 };
 
 const AVAILABLE_EASES =[
@@ -48,8 +48,9 @@ const DocH2 = ({ children, id }: { children: React.ReactNode; id?: string }) => 
   </h2>
 );
 
+// UPDATED: Higher contrast colors for readability
 const DocP = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 mb-6">{children}</p>
+  <p className="text-sm leading-relaxed opacity-90 mb-6 font-medium">{children}</p>
 );
 
 const CodeSpan = ({ children }: { children: React.ReactNode }) => (
@@ -93,10 +94,13 @@ const StaticCodeBlock = ({ code }: { code: string }) => {
 
 const LiveConfigEditor = ({ initialConfig, defaultPreset = "scale", viewMode = 'elements' }: { initialConfig: string, defaultPreset?: string, viewMode?: 'elements' | 'text' }) => {
   const[code, setCode] = useState(initialConfig);
-  const[parsedConfig, setParsedConfig] = useState<any>({});
+  // Initialize state with the parsed initial config to fix the "doesn't work on load" bug
+  const[parsedConfig, setParsedConfig] = useState<any>(() => {
+    try { return new Function("return " + initialConfig)(); } catch { return {}; }
+  });
   const[error, setError] = useState<string | null>(null);
   const[copied, setCopied] = useState(false);
-  const[renderKey, setRenderKey] = useState("");
+  const[renderKey, setRenderKey] = useState("init");
 
   useEffect(() => {
     try {
@@ -140,7 +144,7 @@ const LiveConfigEditor = ({ initialConfig, defaultPreset = "scale", viewMode = '
             value={code}
             onChange={(e) => setCode(e.target.value)}
             spellCheck="false"
-            className="absolute inset-0 w-full h-full p-4 bg-transparent font-mono text-[11px] md:text-xs leading-relaxed outline-none resize-none focus:ring-0"
+            className="absolute inset-0 w-full h-full p-4 bg-transparent font-mono text-[11px] md:text-xs leading-relaxed outline-none resize-none focus:ring-0 text-[var(--text-color)]"
           />
           {error && (
             <div className="absolute bottom-0 left-0 w-full bg-red-500 text-white text-[10px] p-2 font-mono z-10 shadow-lg">
@@ -195,7 +199,7 @@ export default function Documentation() {
   const[activePresets, setActivePresets] = useState<string[]>(['scale', 'blur']);
   const[pgViewMode, setPgViewMode] = useState<'elements'|'text'>('elements');
 
-  // GSAP SCROLL-TRIGGER PINNING (Bypasses all CSS overflow bugs)
+  // GSAP SCROLL-TRIGGER PINNING
   useGSAP(() => {
     const mm = gsap.matchMedia();
     mm.add("(min-width: 1024px)", () => {
@@ -203,10 +207,10 @@ export default function Documentation() {
       
       ScrollTrigger.create({
         trigger: containerRef.current,
-        start: "top top+=85", // Starts pinning when docs hit 85px from screen top (below your App Header)
-        end: "bottom bottom", // Unpins perfectly when the bottom of docs hits bottom of screen
+        start: "top top+=85", 
+        end: "bottom bottom", 
         pin: sidebarRef.current,
-        pinSpacing: false, // We use a dummy spacer div to keep the flex layout intact
+        pinSpacing: false, 
         invalidateOnRefresh: true,
       });
     });
@@ -214,18 +218,25 @@ export default function Documentation() {
   }, { scope: containerRef });
 
   useEffect(() => {
+    const t = setTimeout(() => ScrollTrigger.refresh(), 500);
+    return () => clearTimeout(t);
+  },[]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setShowFloatingBtn(window.scrollY > 200);
 
       const sections = SECTIONS.map(s => document.getElementById(s.id));
-      const scrollPos = window.scrollY + window.innerHeight / 3;
+      let current = SECTIONS[0].id;
 
-      let current = sections[0]?.id || 'getting-started';
       sections.forEach(sec => {
-        if (sec && sec.offsetTop <= scrollPos) {
-          current = sec.id;
+        if (sec) {
+          if (sec.getBoundingClientRect().top <= window.innerHeight / 3) {
+            current = sec.id;
+          }
         }
       });
+      
       setActiveSection(current);
     };
 
@@ -235,11 +246,7 @@ export default function Documentation() {
   },[]);
 
   const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
+    gsap.to(window, { duration: 1.2, scrollTo: { y: `#${id}`, offsetY: 100 }, ease: "power3.inOut" });
     setIsSidebarOpen(false);
   };
 
@@ -264,11 +271,11 @@ export default function Documentation() {
         />
       )}
 
-      {/* SIDEBAR: Absolute on desktop (GSAP Pins it dynamically), Fixed Drawer on Mobile */}
+      {/* SIDEBAR */}
       <aside ref={sidebarRef} className={`
         fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[var(--bg-color)] border-r border-[var(--border-color)] overflow-y-auto shrink-0
         transition-transform duration-300 ease-in-out
-        lg:!absolute lg:top-0 lg:left-0 lg:h-[calc(100vh-85px)] lg:!translate-x-0 lg:!transition-none
+        lg:absolute lg:top-0 lg:left-0 lg:h-[calc(100vh-85px)] lg:translate-x-0 lg:transition-none
         ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
       `}>
         <div className="p-6 md:p-8 pb-4 flex justify-between items-center border-b border-[var(--border-color)] sticky top-0 bg-[var(--bg-color)] z-10">
@@ -294,47 +301,42 @@ export default function Documentation() {
         </nav>
       </aside>
 
-      {/* STRUCTURAL DUMMY DIV: Keeps the main content pushed right while sidebar is pinned */}
       <div className="hidden lg:block w-72 shrink-0 border-r border-[var(--border-color)]" />
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 min-w-0 w-full px-6 py-10 md:px-12 lg:px-16 pb-32 max-w-5xl mx-auto overflow-hidden">
         
-        {/* SECTION 1: Getting Started */}
         <section id="getting-started">
           <DocH2>1. Getting Started</DocH2>
           <DocP>ZProximity Engine relies on GSAP for its hyper-optimized animation rendering. You'll need to install the engine alongside GSAP.</DocP>
           <StaticCodeBlock code="npm install z-proximity-engine gsap @gsap/react" />
         </section>
 
-        {/* SECTION 2: Basics */}
         <section id="basics">
           <DocH2>2. Core Basics</DocH2>
-          <DocP>Wrap any HTML elements you want to animate inside the <CodeSpan>&lt;Proximity&gt;</CodeSpan> component. By default, the engine targets elements with the class <CodeSpan>.prox-item</CodeSpan>. Change values in the editor below and watch it update instantly!</DocP>
+          <DocP>Wrap any HTML elements you want to animate inside the &lt;Proximity&gt; component. By default, the engine targets elements with the class .prox-item. Change values in the editor below and watch it update instantly!</DocP>
           <LiveConfigEditor 
             defaultPreset="scale"
             initialConfig={`{\n  reach: 1.5,\n  duration: 0.3,\n  ease: "back.out(1.7)",\n  scale:[1, 1.5]\n}`}
           />
         </section>
 
-        {/* SECTION 3: Props vs Config */}
         <section id="props-vs-config">
           <DocH2>3. Props vs Config Object</DocH2>
-          <DocP>ZProximity is incredibly flexible. You can pass settings as direct props for quick setups, or group them into a single <CodeSpan>config</CodeSpan> object for cleaner code.</DocP>
+          <DocP>ZProximity is incredibly flexible. You can pass settings as direct props for quick setups, or group them into a single config object for cleaner code.</DocP>
           
           <div className="grid md:grid-cols-2 gap-6 mt-6">
             <div className="flex flex-col min-w-0">
-              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-50 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 1: Direct Props</h4>
+              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-70 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 1: Direct Props</h4>
               <StaticCodeBlock code={`<Proximity \n  preset="magnetic"\n  reach={2}\n  ease="elastic"\n>\n  <div className="prox-item">Hover</div>\n</Proximity>`} />
             </div>
             <div className="flex flex-col min-w-0">
-              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-50 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 2: Config Object</h4>
+              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-70 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 2: Config Object</h4>
               <StaticCodeBlock code={`const physics = {\n  preset: "magnetic",\n  reach: 2,\n  ease: "elastic"\n};\n\n<Proximity config={physics}>\n  <div className="prox-item">Hover</div>\n</Proximity>`} />
             </div>
           </div>
         </section>
 
-        {/* SECTION 4: Interactive Builder */}
         <section id="playground">
           <DocH2>4. The Preset Builder</DocH2>
           <DocP>ZProximity allows you to chain multiple physics calculations seamlessly using dash-syntax. Try combining them below to see the result live.</DocP>
@@ -353,7 +355,6 @@ export default function Documentation() {
             </div>
 
             <div className="flex flex-col md:flex-row">
-              {/* Checkboxes */}
               <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-[var(--border-color)] p-4 md:p-6 space-y-6">
                 {Object.entries(PRESETS).map(([category, presets]) => {
                    if (pgViewMode === 'elements' && category === 'text') return null;
@@ -361,7 +362,7 @@ export default function Documentation() {
                    
                    return (
                     <div key={category}>
-                      <h4 className="text-[10px] uppercase font-black tracking-[0.2em] opacity-40 mb-3">{category}</h4>
+                      <h4 className="text-[10px] uppercase font-black tracking-[0.2em] opacity-60 mb-3">{category}</h4>
                       <div className="flex flex-wrap gap-2">
                         {presets.map(p => {
                           const isActive = activePresets.includes(p);
@@ -384,7 +385,6 @@ export default function Documentation() {
                 })}
               </div>
 
-              {/* Preview */}
               <div className="w-full md:w-2/3 p-6 md:p-12 flex items-center justify-center mono-grid min-h-[300px] md:min-h-[400px]">
                  <Proximity key={combinedPreset + pgViewMode} preset={combinedPreset as any} reach={1.8}>
                     {pgViewMode === 'elements' ? (
@@ -408,17 +408,15 @@ export default function Documentation() {
           </div>
         </section>
 
-        {/* SECTION 5: Advanced Targeting */}
         <section id="advanced-targeting">
           <DocH2>5. Neighbor vs Nearest Logic</DocH2>
-          <DocP>Want to pull the item you are hovering, but push the others away? Use <CodeSpan>nearestPreset</CodeSpan> and <CodeSpan>neighborPreset</CodeSpan>. This creates a highly organic "dock" or "focus" effect without writing complex layout loops.</DocP>
+          <DocP>Want to pull the item you are hovering, but push the others away? Use nearestPreset and neighborPreset. This creates a highly organic "dock" or "focus" effect without writing complex layout loops.</DocP>
           <LiveConfigEditor 
             defaultPreset=""
-            initialConfig={`{\n  reach: 2,\n  nearestPreset: "scale-magnetic",\n  neighborPreset: "repel-blur",\n  scale: [1, 1.4],\n  blur:[0, 4],\n  magnetic:[0, 0.4],\n  repel:[0, 0.6]\n}`}
+            initialConfig={`{\n  reach: 2,\n  nearestPreset: "scale-magnetic",\n  neighborPreset: "repel-blur",\n  scale:[1, 1.4],\n  blur:[0, 4],\n  magnetic:[0, 0.4],\n  repel:[0, 0.6]\n}`}
           />
         </section>
 
-        {/* SECTION 6: Explicit & Global */}
         <section id="explicit-global">
           <DocH2>6. Boundaries: Explicit & Global</DocH2>
           <DocP>By default, proximity triggers based on mathematical distance. But you can strictly control *when* it listens.</DocP>
@@ -427,34 +425,32 @@ export default function Documentation() {
               <Settings2 className="shrink-0 mt-1 text-[var(--text-color)]" size={20}/>
               <div>
                 <strong className="block font-bold">explicit={`{true}`}</strong>
-                <span className="text-sm opacity-80 mt-1 block">The engine will ignore the mouse UNTIL the cursor physically enters the bounding box of the <CodeSpan>&lt;Proximity&gt;</CodeSpan> container. Great for strict UI buttons.</span>
+                <span className="text-sm opacity-80 mt-1 block">The engine will ignore the mouse UNTIL the cursor physically enters the bounding box.</span>
               </div>
             </li>
             <li className="flex items-start gap-4 p-4 border border-[var(--border-color)] bg-black/5 dark:bg-white/5">
               <Settings2 className="shrink-0 mt-1 text-[var(--text-color)]" size={20}/>
               <div>
                 <strong className="block font-bold">global={`{true}`}</strong>
-                <span className="text-sm opacity-80 mt-1 block">Tracks the mouse across the ENTIRE window, even if the user is miles away from the component. Essential for background grid/hero effects.</span>
+                <span className="text-sm opacity-80 mt-1 block">Tracks the mouse across the ENTIRE window, even if the user is miles away.</span>
               </div>
             </li>
           </ul>
         </section>
 
-        {/* SECTION 7: Text Splitting */}
         <section id="text-splitting">
           <DocH2>7. Text Splitting</DocH2>
-          <DocP>The <CodeSpan>&lt;ProximityText&gt;</CodeSpan> component does all the heavy lifting of wrapping letters, words, or lines in accessible, non-layout-breaking spans. Test it by changing <CodeSpan>splitBy</CodeSpan> below.</DocP>
+          <DocP>The &lt;ProximityText&gt; component does all the heavy lifting of wrapping letters, words, or lines in accessible spans.</DocP>
           <LiveConfigEditor 
             viewMode="text"
             defaultPreset="y-opacity"
-            initialConfig={`{\n  reach: 1.5,\n  splitBy: "word", // Try "letter" or "line"\n  y:[0, -30],\n  opacity:[0.2, 1],\n  ease: "bounce.out"\n}`}
+            initialConfig={`{\n  reach: 1.5,\n  splitBy: "word",\n  y:[0, -30],\n  opacity:[0.2, 1],\n  ease: "bounce.out"\n}`}
           />
         </section>
 
-        {/* SECTION 8: Custom Easing */}
         <section id="custom-easing">
           <DocH2>8. Custom Easing</DocH2>
-          <DocP>ZProximity features 22 custom-engineered physics eases built specifically for UI motion. If you type an invalid ease, GSAP gracefully falls back to a default.</DocP>
+          <DocP>ZProximity features 22 custom-engineered physics eases built specifically for UI motion.</DocP>
           
           <div className="flex flex-wrap gap-2 mb-8 p-4 border border-[var(--border-color)] bg-black/5 dark:bg-white/5">
             {AVAILABLE_EASES.map(ease => (
@@ -466,39 +462,75 @@ export default function Documentation() {
 
           <LiveConfigEditor 
             defaultPreset="x-y"
-            initialConfig={`{\n  reach: 2,\n  duration: 0.8,\n  ease: "whiplash",\n  x:[0, 80],\n  y: [0, -40]\n}`}
+            initialConfig={`{\n  reach: 2,\n  duration: 0.8,\n  ease: "whiplash",\n  x:[0, 80],\n  y:[0, -40]\n}`}
           />
         </section>
 
-        {/* SECTION 9: Scroll Mode */}
+        {/* REAMPED SECTION 9 */}
         <section id="scroll-mode">
           <DocH2>9. Scroll Mode Deep Dive</DocH2>
-          <DocP>Change <CodeSpan>mode="scroll"</CodeSpan> to ditch mouse tracking and bind animations strictly to viewport position and scroll velocity.</DocP>
+          <DocP>Scroll Mode ditches mouse tracking. It binds animations to viewport position. The engine automatically calculates scroll velocity, allowing elements to "lean" or "react" to how fast the user is scrolling.</DocP>
           
-          <StaticCodeBlock code={`<Proximity
-  mode="scroll"
-  preset="reveal-opacity"
-  config={{
-    scroll: {
-      start: "top 80%", // Animates when top of element hits 80% down viewport
-      end: "bottom 20%",
-      scrub: true, // Ties animation strictly to scrollbar
-      once: false, // Allows animation to reverse when scrolling up
-      focus: "center" // Creates a "lens" effect peaking at screen center
-    },
-    stagger: 0.1, // Staggers multiple .prox-items sequentially
-    waitForAnimationEnd: true, // Prevents overlapping if scrolling fast
-    reveal:[110, 0] // Clips from bottom 110% to 0%
-  }}
->
-  <div className="prox-item">Feature 1</div>
-  <div className="prox-item">Feature 2</div>
-  <div className="prox-item">Feature 3</div>
-</Proximity>`} />
+          <StaticCodeBlock code={`<Proximity\n  mode="scroll"\n  preset="tiltCard-y-opacity"\n  config={{\n    scroll: { start: "top 100%", end: "center 40%", scrub: true },\n    tiltCard: [0, 45], // Reacts to scroll speed!\n    stagger: 0.2\n  }}\n/>`} />
           
           <DocP>
-            <strong>Pro Tip: Velocity Simulation!</strong> When using <CodeSpan>scrub: true</CodeSpan>, presets like <CodeSpan>tilt</CodeSpan> or <CodeSpan>skew</CodeSpan> automatically react to how <em>fast</em> the user is scrolling! Scrolling quickly makes the elements tilt harder.
+            <strong>🔥 Demo: Velocity & Staggered Entry</strong><br/>
+            As you scroll down to see these cards, notice two things:<br/>
+            1. <strong>Stagger:</strong> The cards appear one-by-one with a delay.<br/>
+            2. <strong>Velocity Leaning:</strong> If you scroll quickly, the cards tilt heavily. If you scroll slowly, the tilt is subtle.
           </DocP>
+
+          <div className="my-12 py-20 px-6 bg-zinc-900 dark:bg-zinc-100 border border-[var(--border-color)] rounded-sm overflow-hidden" style={{ perspective: 1200 }}>
+            <Proximity
+              mode="scroll"
+              preset="tiltCard-y-opacity-scale"
+              config={{
+                scroll: { start: "top 95%", end: "center 30%", scrub: 0.5, once: false },
+                y: [150, 0],
+                opacity: [0, 1],
+                scale: [0.7, 1],
+                tiltCard: [0, 60], // High value to make velocity leaning obvious
+                stagger: 0.2 // Distinct staggered entry
+              }}
+              className="flex flex-col md:flex-row gap-8 justify-center items-center"
+            >
+              {[1, 2, 3].map((num) => (
+                <div key={num} className="prox-item w-full md:w-48 h-64 bg-black dark:bg-white text-white dark:text-black p-6 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(255,255,255,0.1)] rounded-lg">
+                  <span className="text-xs font-black opacity-50">#0{num}</span>
+                  <div className="space-y-2">
+                    <div className="h-1 w-12 bg-current opacity-30" />
+                    <span className="text-3xl font-black italic tracking-tighter block leading-none">
+                      {num === 1 ? 'PHYSIC' : num === 2 ? 'SCROLL' : 'STAGGR'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </Proximity>
+          </div>
+
+          <DocP>
+            <strong>✨ Cinematic Word-by-Word Scroll</strong><br/>
+            Below is a typography reveal where every word is tied to the scrollbar.
+          </DocP>
+
+          <div className="my-8 p-10 md:p-20 border border-[var(--border-color)] bg-[var(--bg-color)] shadow-2xl relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 mono-grid" />
+            <div className="relative z-10 text-center">
+              <ProximityText
+                mode="scroll"
+                text="The experience of motion is not just about what moves, but how it responds to your rhythm."
+                preset="reveal-opacity"
+                splitBy="word"
+                textClassName="text-2xl md:text-6xl font-black font-serif italic tracking-tight leading-[1.1]"
+                config={{
+                  reveal:[100, 0],
+                  opacity: [0.5, 1],
+                  stagger: 0.08,
+                  scroll: { start: "top 90%", end: "center 40%", scrub: 1, once: false }
+                }}
+              />
+            </div>
+          </div>
         </section>
 
       </main>

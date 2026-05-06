@@ -97,7 +97,6 @@ export interface ProximityConfig {
   onReset?: () => gsap.TweenVars;
   /** Disable animations on mobile devices. True disables all, string/array disables specific presets. */
   disableOnMobile?: boolean | string | string[];
-  /** In scroll mode, wait for the previous element's animation to finish before starting the next. */
   waitForAnimationEnd?: boolean;
   /** In scroll mode, wait for enter animation so leave animation could work*/
   waitForEnterAnimationEnd?: boolean;
@@ -113,11 +112,9 @@ export interface ProximityProps extends ProximityConfig {
   excludeElements?: string; 
   className?: string; 
   style?: CSSProperties;
-  /** Optional scrolling container ref to explicitly map context against (fixes nested modals/sidebars) */
   scrollerRef?: React.RefObject<HTMLElement | null>;
 }
 
-// Internal TS strict types
 interface ProxHTMLElement extends HTMLElement {
   proxCipher?: number;
   _lastCipherUpdate?: number;
@@ -135,7 +132,6 @@ interface ItemState {
   isOutside: boolean; lastIntensity: number; lastDx: number; lastDy: number;
 }
 
-// Safely typed Setters
 interface ItemSetters {
   intensity: (val: number | string) => void;
   dx: (val: number | string) => void;
@@ -146,7 +142,7 @@ interface ContainerBounds {
   left: number; right: number; top: number; bottom: number;
 }
 
-const PRESET_DEFAULTS: Record<string, [number, number]> = {
+const PRESET_DEFAULTS: Record<string,[number, number]> = {
   scale:[1, 1.5], flexScale:[1, 1.5], y:[0, -30], x:[0, 30], opacity:[0.2, 1], blur:[8, 0], rotate:[0, 90], weight:[100, 900],
   skew:[0, 20], magnetic:[0, 0.1], tilt:[0, 30], tiltCard:[0, 15], repel:[0, 0.4], cipher:[0, 1], reveal:[110, 0]
 };
@@ -185,7 +181,6 @@ function useDeepMemo<T>(value: T): T {
     return ref.current;
 }
 
-// 4. PRE-ALLOCATED REUSABLE RESULT OBJECT TO KILL GARBAGE COLLECTION AT 120FPS
 const REUSABLE_RESULT: Record<string, gsap.TweenVars> = {};
 
 const calculatePresetValues = (
@@ -198,10 +193,9 @@ const calculatePresetValues = (
   const activeProps = new Set(activePresetString.split("-").filter(Boolean));
   const allPropsArray = allPresetsString.split("-").filter(Boolean);
 
-  const lockX = lockAxis === "y"; // If locked to Y, nullify X physics
-  const lockY = lockAxis === "x"; // If locked to X, nullify Y physics
+  const lockX = lockAxis === "y"; 
+  const lockY = lockAxis === "x"; 
 
-  // Safely extract center data or default to 0/1
   const w = center?.w || 1;
   const h = center?.h || 1;
   const ml = center?.ml || 0;
@@ -220,7 +214,6 @@ const calculatePresetValues = (
     return Math.max(-limit, Math.min(val, limit));
   };
 
-  // Recycle main root level memory object
   for (const k in REUSABLE_RESULT) delete REUSABLE_RESULT[k];
 
   for (let i = 0; i < allPropsArray.length; i++) {
@@ -230,7 +223,6 @@ const calculatePresetValues = (
     const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
     if (!bounds) continue;
     
-    // Recycle nested level memory object without reallocating
     if (!REUSABLE_RESULT[prop]) REUSABLE_RESULT[prop] = {};
     else for (const k in REUSABLE_RESULT[prop]) delete REUSABLE_RESULT[prop][k];
     
@@ -350,14 +342,13 @@ export const Proximity: React.FC<ProximityProps> = ({
   scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top", lockAxis,
   maxTravel, onCalculate, onReset, ease, resetEase, disableOnMobile, waitForAnimationEnd,
   waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur,
-  rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal,
+  rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal, splitBy,
   scroll, timeline, delay, resetDelay, scrub, resetScrub, start, end, stagger, resetStagger, targets,
   ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
 
-  // 3. PERSISTENT CLOSURE SAFE REFS FOR TICKER PERFORMANCE
   const itemsRef = useRef<ProxHTMLElement[]>([]);
   const centersRef = useRef<ItemCenter[]>([]);
   const statesRef = useRef<ItemState[]>([]);
@@ -402,7 +393,6 @@ export const Proximity: React.FC<ProximityProps> = ({
   const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
 
-  // 2. STOP EXPENSIVE JSON.STRINGIFY RENDER PENALTIES
   const mergedBounds = useDeepMemo({
     scale: config.scale ?? scale, flexScale: config.flexScale ?? flexScale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
@@ -425,7 +415,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     return Array.from(new Set([...basePresets, ...targetPresets])).join('-');
   },[activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
 
-  // 6. PRE-COMPUTE ACTIVE KEYS (AVOIDS Object.keys() IN THE PER-FRAME HOT PATH)
   const activePresetKeys = useMemo(() => {
     const keys = new Set<string>();
     allPresetsStr.split("-").forEach(k => { if (k) keys.add(k); });
@@ -458,7 +447,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    // LIVE ACCESSIBILITY HOT-SWAPPING
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     let isReducedMotion = mediaQuery.matches;
 
@@ -490,7 +478,6 @@ export const Proximity: React.FC<ProximityProps> = ({
               left: cRect.left + sx, right: cRect.right + sx, top: cRect.top + sy, bottom: cRect.bottom + sy
           };
     
-          // 1. FIX LAYOUT THRASHING - BATCH ALL WRITES
           const inlineStates = itemsRef.current.map((item) => {
             const state = {
                 ml: item.style.marginLeft, mr: item.style.marginRight,
@@ -503,7 +490,6 @@ export const Proximity: React.FC<ProximityProps> = ({
             return state;
           });
 
-          // 1. FIX LAYOUT THRASHING - BATCH ALL READS
           const measurements = itemsRef.current.map((item) => {
             const rect = item.getBoundingClientRect();
             const comp = window.getComputedStyle(item);
@@ -516,7 +502,6 @@ export const Proximity: React.FC<ProximityProps> = ({
             };
           });
 
-          // 1. FIX LAYOUT THRASHING - RESTORE INLINE STYLES AND BUILD REF ARRAY
           centersRef.current = itemsRef.current.map((item, i) => {
             const inline = inlineStates[i];
             item.style.marginLeft = inline.ml; item.style.marginRight = inline.mr;
@@ -558,7 +543,6 @@ export const Proximity: React.FC<ProximityProps> = ({
       
       updateCenters();
 
-      // OFF-SCREEN CULLING SETUP
       if (io) io.disconnect();
       io = new IntersectionObserver((entries) => {
           entries.forEach(e => {
@@ -571,7 +555,6 @@ export const Proximity: React.FC<ProximityProps> = ({
           io!.observe(item);
       });
       
-      // 7. PRE-COMPUTE BASE RESET PROPS (AVOIDS RUNNING ALGORITHM ON LEAVE/RESET)
       resetPropsRef.current = itemsRef.current.map((_, i) => {
           if (skipAllAnimations) return {};
           if (activeOnReset) return { custom: activeOnReset() };
@@ -590,7 +573,6 @@ export const Proximity: React.FC<ProximityProps> = ({
       if (Object.keys(flatProps).length > 0 && itemsRef.current.length > 0) gsap.set(itemsRef.current, flatProps);
     };
 
-    // Live Event Listener for Motion Settings
     const handleMotionChange = (e: MediaQueryListEvent) => {
         isReducedMotion = e.matches;
         skipAllAnimations = isReducedMotion || (isMobile && memoizedDisableOnMobile === true);
@@ -622,6 +604,7 @@ export const Proximity: React.FC<ProximityProps> = ({
     
     mutationObserver.observe(container, { childList: true, subtree: true });
     resizeObserver.observe(container);
+    resizeObserver.observe(document.body);
 
     const getStaggerValue = (i: number, target: HTMLElement, list: HTMLElement[], staggerVal: number | gsap.StaggerVars) => {
       if (!staggerVal) return 0;
@@ -908,7 +891,7 @@ export const Proximity: React.FC<ProximityProps> = ({
                         ? { custom: activeOnCalculate(intensity, 0, 0, simulatedDy, true) } 
                         : calculatePresetValues(localPreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centersRef.current[i], false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets));
                         
-                        const keysToLoop = activeOnCalculate ? ["custom"] : activePresetKeys;
+                        const keysToLoop = activeOnCalculate ?["custom"] : activePresetKeys;
                         for (let kIdx = 0; kIdx < keysToLoop.length; kIdx++) {
                             const key = keysToLoop[kIdx];
                             const vars = gp[key];
@@ -928,7 +911,6 @@ export const Proximity: React.FC<ProximityProps> = ({
                                 for (const cssProp in vars) {
                                     const qtKey = `${key}_${cssProp}`;
                                     if (!item._quickTos![qtKey]) {
-                                        gsap.killTweensOf(item, cssProp); 
                                         item._quickTos![qtKey] = gsap.quickTo(item, cssProp, { duration: dur, ease: ez });
                                     }
                                     item._quickTos![qtKey](vars[cssProp] as number);
@@ -950,7 +932,6 @@ export const Proximity: React.FC<ProximityProps> = ({
         const onTick = () => {
           if (!pointer.current.active || !container || skipAllAnimations) return;
           
-          // 5. CACHE PER-TICK SCROLL ACCESS
           const scrollEl = scrollerRef?.current;
           const sx = scrollEl ? scrollEl.scrollLeft : window.scrollX;
           const sy = scrollEl ? scrollEl.scrollTop : window.scrollY;
@@ -1060,7 +1041,6 @@ export const Proximity: React.FC<ProximityProps> = ({
                       for (const cssProp in vars) {
                           const qtKey = `${k}_${cssProp}`;
                           if (!item._quickTos![qtKey]) {
-                              gsap.killTweensOf(item, cssProp);
                               item._quickTos![qtKey] = gsap.quickTo(item, cssProp, { duration: dur, ease: ez });
                           }
                           item._quickTos![qtKey](vars[cssProp] as number);

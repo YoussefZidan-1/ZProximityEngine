@@ -9,26 +9,33 @@
 @layer base {
   :root {
     --bg-color: #ffffff;
-    --text-color: #000000;
-    --border-color: #000000;
-    --grid-dot: #e5e7eb;
+    --text-color: #0c0c0c;
+    --border-color: #0c0c0c;
+    --grid-dot: #d1d5db; /* Darkened dots for visibility */
   }
 
   .dark {
     --bg-color: #000000;
-    --text-color: #ffffff;
-    --border-color: #ffffff;
+    --text-color: #f8fafc;
+    --border-color: #f8fafc;
     --grid-dot: #1f2937;
   }
 
   body {
-    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-700 ease-in-out;
+    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
     background-color: var(--bg-color);
     color: var(--text-color);
   }
 
   * {
-    @apply border-[var(--border-color)] transition-colors duration-700 ease-in-out;
+    @apply border-[var(--border-color)];
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  .prox-part {
+    transition: none !important;
   }
 }
 

@@ -49,7 +49,7 @@ package.json
 public/og-image.jpg
 README.md
 src/App.tsx
-src/components/PixelGridBackground.tsx
+src/components/PresetsSection.tsx
 src/Documentation.tsx
 src/index.css
 src/lib/index.ts
@@ -64,6 +64,138 @@ vite.config.ts
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/components/PresetsSection.tsx">
+import React, { useState } from 'react';
+import { Proximity, ProximityText } from '../lib';
+
+const Badge = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  <span className={`text-[10px] uppercase font-bold tracking-[0.2em] block ${className}`}>
+    {children}
+  </span>
+);
+
+const PresetCard = ({ 
+  preset, title, description, config = {}, viewMode = 'text', splitMode = 'letter'
+}: { 
+  preset: string, title: string, description: string, config?: any, viewMode?: 'text' | 'elements', splitMode?: 'letter' | 'word'
+}) => (
+  <Proximity 
+    preset={preset as any}
+    reach={0.8}
+    className="group relative bg-[var(--bg-color)] border border-[var(--border-color)] p-8 flex flex-col items-center justify-center gap-6 overflow-hidden min-h-[320px]"
+    {...config}
+  >
+    <div className="relative z-10 flex flex-col items-center text-center w-full">
+      <div className="h-28 flex items-center justify-center mb-6 w-full">
+        {viewMode === 'text' ? (
+          <ProximityText 
+             text={preset === 'cipher' ? 'Scramble' : preset.toUpperCase()}
+             splitBy={splitMode}
+             preset={preset as any}
+             fontFamily="'Source Serif 4', serif"
+             style={{ fontStyle: 'italic' }}
+             textClassName="text-3xl font-normal font-serif italic tracking-widest"
+             {...config}
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+             <div className="prox-item w-8 h-8 bg-[var(--text-color)] rounded-sm"></div>
+             <div className="prox-item w-8 h-8 bg-[var(--text-color)] rounded-full"></div>
+             <div className="prox-item w-8 h-8 border-2 border-[var(--text-color)] rounded-sm"></div>
+             <div className="prox-item w-8 h-8 bg-[var(--text-color)] rotate-45"></div>
+          </div>
+        )}
+      </div>
+      <Badge className="opacity-40 mb-2">{title}</Badge>
+      <p className="text-[11px] uppercase tracking-tighter max-w-[200px] opacity-70">{description}</p>
+    </div>
+  </Proximity>
+);
+
+export default function PresetsSection() {
+  const [viewMode, setViewMode] = useState<'text' | 'elements'>('text');
+  const [splitMode, setSplitMode] = useState<'letter' | 'word'>('letter');
+
+  return (
+    <section id="presets" className="border-b lg:border-b-0 lg:border-r border-[var(--border-color)] flex flex-col">
+      <div className="p-10 border-b border-[var(--border-color)]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div>
+            <Badge className="mb-6">02 / Interaction Presets</Badge>
+            <h3 className="text-2xl font-black font-sans italic tracking-tighter">Physics Models</h3>
+          </div>
+          
+          <div className="flex flex-wrap gap-4">
+            <div className="flex border border-[var(--border-color)] overflow-hidden">
+              <button onClick={() => setViewMode('text')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${viewMode === 'text' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Text</button>
+              <button onClick={() => setViewMode('elements')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${viewMode === 'elements' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Elements</button>
+            </div>
+
+            <div className={`flex border border-[var(--border-color)] overflow-hidden transition-opacity duration-300 ${viewMode === 'elements' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+              <button onClick={() => setSplitMode('letter')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${splitMode === 'letter' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Letter</button>
+              <button onClick={() => setSplitMode('word')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${splitMode === 'word' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Word</button>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-[11px] opacity-70 uppercase tracking-widest mb-10">Hover elements below to simulate spatial reaction.</p>
+        
+        <div className="grid grid-cols-2 gap-px bg-[var(--border-color)] border border-[var(--border-color)] overflow-hidden shadow-2xl">
+          <PresetCard preset={viewMode === 'elements' ? 'flexScale' : 'scale'} title="Fluid Scale" description="Size adjustment based on pointer Euclidean distance." viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="blur" title="Deep Blur" description="Gaussian focus shift driving depth-of-field effects." config={{ blur:[12, 0] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="magnetic" title="Magnetic" description="Inverse square attraction to pointer origin." config={{ magnetic:[0, 0.4], reach: 1.5 }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="tilt" title="3D Tilt" description="Quaternion-based rotation on the local X/Y axes." config={{ tilt: [0, 40] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="tiltCard" title="Tilt Card" description="Perspective transform relative to element center." config={{ tiltCard: [0, 20] }} viewMode={viewMode} splitMode={splitMode} />
+          
+          <PresetCard preset="rotate" title="Rotation" description="Angular spin based on interaction distance." config={{ rotate: viewMode === 'elements' ?[0, 360] :[-90, 0] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="skew" title="Skew Matrix" description="Shear transforms along the X/Y axes." config={{ skew: viewMode === 'elements' ?[0, 360] : [90, 0] }} viewMode={viewMode} splitMode={splitMode} />
+
+          {viewMode === 'text' && (
+            <>
+              <PresetCard preset="cipher" title="Cipher" description="Dynamic text decryption as cursor enters reach." config={{ cipher:[0, 1] }} viewMode={viewMode} splitMode={splitMode} />
+              <PresetCard preset="weight" title="Weight" description="Variable font-weight modulation from Thin to Black." config={{ weight:[100, 900] }} viewMode={viewMode} splitMode={splitMode} />
+            </>
+          )}
+          <PresetCard preset="x" title="Horizontal" description="Linear X-axis translation based on proximity." config={{ x: [0, 50] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="y" title="Vertical" description="Linear Y-axis translation based on proximity." config={{ y: [0, -50] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="repel" title="Repel" description="Active avoidance physics pushing away from pointer." config={{ repel: [0, 0.4] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="opacity" title="Opacity" description="Visibility modulation for ghosting and focus effects." config={{ opacity:[0.1, 1] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="reveal" title="Hover Reveal" description="Starts hidden. Slides up and fades in seamlessly as the cursor approaches." viewMode={viewMode} splitMode={splitMode} />
+        </div>
+      </div>
+      
+      <div className="p-10 flex-grow mono-grid">
+        <Badge className="mb-6 opacity-50">Custom Hooks</Badge>
+        <h4 className="text-sm font-bold uppercase mb-4 tracking-[0.1em]">Technical Utility</h4>
+        <p className="text-sm leading-relaxed opacity-80">
+          Custom <code className="bg-[var(--text-color)] text-[var(--bg-color)] px-1.5 py-0.5 rounded-sm font-mono text-xs">onCalculate</code> hooks allow engineers to inject complex physics—spring dynamics, flocking behaviors, or path-based attractions—directly into the component's render cycle.
+        </p>
+
+        <div className="mt-10 p-8 border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm relative overflow-hidden group">
+           <Proximity 
+              onCalculate={(intensity) => ({
+                scale: 1 + intensity * 0.05,
+                rotate: intensity * 2,
+                filter: `blur(${10 - intensity * 10}px)`
+            })}
+            onReset={() => ({
+              rotate: 0,
+              filter: `blur(0px)`
+              })}
+              reach={1.2}
+              className="flex flex-col items-center justify-center gap-4 py-8"
+            >
+              <div className="prox-item text-4xl font-serif italic font-bold">Spatial Playground</div>
+              <div className="w-1/2 h-[1px] bg-black/20 dark:bg-white/20"></div>
+              <Badge className="opacity-70">Move pointer to focus</Badge>
+            </Proximity>
+        </div>
+      </div>
+    </section>
+  );
+}
+</file>
 
 <file path="eslint.config.js">
 import js from '@eslint/js'
@@ -271,70 +403,6 @@ export default defineConfig(({ mode }) => {
 }
 </file>
 
-<file path="src/components/PixelGridBackground.tsx">
-import { useMemo } from 'react';
-import { Proximity } from '../lib';
-
-const PixelGridBackground = () => {
-  // We define separate arrays for the horizontal (top/bottom) and vertical (left/right) edges
-  const horizontalPixels = useMemo(() => Array.from({ length: 25 }),[]);
-  const verticalPixels = useMemo(() => Array.from({ length: 15 }),[]);
-
-  return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
-      <Proximity
-        selector=".bg-pixel"
-        preset="scale-opacity-rotate-skew-magnetic"
-        reach={3.5}
-        global={true}
-        config={{
-          scale: [0.7, 4],
-          opacity:[0.3, 0.9],
-          rotate: [0, 360],
-          skew:[0, 5],
-          duration: 2,
-          resetDuration: 2,
-          ease: "elastic",
-          resetEase: "elastic"
-        }}
-        // The main container fills the space but doesn't dictate layout
-        className="absolute inset-0 w-full h-full"
-      >
-        {/* Top Border */}
-        <div className="absolute top-0 left-0 right-0 flex justify-between p-4">
-          {horizontalPixels.map((_, i) => (
-            <div key={`t-${i}`} className="bg-pixel w-1 h-1 bg-[var(--text-color)]" />
-          ))}
-        </div>
-        
-        {/* Bottom Border */}
-        <div className="absolute bottom-0 left-0 right-0 flex justify-between p-4">
-          {horizontalPixels.map((_, i) => (
-            <div key={`b-${i}`} className="bg-pixel w-1 h-1 bg-[var(--text-color)]" />
-          ))}
-        </div>
-
-        {/* Left Border (Pushed down/up slightly to avoid corner overlap with Top/Bottom) */}
-        <div className="absolute top-10 bottom-10 left-0 flex flex-col justify-between p-4">
-          {verticalPixels.map((_, i) => (
-            <div key={`l-${i}`} className="bg-pixel w-1 h-1 bg-[var(--text-color)]" />
-          ))}
-        </div>
-
-        {/* Right Border */}
-        <div className="absolute top-10 bottom-10 right-0 flex flex-col justify-between p-4">
-          {verticalPixels.map((_, i) => (
-            <div key={`r-${i}`} className="bg-pixel w-1 h-1 bg-[var(--text-color)]" />
-          ))}
-        </div>
-      </Proximity>
-    </div>
-  );
-};
-
-export default PixelGridBackground;
-</file>
-
 <file path="src/Documentation.tsx">
 import React, { useState, useEffect, useRef } from 'react';
 import { Proximity, ProximityText } from './lib';
@@ -366,7 +434,7 @@ const PRESETS = {
   appearance:['opacity', 'blur', 'reveal'],
   physics:['magnetic', 'repel'],
   space:['tilt', 'tiltCard'],
-  text: ['weight', 'cipher'],
+  text:['weight', 'cipher'],
 };
 
 const AVAILABLE_EASES =[
@@ -386,8 +454,9 @@ const DocH2 = ({ children, id }: { children: React.ReactNode; id?: string }) => 
   </h2>
 );
 
+// UPDATED: Higher contrast colors for readability
 const DocP = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 mb-6">{children}</p>
+  <p className="text-sm leading-relaxed opacity-90 mb-6 font-medium">{children}</p>
 );
 
 const CodeSpan = ({ children }: { children: React.ReactNode }) => (
@@ -431,10 +500,13 @@ const StaticCodeBlock = ({ code }: { code: string }) => {
 
 const LiveConfigEditor = ({ initialConfig, defaultPreset = "scale", viewMode = 'elements' }: { initialConfig: string, defaultPreset?: string, viewMode?: 'elements' | 'text' }) => {
   const[code, setCode] = useState(initialConfig);
-  const[parsedConfig, setParsedConfig] = useState<any>({});
+  // Initialize state with the parsed initial config to fix the "doesn't work on load" bug
+  const[parsedConfig, setParsedConfig] = useState<any>(() => {
+    try { return new Function("return " + initialConfig)(); } catch { return {}; }
+  });
   const[error, setError] = useState<string | null>(null);
   const[copied, setCopied] = useState(false);
-  const[renderKey, setRenderKey] = useState("");
+  const[renderKey, setRenderKey] = useState("init");
 
   useEffect(() => {
     try {
@@ -478,7 +550,7 @@ const LiveConfigEditor = ({ initialConfig, defaultPreset = "scale", viewMode = '
             value={code}
             onChange={(e) => setCode(e.target.value)}
             spellCheck="false"
-            className="absolute inset-0 w-full h-full p-4 bg-transparent font-mono text-[11px] md:text-xs leading-relaxed outline-none resize-none focus:ring-0"
+            className="absolute inset-0 w-full h-full p-4 bg-transparent font-mono text-[11px] md:text-xs leading-relaxed outline-none resize-none focus:ring-0 text-[var(--text-color)]"
           />
           {error && (
             <div className="absolute bottom-0 left-0 w-full bg-red-500 text-white text-[10px] p-2 font-mono z-10 shadow-lg">
@@ -533,7 +605,7 @@ export default function Documentation() {
   const[activePresets, setActivePresets] = useState<string[]>(['scale', 'blur']);
   const[pgViewMode, setPgViewMode] = useState<'elements'|'text'>('elements');
 
-  // GSAP SCROLL-TRIGGER PINNING (Bypasses all CSS overflow bugs)
+  // GSAP SCROLL-TRIGGER PINNING
   useGSAP(() => {
     const mm = gsap.matchMedia();
     mm.add("(min-width: 1024px)", () => {
@@ -541,10 +613,10 @@ export default function Documentation() {
       
       ScrollTrigger.create({
         trigger: containerRef.current,
-        start: "top top+=85", // Starts pinning when docs hit 85px from screen top (below your App Header)
-        end: "bottom bottom", // Unpins perfectly when the bottom of docs hits bottom of screen
+        start: "top top+=85", 
+        end: "bottom bottom", 
         pin: sidebarRef.current,
-        pinSpacing: false, // We use a dummy spacer div to keep the flex layout intact
+        pinSpacing: false, 
         invalidateOnRefresh: true,
       });
     });
@@ -552,18 +624,25 @@ export default function Documentation() {
   }, { scope: containerRef });
 
   useEffect(() => {
+    const t = setTimeout(() => ScrollTrigger.refresh(), 500);
+    return () => clearTimeout(t);
+  },[]);
+
+  useEffect(() => {
     const handleScroll = () => {
       setShowFloatingBtn(window.scrollY > 200);
 
       const sections = SECTIONS.map(s => document.getElementById(s.id));
-      const scrollPos = window.scrollY + window.innerHeight / 3;
+      let current = SECTIONS[0].id;
 
-      let current = sections[0]?.id || 'getting-started';
       sections.forEach(sec => {
-        if (sec && sec.offsetTop <= scrollPos) {
-          current = sec.id;
+        if (sec) {
+          if (sec.getBoundingClientRect().top <= window.innerHeight / 3) {
+            current = sec.id;
+          }
         }
       });
+      
       setActiveSection(current);
     };
 
@@ -573,11 +652,7 @@ export default function Documentation() {
   },[]);
 
   const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
+    gsap.to(window, { duration: 1.2, scrollTo: { y: `#${id}`, offsetY: 100 }, ease: "power3.inOut" });
     setIsSidebarOpen(false);
   };
 
@@ -602,11 +677,11 @@ export default function Documentation() {
         />
       )}
 
-      {/* SIDEBAR: Absolute on desktop (GSAP Pins it dynamically), Fixed Drawer on Mobile */}
+      {/* SIDEBAR */}
       <aside ref={sidebarRef} className={`
         fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[var(--bg-color)] border-r border-[var(--border-color)] overflow-y-auto shrink-0
         transition-transform duration-300 ease-in-out
-        lg:!absolute lg:top-0 lg:left-0 lg:h-[calc(100vh-85px)] lg:!translate-x-0 lg:!transition-none
+        lg:absolute lg:top-0 lg:left-0 lg:h-[calc(100vh-85px)] lg:translate-x-0 lg:transition-none
         ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
       `}>
         <div className="p-6 md:p-8 pb-4 flex justify-between items-center border-b border-[var(--border-color)] sticky top-0 bg-[var(--bg-color)] z-10">
@@ -632,47 +707,42 @@ export default function Documentation() {
         </nav>
       </aside>
 
-      {/* STRUCTURAL DUMMY DIV: Keeps the main content pushed right while sidebar is pinned */}
       <div className="hidden lg:block w-72 shrink-0 border-r border-[var(--border-color)]" />
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 min-w-0 w-full px-6 py-10 md:px-12 lg:px-16 pb-32 max-w-5xl mx-auto overflow-hidden">
         
-        {/* SECTION 1: Getting Started */}
         <section id="getting-started">
           <DocH2>1. Getting Started</DocH2>
           <DocP>ZProximity Engine relies on GSAP for its hyper-optimized animation rendering. You'll need to install the engine alongside GSAP.</DocP>
           <StaticCodeBlock code="npm install z-proximity-engine gsap @gsap/react" />
         </section>
 
-        {/* SECTION 2: Basics */}
         <section id="basics">
           <DocH2>2. Core Basics</DocH2>
-          <DocP>Wrap any HTML elements you want to animate inside the <CodeSpan>&lt;Proximity&gt;</CodeSpan> component. By default, the engine targets elements with the class <CodeSpan>.prox-item</CodeSpan>. Change values in the editor below and watch it update instantly!</DocP>
+          <DocP>Wrap any HTML elements you want to animate inside the &lt;Proximity&gt; component. By default, the engine targets elements with the class .prox-item. Change values in the editor below and watch it update instantly!</DocP>
           <LiveConfigEditor 
             defaultPreset="scale"
             initialConfig={`{\n  reach: 1.5,\n  duration: 0.3,\n  ease: "back.out(1.7)",\n  scale:[1, 1.5]\n}`}
           />
         </section>
 
-        {/* SECTION 3: Props vs Config */}
         <section id="props-vs-config">
           <DocH2>3. Props vs Config Object</DocH2>
-          <DocP>ZProximity is incredibly flexible. You can pass settings as direct props for quick setups, or group them into a single <CodeSpan>config</CodeSpan> object for cleaner code.</DocP>
+          <DocP>ZProximity is incredibly flexible. You can pass settings as direct props for quick setups, or group them into a single config object for cleaner code.</DocP>
           
           <div className="grid md:grid-cols-2 gap-6 mt-6">
             <div className="flex flex-col min-w-0">
-              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-50 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 1: Direct Props</h4>
+              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-70 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 1: Direct Props</h4>
               <StaticCodeBlock code={`<Proximity \n  preset="magnetic"\n  reach={2}\n  ease="elastic"\n>\n  <div className="prox-item">Hover</div>\n</Proximity>`} />
             </div>
             <div className="flex flex-col min-w-0">
-              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-50 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 2: Config Object</h4>
+              <h4 className="font-bold text-[10px] uppercase mb-3 opacity-70 flex items-center gap-2 tracking-widest"><Check size={14}/> Method 2: Config Object</h4>
               <StaticCodeBlock code={`const physics = {\n  preset: "magnetic",\n  reach: 2,\n  ease: "elastic"\n};\n\n<Proximity config={physics}>\n  <div className="prox-item">Hover</div>\n</Proximity>`} />
             </div>
           </div>
         </section>
 
-        {/* SECTION 4: Interactive Builder */}
         <section id="playground">
           <DocH2>4. The Preset Builder</DocH2>
           <DocP>ZProximity allows you to chain multiple physics calculations seamlessly using dash-syntax. Try combining them below to see the result live.</DocP>
@@ -691,7 +761,6 @@ export default function Documentation() {
             </div>
 
             <div className="flex flex-col md:flex-row">
-              {/* Checkboxes */}
               <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-[var(--border-color)] p-4 md:p-6 space-y-6">
                 {Object.entries(PRESETS).map(([category, presets]) => {
                    if (pgViewMode === 'elements' && category === 'text') return null;
@@ -699,7 +768,7 @@ export default function Documentation() {
                    
                    return (
                     <div key={category}>
-                      <h4 className="text-[10px] uppercase font-black tracking-[0.2em] opacity-40 mb-3">{category}</h4>
+                      <h4 className="text-[10px] uppercase font-black tracking-[0.2em] opacity-60 mb-3">{category}</h4>
                       <div className="flex flex-wrap gap-2">
                         {presets.map(p => {
                           const isActive = activePresets.includes(p);
@@ -722,7 +791,6 @@ export default function Documentation() {
                 })}
               </div>
 
-              {/* Preview */}
               <div className="w-full md:w-2/3 p-6 md:p-12 flex items-center justify-center mono-grid min-h-[300px] md:min-h-[400px]">
                  <Proximity key={combinedPreset + pgViewMode} preset={combinedPreset as any} reach={1.8}>
                     {pgViewMode === 'elements' ? (
@@ -746,17 +814,15 @@ export default function Documentation() {
           </div>
         </section>
 
-        {/* SECTION 5: Advanced Targeting */}
         <section id="advanced-targeting">
           <DocH2>5. Neighbor vs Nearest Logic</DocH2>
-          <DocP>Want to pull the item you are hovering, but push the others away? Use <CodeSpan>nearestPreset</CodeSpan> and <CodeSpan>neighborPreset</CodeSpan>. This creates a highly organic "dock" or "focus" effect without writing complex layout loops.</DocP>
+          <DocP>Want to pull the item you are hovering, but push the others away? Use nearestPreset and neighborPreset. This creates a highly organic "dock" or "focus" effect without writing complex layout loops.</DocP>
           <LiveConfigEditor 
             defaultPreset=""
-            initialConfig={`{\n  reach: 2,\n  nearestPreset: "scale-magnetic",\n  neighborPreset: "repel-blur",\n  scale: [1, 1.4],\n  blur:[0, 4],\n  magnetic:[0, 0.4],\n  repel:[0, 0.6]\n}`}
+            initialConfig={`{\n  reach: 2,\n  nearestPreset: "scale-magnetic",\n  neighborPreset: "repel-blur",\n  scale:[1, 1.4],\n  blur:[0, 4],\n  magnetic:[0, 0.4],\n  repel:[0, 0.6]\n}`}
           />
         </section>
 
-        {/* SECTION 6: Explicit & Global */}
         <section id="explicit-global">
           <DocH2>6. Boundaries: Explicit & Global</DocH2>
           <DocP>By default, proximity triggers based on mathematical distance. But you can strictly control *when* it listens.</DocP>
@@ -765,34 +831,32 @@ export default function Documentation() {
               <Settings2 className="shrink-0 mt-1 text-[var(--text-color)]" size={20}/>
               <div>
                 <strong className="block font-bold">explicit={`{true}`}</strong>
-                <span className="text-sm opacity-80 mt-1 block">The engine will ignore the mouse UNTIL the cursor physically enters the bounding box of the <CodeSpan>&lt;Proximity&gt;</CodeSpan> container. Great for strict UI buttons.</span>
+                <span className="text-sm opacity-80 mt-1 block">The engine will ignore the mouse UNTIL the cursor physically enters the bounding box.</span>
               </div>
             </li>
             <li className="flex items-start gap-4 p-4 border border-[var(--border-color)] bg-black/5 dark:bg-white/5">
               <Settings2 className="shrink-0 mt-1 text-[var(--text-color)]" size={20}/>
               <div>
                 <strong className="block font-bold">global={`{true}`}</strong>
-                <span className="text-sm opacity-80 mt-1 block">Tracks the mouse across the ENTIRE window, even if the user is miles away from the component. Essential for background grid/hero effects.</span>
+                <span className="text-sm opacity-80 mt-1 block">Tracks the mouse across the ENTIRE window, even if the user is miles away.</span>
               </div>
             </li>
           </ul>
         </section>
 
-        {/* SECTION 7: Text Splitting */}
         <section id="text-splitting">
           <DocH2>7. Text Splitting</DocH2>
-          <DocP>The <CodeSpan>&lt;ProximityText&gt;</CodeSpan> component does all the heavy lifting of wrapping letters, words, or lines in accessible, non-layout-breaking spans. Test it by changing <CodeSpan>splitBy</CodeSpan> below.</DocP>
+          <DocP>The &lt;ProximityText&gt; component does all the heavy lifting of wrapping letters, words, or lines in accessible spans.</DocP>
           <LiveConfigEditor 
             viewMode="text"
             defaultPreset="y-opacity"
-            initialConfig={`{\n  reach: 1.5,\n  splitBy: "word", // Try "letter" or "line"\n  y:[0, -30],\n  opacity:[0.2, 1],\n  ease: "bounce.out"\n}`}
+            initialConfig={`{\n  reach: 1.5,\n  splitBy: "word",\n  y:[0, -30],\n  opacity:[0.2, 1],\n  ease: "bounce.out"\n}`}
           />
         </section>
 
-        {/* SECTION 8: Custom Easing */}
         <section id="custom-easing">
           <DocH2>8. Custom Easing</DocH2>
-          <DocP>ZProximity features 22 custom-engineered physics eases built specifically for UI motion. If you type an invalid ease, GSAP gracefully falls back to a default.</DocP>
+          <DocP>ZProximity features 22 custom-engineered physics eases built specifically for UI motion.</DocP>
           
           <div className="flex flex-wrap gap-2 mb-8 p-4 border border-[var(--border-color)] bg-black/5 dark:bg-white/5">
             {AVAILABLE_EASES.map(ease => (
@@ -804,39 +868,75 @@ export default function Documentation() {
 
           <LiveConfigEditor 
             defaultPreset="x-y"
-            initialConfig={`{\n  reach: 2,\n  duration: 0.8,\n  ease: "whiplash",\n  x:[0, 80],\n  y: [0, -40]\n}`}
+            initialConfig={`{\n  reach: 2,\n  duration: 0.8,\n  ease: "whiplash",\n  x:[0, 80],\n  y:[0, -40]\n}`}
           />
         </section>
 
-        {/* SECTION 9: Scroll Mode */}
+        {/* REAMPED SECTION 9 */}
         <section id="scroll-mode">
           <DocH2>9. Scroll Mode Deep Dive</DocH2>
-          <DocP>Change <CodeSpan>mode="scroll"</CodeSpan> to ditch mouse tracking and bind animations strictly to viewport position and scroll velocity.</DocP>
+          <DocP>Scroll Mode ditches mouse tracking. It binds animations to viewport position. The engine automatically calculates scroll velocity, allowing elements to "lean" or "react" to how fast the user is scrolling.</DocP>
           
-          <StaticCodeBlock code={`<Proximity
-  mode="scroll"
-  preset="reveal-opacity"
-  config={{
-    scroll: {
-      start: "top 80%", // Animates when top of element hits 80% down viewport
-      end: "bottom 20%",
-      scrub: true, // Ties animation strictly to scrollbar
-      once: false, // Allows animation to reverse when scrolling up
-      focus: "center" // Creates a "lens" effect peaking at screen center
-    },
-    stagger: 0.1, // Staggers multiple .prox-items sequentially
-    waitForAnimationEnd: true, // Prevents overlapping if scrolling fast
-    reveal:[110, 0] // Clips from bottom 110% to 0%
-  }}
->
-  <div className="prox-item">Feature 1</div>
-  <div className="prox-item">Feature 2</div>
-  <div className="prox-item">Feature 3</div>
-</Proximity>`} />
+          <StaticCodeBlock code={`<Proximity\n  mode="scroll"\n  preset="tiltCard-y-opacity"\n  config={{\n    scroll: { start: "top 100%", end: "center 40%", scrub: true },\n    tiltCard: [0, 45], // Reacts to scroll speed!\n    stagger: 0.2\n  }}\n/>`} />
           
           <DocP>
-            <strong>Pro Tip: Velocity Simulation!</strong> When using <CodeSpan>scrub: true</CodeSpan>, presets like <CodeSpan>tilt</CodeSpan> or <CodeSpan>skew</CodeSpan> automatically react to how <em>fast</em> the user is scrolling! Scrolling quickly makes the elements tilt harder.
+            <strong>🔥 Demo: Velocity & Staggered Entry</strong><br/>
+            As you scroll down to see these cards, notice two things:<br/>
+            1. <strong>Stagger:</strong> The cards appear one-by-one with a delay.<br/>
+            2. <strong>Velocity Leaning:</strong> If you scroll quickly, the cards tilt heavily. If you scroll slowly, the tilt is subtle.
           </DocP>
+
+          <div className="my-12 py-20 px-6 bg-zinc-900 dark:bg-zinc-100 border border-[var(--border-color)] rounded-sm overflow-hidden" style={{ perspective: 1200 }}>
+            <Proximity
+              mode="scroll"
+              preset="tiltCard-y-opacity-scale"
+              config={{
+                scroll: { start: "top 95%", end: "center 30%", scrub: 0.5, once: false },
+                y: [150, 0],
+                opacity: [0, 1],
+                scale: [0.7, 1],
+                tiltCard: [0, 60], // High value to make velocity leaning obvious
+                stagger: 0.2 // Distinct staggered entry
+              }}
+              className="flex flex-col md:flex-row gap-8 justify-center items-center"
+            >
+              {[1, 2, 3].map((num) => (
+                <div key={num} className="prox-item w-full md:w-48 h-64 bg-black dark:bg-white text-white dark:text-black p-6 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(255,255,255,0.1)] rounded-lg">
+                  <span className="text-xs font-black opacity-50">#0{num}</span>
+                  <div className="space-y-2">
+                    <div className="h-1 w-12 bg-current opacity-30" />
+                    <span className="text-3xl font-black italic tracking-tighter block leading-none">
+                      {num === 1 ? 'PHYSIC' : num === 2 ? 'SCROLL' : 'STAGGR'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </Proximity>
+          </div>
+
+          <DocP>
+            <strong>✨ Cinematic Word-by-Word Scroll</strong><br/>
+            Below is a typography reveal where every word is tied to the scrollbar.
+          </DocP>
+
+          <div className="my-8 p-10 md:p-20 border border-[var(--border-color)] bg-[var(--bg-color)] shadow-2xl relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 mono-grid" />
+            <div className="relative z-10 text-center">
+              <ProximityText
+                mode="scroll"
+                text="The experience of motion is not just about what moves, but how it responds to your rhythm."
+                preset="reveal-opacity"
+                splitBy="word"
+                textClassName="text-2xl md:text-6xl font-black font-serif italic tracking-tight leading-[1.1]"
+                config={{
+                  reveal:[100, 0],
+                  opacity: [0.5, 1],
+                  stagger: 0.08,
+                  scroll: { start: "top 90%", end: "center 40%", scrub: 1, once: false }
+                }}
+              />
+            </div>
+          </div>
         </section>
 
       </main>
@@ -857,26 +957,33 @@ export default function Documentation() {
 @layer base {
   :root {
     --bg-color: #ffffff;
-    --text-color: #000000;
-    --border-color: #000000;
-    --grid-dot: #e5e7eb;
+    --text-color: #0c0c0c;
+    --border-color: #0c0c0c;
+    --grid-dot: #d1d5db; /* Darkened dots for visibility */
   }
 
   .dark {
     --bg-color: #000000;
-    --text-color: #ffffff;
-    --border-color: #ffffff;
+    --text-color: #f8fafc;
+    --border-color: #f8fafc;
     --grid-dot: #1f2937;
   }
 
   body {
-    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-700 ease-in-out;
+    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
     background-color: var(--bg-color);
     color: var(--text-color);
   }
 
   * {
-    @apply border-[var(--border-color)] transition-colors duration-700 ease-in-out;
+    @apply border-[var(--border-color)];
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  .prox-part {
+    transition: none !important;
   }
 }
 
@@ -1394,7 +1501,7 @@ MIT © [Yousef Zedan](https://github.com/YoussefZidan-1/ZProximityEngine)
 </file>
 
 <file path="src/App.tsx">
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import gsap from 'gsap';
 import { ReactLenis } from 'lenis/react';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
@@ -1409,16 +1516,19 @@ import {
   Sun
 } from 'lucide-react';
 import { Proximity, ProximityText, ProximityProvider } from './lib';
-import PixelGridBackground from './components/PixelGridBackground';
-import Documentation from './Documentation';
+
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
+
+// LAZY LOADED HEAVY COMPONENTS
+const PresetsSection = lazy(() => import('./components/PresetsSection'));
+const Documentation = lazy(() => import('./Documentation'));
 
 // =====================================================================
 // DRY ANIMATION WRAPPERS (Tasteful Reveals Only)
 // =====================================================================
 
 const getRevealConfig = (delay: number, animateOnScroll: boolean, duration: number) => ({
-  reveal: [110, 0] as [number, number],
+  reveal:[110, 0] as[number, number],
   opacity:[0, 1] as [number, number],
   duration,
   ease: "expo",
@@ -1456,52 +1566,14 @@ const RevealGroup = ({ children, delay = 0, duration = 1.2, animateOnScroll = tr
 // UI COMPONENTS
 // =====================================================================
 
-const Badge = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+export const Badge = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
   <span className={`text-[10px] uppercase font-bold tracking-[0.2em] block ${className}`}>
     {children}
   </span>
 );
 
-const PresetCard = ({ 
-  preset, title, description, config = {}, viewMode = 'text', splitMode = 'letter'
-}: { 
-  preset: string, title: string, description: string, config?: any, viewMode?: 'text' | 'elements', splitMode?: 'letter' | 'word'
-}) => (
-  <Proximity 
-    preset={preset as any}
-    reach={0.8}
-    className="group relative bg-[var(--bg-color)] border border-[var(--border-color)] p-8 flex flex-col items-center justify-center gap-6 overflow-hidden min-h-[320px]"
-    {...config}
-  >
-    <div className="relative z-10 flex flex-col items-center text-center w-full">
-      <div className="h-28 flex items-center justify-center mb-6 w-full">
-        {viewMode === 'text' ? (
-          <ProximityText 
-             text={preset === 'cipher' ? 'Scramble' : preset.toUpperCase()}
-             splitBy={splitMode}
-             preset={preset as any}
-             fontFamily="'Source Serif 4', serif"
-             style={{ fontStyle: 'italic' }}
-             textClassName="text-3xl font-normal font-serif italic tracking-widest"
-             {...config}
-          />
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-             <div className="prox-item w-8 h-8 bg-[var(--text-color)] rounded-sm"></div>
-             <div className="prox-item w-8 h-8 bg-[var(--text-color)] rounded-full"></div>
-             <div className="prox-item w-8 h-8 border-2 border-[var(--text-color)] rounded-sm"></div>
-             <div className="prox-item w-8 h-8 bg-[var(--text-color)] rotate-45"></div>
-          </div>
-        )}
-      </div>
-      <Badge className="opacity-40 mb-2">{title}</Badge>
-      <p className="text-[11px] uppercase tracking-tighter max-w-[200px] text-gray-400 dark:text-gray-500">{description}</p>
-    </div>
-  </Proximity>
-);
-
 const CodeBlock = ({ code }: { code: string }) => (
-  <div className="bg-black dark:bg-zinc-900 text-gray-400 p-8 rounded-sm font-mono text-[11px] leading-relaxed overflow-x-auto border border-black dark:border-zinc-800 shadow-2xl flex-grow h-full mb-8">
+  <div className="bg-black dark:bg-zinc-900 text-gray-300 p-8 rounded-sm font-mono text-[11px] leading-relaxed overflow-x-auto border border-black dark:border-zinc-800 shadow-2xl flex-grow h-full mb-8">
     <div className="flex gap-2 mb-6">
       <div className="w-2 h-2 rounded-full bg-red-400/30"></div>
       <div className="w-2 h-2 rounded-full bg-yellow-400/30"></div>
@@ -1519,9 +1591,6 @@ const CodeBlock = ({ code }: { code: string }) => (
 
 export default function App() {
   const[isDark, setIsDark] = useState(false);
-  const [viewMode, setViewMode] = useState<'text' | 'elements'>('text');
-  const [splitMode, setSplitMode] = useState<'letter' | 'word'>('letter');
-
   const lenisRef = useRef<any>(null);
 
   useEffect(() => {
@@ -1533,7 +1602,17 @@ export default function App() {
   },[isDark]);
 
   useGSAP(() => {
-    ScrollTrigger.refresh();
+    // FIX: We use a ResizeObserver on the body so that the exact moment 
+    // the Lazy-loaded components finish loading and expand the page, GSAP fixes the physics coordinates
+    const resizeObserver = new ResizeObserver(() => {
+      ScrollTrigger.refresh();
+    });
+    
+    resizeObserver.observe(document.body);
+    
+    return () => {
+      resizeObserver.disconnect();
+    };
   });
 
   useEffect(() => {
@@ -1590,32 +1669,31 @@ export default function App() {
           <main className="grow flex flex-col">
             
             <section id="vision" className="relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[var(--border-color)] p-10 flex flex-col justify-between min-h-[500px]">
-              <PixelGridBackground />
               <div className='relative z-10'>
                 <RevealGroup delay={0.1} duration={1}>
                   <Badge className="reveal-item mb-10">01 / The Vision</Badge>
                 </RevealGroup>
                 
                 <div className="mb-8">
+                  {/* FIX: Simplified the hero config to once: true so it doesn't accidentally trigger a reset/leave animation and disappear */}
                   <ProximityText 
-                      text="Spatial awareness for the modern web."
-                      mode="scroll"
-                      preset="reveal-opacity"
-                      splitBy="letter"
-                      textClassName="text-5xl font-serif text-align-left italic leading-[1.1] tracking-tight origin-left"
-                      wordSpacing={0.5}
+                    text="Spatial awareness for the modern web."
+                    mode="scroll"
+                    preset="reveal-opacity"
+                    splitBy="letter"
+                    textClassName="text-5xl font-serif text-align-left italic leading-[1.1] tracking-tight origin-left"
+                    wordSpacing={0.5}
                     config={{
-                        waitForEnterAnimationEnd: true, waitForLeaveAnimationEnd: true,
-                        reveal:[150, 0], opacity: [0, 1], duration: 1.2, resetDuration: 1.2, ease: "spring", resetEase: "spring",
-                        scroll: { scrub: false, once: false, start: "appear", end: "top 30%", resetStagger: 0 }
-                      }}
-                    />
+                      reveal:[150, 0], opacity: [0, 1], duration: 1.2, ease: "spring",
+                      scroll: { scrub: false, once: false, start: "appear" }
+                    }}
+                  />
                 </div>
 
                 <RevealText 
                   text="A lightweight GSAP-powered React library that calculates cursor distance, velocity, and angle to drive fluid UI transformations for Hover and Scroll."
                   delay={0.4} duration={1}
-                  textClassName="text-sm leading-relaxed mb-10 text-gray-600 dark:text-gray-400 italic"
+                  textClassName="text-sm leading-relaxed mb-10 opacity-70 italic"
                 />
                 
                 <div className="space-y-4 pt-10 border-t border-black/10 dark:border-white/10">
@@ -1660,86 +1738,19 @@ export default function App() {
               </div>
             </section>
 
-            <section id="presets" className="border-b lg:border-b-0 lg:border-r border-[var(--border-color)] flex flex-col">
-              <div className="p-10 border-b border-[var(--border-color)]">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-                  <div>
-                    <Badge className="mb-6">02 / Interaction Presets</Badge>
-                    <h3 className="text-2xl font-black font-sans italic tracking-tighter">Physics Models</h3>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex border border-[var(--border-color)] overflow-hidden">
-                      <button onClick={() => setViewMode('text')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${viewMode === 'text' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Text</button>
-                      <button onClick={() => setViewMode('elements')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${viewMode === 'elements' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Elements</button>
-                    </div>
-
-                    <div className={`flex border border-[var(--border-color)] overflow-hidden transition-opacity duration-300 ${viewMode === 'elements' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                      <button onClick={() => setSplitMode('letter')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${splitMode === 'letter' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Letter</button>
-                      <button onClick={() => setSplitMode('word')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${splitMode === 'word' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Word</button>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-10">Hover elements below to simulate spatial reaction.</p>
-                
-                <div className="grid grid-cols-2 gap-px bg-[var(--border-color)] border border-[var(--border-color)] overflow-hidden shadow-2xl">
-                  <PresetCard preset={viewMode === 'elements' ? 'flexScale' : 'scale'} title="Fluid Scale" description="Size adjustment based on pointer Euclidean distance." viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="blur" title="Deep Blur" description="Gaussian focus shift driving depth-of-field effects." config={{ blur:[12, 0] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="magnetic" title="Magnetic" description="Inverse square attraction to pointer origin." config={{ magnetic:[0, 0.4], reach: 1.5 }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="tilt" title="3D Tilt" description="Quaternion-based rotation on the local X/Y axes." config={{ tilt: [0, 40] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="tiltCard" title="Tilt Card" description="Perspective transform relative to element center." config={{ tiltCard: [0, 20] }} viewMode={viewMode} splitMode={splitMode} />
-                  
-                  {/* Rotation and Skew Presets */}
-                  <PresetCard preset="rotate" title="Rotation" description="Angular spin based on interaction distance." config={{ rotate: viewMode === 'elements' ?[0, 360] : [-90, 0] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="skew" title="Skew Matrix" description="Shear transforms along the X/Y axes." config={{ skew: viewMode === 'elements' ?[0, 360] : [90, 0] }} viewMode={viewMode} splitMode={splitMode} />
-
-                  {viewMode === 'text' && (
-                    <>
-                      <PresetCard preset="cipher" title="Cipher" description="Dynamic text decryption as cursor enters reach." config={{ cipher:[0, 1] }} viewMode={viewMode} splitMode={splitMode} />
-                      <PresetCard preset="weight" title="Weight" description="Variable font-weight modulation from Thin to Black." config={{ weight:[100, 900] }} viewMode={viewMode} splitMode={splitMode} />
-                    </>
-                  )}
-                  <PresetCard preset="x" title="Horizontal" description="Linear X-axis translation based on proximity." config={{ x: [0, 50] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="y" title="Vertical" description="Linear Y-axis translation based on proximity." config={{ y: [0, -50] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="repel" title="Repel" description="Active avoidance physics pushing away from pointer." config={{ repel: [0, 0.4] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="opacity" title="Opacity" description="Visibility modulation for ghosting and focus effects." config={{ opacity:[0.1, 1] }} viewMode={viewMode} splitMode={splitMode} />
-                  <PresetCard preset="reveal" title="Hover Reveal" description="Starts hidden. Slides up and fades in seamlessly as the cursor approaches." viewMode={viewMode} splitMode={splitMode} />
-                </div>
-              </div>
-              
-              <div className="p-10 flex-grow mono-grid">
-                <Badge className="mb-6 opacity-50">Custom Hooks</Badge>
-                <h4 className="text-sm font-bold uppercase mb-4 tracking-[0.1em]">Technical Utility</h4>
-                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                  Custom <code className="bg-[var(--text-color)] text-[var(--bg-color)] px-1.5 py-0.5 rounded-sm font-mono text-xs">onCalculate</code> hooks allow engineers to inject complex physics—spring dynamics, flocking behaviors, or path-based attractions—directly into the component's render cycle.
-                </p>
-
-                <div className="mt-10 p-8 border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm relative overflow-hidden group">
-                   <Proximity 
-                      onCalculate={(intensity) => ({
-                        scale: 1 + intensity * 0.05,
-                        rotate: intensity * 2,
-                        filter: `blur(${10 - intensity * 10}px)`
-                    })}
-                    onReset={() => ({
-                      rotate: 0,
-                      filter: `blur(0px)`
-                      })}
-                      reach={1.2}
-                      className="flex flex-col items-center justify-center gap-4 py-8"
-                    >
-                      <div className="prox-item text-4xl font-serif italic font-bold">Spatial Playground</div>
-                      <div className="w-1/2 h-[1px] bg-black/20 dark:bg-white/20"></div>
-                      <Badge className="text-gray-400 dark:text-gray-500">Move pointer to focus</Badge>
-                    </Proximity>
-                </div>
-              </div>
-            </section>
+            {/* LAZY LOADED PRESETS SECTION */}
+            <Suspense fallback={<div className="p-20 text-center border-b lg:border-b-0 lg:border-r border-[var(--border-color)] text-[10px] uppercase font-bold tracking-widest opacity-50">Loading Physics Engine...</div>}>
+              <PresetsSection />
+            </Suspense>
 
             <section id="implementation" className="p-10 flex flex-col h-full overflow-hidden">
               <Badge className="mb-8">03 / Implementation</Badge>
-              <Documentation/>
+              
+              {/* LAZY LOADED DOCUMENTATION COMPONENT */}
+              <Suspense fallback={<div className="py-32 text-center text-[10px] uppercase font-bold tracking-widest opacity-50">Loading Documentation Modules...</div>}>
+                <Documentation/>
+              </Suspense>
+
               <div className="grow flex flex-col">
                 <CodeBlock code={`import { Proximity } from 'z-proximity-engine';\n\n// Basic usage\n<Proximity\n  preset="magnetic-scale"\n  reach={1.5}\n  ease="elastic"\n/>\n\n// Custom Physics\n<Proximity\n  onCalculate={(intensity, dist) => ({\n    filter: \`blur(\${intensity * 10}px)\`,\n    y: intensity * -40\n  })}\n>\n  Hover me\n</Proximity>`} />
                 
@@ -1752,16 +1763,6 @@ export default function App() {
                     <div className="space-y-2">
                       <Badge>Stack</Badge>
                       <span className="text-xs font-mono uppercase">GSAP / React 19</span>
-                    </div>
-                  </div>
-                  <div className="p-6 bg-gray-50 dark:bg-zinc-900 border border-black/5 dark:border-white/5 rounded-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                      <ShieldCheck size={20} className="text-[var(--text-color)]" />
-                      <h5 className="text-[10px] font-bold uppercase tracking-[0.2em]">All Systems Operational</h5>
-                    </div>
-                    <div className="flex justify-between items-center bg-[var(--bg-color)] border border-[var(--border-color)] p-4 font-mono text-[11px]">
-                      <span className="text-gray-400 dark:text-gray-500">$ npm i z-proximity-engine</span>
-                      <button className="hover:scale-110 active:scale-95 transition-transform"><Layers size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -1887,7 +1888,6 @@ export interface ProximityConfig {
   onReset?: () => gsap.TweenVars;
   /** Disable animations on mobile devices. True disables all, string/array disables specific presets. */
   disableOnMobile?: boolean | string | string[];
-  /** In scroll mode, wait for the previous element's animation to finish before starting the next. */
   waitForAnimationEnd?: boolean;
   /** In scroll mode, wait for enter animation so leave animation could work*/
   waitForEnterAnimationEnd?: boolean;
@@ -1903,11 +1903,9 @@ export interface ProximityProps extends ProximityConfig {
   excludeElements?: string; 
   className?: string; 
   style?: CSSProperties;
-  /** Optional scrolling container ref to explicitly map context against (fixes nested modals/sidebars) */
   scrollerRef?: React.RefObject<HTMLElement | null>;
 }
 
-// Internal TS strict types
 interface ProxHTMLElement extends HTMLElement {
   proxCipher?: number;
   _lastCipherUpdate?: number;
@@ -1925,7 +1923,6 @@ interface ItemState {
   isOutside: boolean; lastIntensity: number; lastDx: number; lastDy: number;
 }
 
-// Safely typed Setters
 interface ItemSetters {
   intensity: (val: number | string) => void;
   dx: (val: number | string) => void;
@@ -1936,7 +1933,7 @@ interface ContainerBounds {
   left: number; right: number; top: number; bottom: number;
 }
 
-const PRESET_DEFAULTS: Record<string, [number, number]> = {
+const PRESET_DEFAULTS: Record<string,[number, number]> = {
   scale:[1, 1.5], flexScale:[1, 1.5], y:[0, -30], x:[0, 30], opacity:[0.2, 1], blur:[8, 0], rotate:[0, 90], weight:[100, 900],
   skew:[0, 20], magnetic:[0, 0.1], tilt:[0, 30], tiltCard:[0, 15], repel:[0, 0.4], cipher:[0, 1], reveal:[110, 0]
 };
@@ -1975,7 +1972,6 @@ function useDeepMemo<T>(value: T): T {
     return ref.current;
 }
 
-// 4. PRE-ALLOCATED REUSABLE RESULT OBJECT TO KILL GARBAGE COLLECTION AT 120FPS
 const REUSABLE_RESULT: Record<string, gsap.TweenVars> = {};
 
 const calculatePresetValues = (
@@ -1988,10 +1984,9 @@ const calculatePresetValues = (
   const activeProps = new Set(activePresetString.split("-").filter(Boolean));
   const allPropsArray = allPresetsString.split("-").filter(Boolean);
 
-  const lockX = lockAxis === "y"; // If locked to Y, nullify X physics
-  const lockY = lockAxis === "x"; // If locked to X, nullify Y physics
+  const lockX = lockAxis === "y"; 
+  const lockY = lockAxis === "x"; 
 
-  // Safely extract center data or default to 0/1
   const w = center?.w || 1;
   const h = center?.h || 1;
   const ml = center?.ml || 0;
@@ -2010,7 +2005,6 @@ const calculatePresetValues = (
     return Math.max(-limit, Math.min(val, limit));
   };
 
-  // Recycle main root level memory object
   for (const k in REUSABLE_RESULT) delete REUSABLE_RESULT[k];
 
   for (let i = 0; i < allPropsArray.length; i++) {
@@ -2020,7 +2014,6 @@ const calculatePresetValues = (
     const bounds = userConfig[prop] || PRESET_DEFAULTS[prop];
     if (!bounds) continue;
     
-    // Recycle nested level memory object without reallocating
     if (!REUSABLE_RESULT[prop]) REUSABLE_RESULT[prop] = {};
     else for (const k in REUSABLE_RESULT[prop]) delete REUSABLE_RESULT[prop][k];
     
@@ -2140,14 +2133,13 @@ export const Proximity: React.FC<ProximityProps> = ({
   scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top", lockAxis,
   maxTravel, onCalculate, onReset, ease, resetEase, disableOnMobile, waitForAnimationEnd,
   waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur,
-  rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal,
+  rotate, weight, skew, magnetic, tilt, tiltCard, repel, cipher, reveal, splitBy,
   scroll, timeline, delay, resetDelay, scrub, resetScrub, start, end, stagger, resetStagger, targets,
   ignoreSelectors =[], excludeElements, className = "", style = {}, ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointer = useRef({ x: 0, y: 0, target: null as EventTarget | null, active: false });
 
-  // 3. PERSISTENT CLOSURE SAFE REFS FOR TICKER PERFORMANCE
   const itemsRef = useRef<ProxHTMLElement[]>([]);
   const centersRef = useRef<ItemCenter[]>([]);
   const statesRef = useRef<ItemState[]>([]);
@@ -2192,7 +2184,6 @@ export const Proximity: React.FC<ProximityProps> = ({
   const targetEase = EASE_MAP[config.ease ?? (ease as string)] || config.ease || ease || "power1.out";
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] || config.resetEase || resetEase || "power2.out";
 
-  // 2. STOP EXPENSIVE JSON.STRINGIFY RENDER PENALTIES
   const mergedBounds = useDeepMemo({
     scale: config.scale ?? scale, flexScale: config.flexScale ?? flexScale, y: config.y ?? y, x: config.x ?? x, opacity: config.opacity ?? opacity,
     blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
@@ -2215,7 +2206,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     return Array.from(new Set([...basePresets, ...targetPresets])).join('-');
   },[activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
 
-  // 6. PRE-COMPUTE ACTIVE KEYS (AVOIDS Object.keys() IN THE PER-FRAME HOT PATH)
   const activePresetKeys = useMemo(() => {
     const keys = new Set<string>();
     allPresetsStr.split("-").forEach(k => { if (k) keys.add(k); });
@@ -2248,7 +2238,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    // LIVE ACCESSIBILITY HOT-SWAPPING
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     let isReducedMotion = mediaQuery.matches;
 
@@ -2280,7 +2269,6 @@ export const Proximity: React.FC<ProximityProps> = ({
               left: cRect.left + sx, right: cRect.right + sx, top: cRect.top + sy, bottom: cRect.bottom + sy
           };
     
-          // 1. FIX LAYOUT THRASHING - BATCH ALL WRITES
           const inlineStates = itemsRef.current.map((item) => {
             const state = {
                 ml: item.style.marginLeft, mr: item.style.marginRight,
@@ -2293,7 +2281,6 @@ export const Proximity: React.FC<ProximityProps> = ({
             return state;
           });
 
-          // 1. FIX LAYOUT THRASHING - BATCH ALL READS
           const measurements = itemsRef.current.map((item) => {
             const rect = item.getBoundingClientRect();
             const comp = window.getComputedStyle(item);
@@ -2306,7 +2293,6 @@ export const Proximity: React.FC<ProximityProps> = ({
             };
           });
 
-          // 1. FIX LAYOUT THRASHING - RESTORE INLINE STYLES AND BUILD REF ARRAY
           centersRef.current = itemsRef.current.map((item, i) => {
             const inline = inlineStates[i];
             item.style.marginLeft = inline.ml; item.style.marginRight = inline.mr;
@@ -2348,7 +2334,6 @@ export const Proximity: React.FC<ProximityProps> = ({
       
       updateCenters();
 
-      // OFF-SCREEN CULLING SETUP
       if (io) io.disconnect();
       io = new IntersectionObserver((entries) => {
           entries.forEach(e => {
@@ -2361,7 +2346,6 @@ export const Proximity: React.FC<ProximityProps> = ({
           io!.observe(item);
       });
       
-      // 7. PRE-COMPUTE BASE RESET PROPS (AVOIDS RUNNING ALGORITHM ON LEAVE/RESET)
       resetPropsRef.current = itemsRef.current.map((_, i) => {
           if (skipAllAnimations) return {};
           if (activeOnReset) return { custom: activeOnReset() };
@@ -2380,7 +2364,6 @@ export const Proximity: React.FC<ProximityProps> = ({
       if (Object.keys(flatProps).length > 0 && itemsRef.current.length > 0) gsap.set(itemsRef.current, flatProps);
     };
 
-    // Live Event Listener for Motion Settings
     const handleMotionChange = (e: MediaQueryListEvent) => {
         isReducedMotion = e.matches;
         skipAllAnimations = isReducedMotion || (isMobile && memoizedDisableOnMobile === true);
@@ -2412,6 +2395,7 @@ export const Proximity: React.FC<ProximityProps> = ({
     
     mutationObserver.observe(container, { childList: true, subtree: true });
     resizeObserver.observe(container);
+    resizeObserver.observe(document.body);
 
     const getStaggerValue = (i: number, target: HTMLElement, list: HTMLElement[], staggerVal: number | gsap.StaggerVars) => {
       if (!staggerVal) return 0;
@@ -2698,7 +2682,7 @@ export const Proximity: React.FC<ProximityProps> = ({
                         ? { custom: activeOnCalculate(intensity, 0, 0, simulatedDy, true) } 
                         : calculatePresetValues(localPreset, allPresetsStr, intensity, mergedBounds, 0, simulatedDy, centersRef.current[i], false, parsedMaxTravel, activeLockAxis, activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets));
                         
-                        const keysToLoop = activeOnCalculate ? ["custom"] : activePresetKeys;
+                        const keysToLoop = activeOnCalculate ?["custom"] : activePresetKeys;
                         for (let kIdx = 0; kIdx < keysToLoop.length; kIdx++) {
                             const key = keysToLoop[kIdx];
                             const vars = gp[key];
@@ -2718,7 +2702,6 @@ export const Proximity: React.FC<ProximityProps> = ({
                                 for (const cssProp in vars) {
                                     const qtKey = `${key}_${cssProp}`;
                                     if (!item._quickTos![qtKey]) {
-                                        gsap.killTweensOf(item, cssProp); 
                                         item._quickTos![qtKey] = gsap.quickTo(item, cssProp, { duration: dur, ease: ez });
                                     }
                                     item._quickTos![qtKey](vars[cssProp] as number);
@@ -2740,7 +2723,6 @@ export const Proximity: React.FC<ProximityProps> = ({
         const onTick = () => {
           if (!pointer.current.active || !container || skipAllAnimations) return;
           
-          // 5. CACHE PER-TICK SCROLL ACCESS
           const scrollEl = scrollerRef?.current;
           const sx = scrollEl ? scrollEl.scrollLeft : window.scrollX;
           const sy = scrollEl ? scrollEl.scrollTop : window.scrollY;
@@ -2850,7 +2832,6 @@ export const Proximity: React.FC<ProximityProps> = ({
                       for (const cssProp in vars) {
                           const qtKey = `${k}_${cssProp}`;
                           if (!item._quickTos![qtKey]) {
-                              gsap.killTweensOf(item, cssProp);
                               item._quickTos![qtKey] = gsap.quickTo(item, cssProp, { duration: dur, ease: ez });
                           }
                           item._quickTos![qtKey](vars[cssProp] as number);
