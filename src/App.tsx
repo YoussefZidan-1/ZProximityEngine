@@ -242,14 +242,20 @@ export default function App() {
                   </div>
                 </div>
               </div>
-
-              <div className="mt-20 flex gap-3">
-                <button className="w-1/2 py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:invert transition-all group">
-                  Documentation
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </button>
-                <a href="https://github.com/YoussefZidan-1/ZProximityEngine" target="_blank">
-                  <button className="w-1/2 py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] gap-3 flex items-center justify-center hover:invert transition-all group">
+              <div className="mt-12 flex flex-col sm:flex-row gap-4">
+                <a href="#implementation" onClick={(e) => handleScroll(e, '#implementation')} className="flex-1">
+                  <button className="w-full py-5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:opacity-90 transition-all group cursor-pointer border border-[var(--text-color)]">
+                    Documentation
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </a>
+                <a 
+                  href="https://github.com/YoussefZidan-1/ZProximityEngine" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                >
+                  <button className="w-full py-5 border border-[var(--border-color)] text-[var(--text-color)] text-[11px] font-black uppercase tracking-[0.2em] gap-3 flex items-center justify-center hover:bg-[var(--text-color)] hover:text-[var(--bg-color)] transition-all group cursor-pointer">
                     GitHub Repo
                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </button>
