@@ -260,7 +260,6 @@ const calculatePresetValues = (
         const pullY = lockY ? 0 : dy * currentIntensity * max;
         res.x = useBase ? 0 : clampTravel(pullX, 'x');
         res.y = useBase ? 0 : clampTravel(pullY, 'y');
-        res.rotation = useBase ? 0 : pullX * 0.05;
     }
     else if (prop === "repel") {
         const distanceOffset = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
