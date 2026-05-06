@@ -20,4 +20,3 @@ dist-ssr
 *.sw?
 .npmrc
 *.tgz
-.Documentation.tsx

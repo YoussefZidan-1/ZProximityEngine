@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Proximity, ProximityText, ProximityProvider } from './lib';
 import PixelGridBackground from './components/PixelGridBackground';
+import Documentation from './Documentation';
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 
 // =====================================================================
@@ -342,7 +343,7 @@ export default function App() {
 
             <section id="implementation" className="p-10 flex flex-col h-full overflow-hidden">
               <Badge className="mb-8">03 / Implementation</Badge>
-              
+              <Documentation/>
               <div className="grow flex flex-col">
                 <CodeBlock code={`import { Proximity } from 'z-proximity-engine';\n\n// Basic usage\n<Proximity\n  preset="magnetic-scale"\n  reach={1.5}\n  ease="elastic"\n/>\n\n// Custom Physics\n<Proximity\n  onCalculate={(intensity, dist) => ({\n    filter: \`blur(\${intensity * 10}px)\`,\n    y: intensity * -40\n  })}\n>\n  Hover me\n</Proximity>`} />
                 
@@ -357,7 +358,6 @@ export default function App() {
                       <span className="text-xs font-mono uppercase">GSAP / React 19</span>
                     </div>
                   </div>
-
                   <div className="p-6 bg-gray-50 dark:bg-zinc-900 border border-black/5 dark:border-white/5 rounded-sm">
                     <div className="flex items-center gap-3 mb-4">
                       <ShieldCheck size={20} className="text-[var(--text-color)]" />
