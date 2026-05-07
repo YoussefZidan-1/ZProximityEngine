@@ -6,9 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import { 
   ArrowRight, 
-  Terminal, 
-  Layers,
-  ShieldCheck,
+  Terminal,
   Moon,
   Sun
 } from 'lucide-react';
@@ -19,6 +17,7 @@ gsap.registerPlugin(ScrollToPlugin, ScrollTrigger);
 // LAZY LOADED HEAVY COMPONENTS
 const PresetsSection = lazy(() => import('./components/PresetsSection'));
 const Documentation = lazy(() => import('./Documentation'));
+const Gamebox = lazy(() => import('./components/Gamebox'));
 
 // =====================================================================
 // DRY ANIMATION WRAPPERS (Tasteful Reveals Only)
@@ -87,7 +86,7 @@ const CodeBlock = ({ code }: { code: string }) => (
 // =====================================================================
 
 export default function App() {
-  const[isDark, setIsDark] = useState(false);
+  const[isDark, setIsDark] = useState(true);
   const lenisRef = useRef<any>(null);
 
   useEffect(() => {
@@ -142,6 +141,7 @@ export default function App() {
                   <a href="#vision" onClick={(e) => handleScroll(e, '#vision')} className="reveal-item smooth-strike mr-10">01 / Vision</a>
                   <a href="#presets" onClick={(e) => handleScroll(e, '#presets')} className="reveal-item smooth-strike mr-10">02 / Presets</a>
                   <a href="#implementation" onClick={(e) => handleScroll(e, '#implementation')} className="reveal-item smooth-strike">03 / Docs</a>
+                  <a href="#gamebox" onClick={(e) => handleScroll(e, '#gamebox')} className="reveal-item smooth-strike mr-10">04 / Gamebox</a>
                 </RevealGroup>
               </nav>
 
@@ -241,29 +241,16 @@ export default function App() {
             </Suspense>
 
             <section id="implementation" className="p-10 flex flex-col h-full overflow-hidden">
-              <Badge className="mb-8">03 / Implementation</Badge>
+              <Badge className="mb-8">03 / Docs</Badge>
               
               {/* LAZY LOADED DOCUMENTATION COMPONENT */}
               <Suspense fallback={<div className="py-32 text-center text-[10px] uppercase font-bold tracking-widest opacity-50">Loading Documentation Modules...</div>}>
                 <Documentation/>
               </Suspense>
-
-              <div className="grow flex flex-col">
-                <CodeBlock code={`import { Proximity } from 'z-proximity-engine';\n\n// Basic usage\n<Proximity\n  preset="magnetic-scale"\n  reach={1.5}\n  ease="elastic"\n/>\n\n// Custom Physics\n<Proximity\n  onCalculate={(intensity, dist) => ({\n    filter: \`blur(\${intensity * 10}px)\`,\n    y: intensity * -40\n  })}\n>\n  Hover me\n</Proximity>`} />
-                
-                <div className="space-y-8">
-                  <div className="grid grid-cols-2 gap-8 border-t border-[var(--border-color)] pt-8">
-                    <div className="space-y-2">
-                      <Badge>License</Badge>
-                      <span className="text-xs font-mono">MIT / 2026</span>
-                    </div>
-                    <div className="space-y-2">
-                      <Badge>Stack</Badge>
-                      <span className="text-xs font-mono uppercase">GSAP / React 19</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              
+              <Suspense fallback={<div className="p-20 text-center border-b lg:border-b-0 lg:border-r border-[var(--border-color)] text-[10px] uppercase font-bold tracking-widest opacity-50">Loading Physics Engine...</div>}>
+                <Gamebox />
+              </Suspense>
             </section>
           </main>
 
