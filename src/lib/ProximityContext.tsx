@@ -5,7 +5,7 @@ export interface GlobalProximityConfig {
 }
 
 const ProximityContext = createContext<GlobalProximityConfig>({
-  defaultFont: "'Georama', sans-serif",
+  defaultFont: "sans-serif",
 });
 
 interface ProximityProviderProps {

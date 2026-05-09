@@ -51,20 +51,14 @@ export interface ProximityTargetOverride extends ProximityConfig {
 }
 
 export interface ProximityConfig {
-  /** Switches engine between tracking cursor vs tracking view scroll. */
   mode?: ProximityMode;
-  /** Custom scroll logic for scroll-driven animations. */
   scroll?: ProximityScrollConfig;
   scrollFocus?: "top" | "center" | "middle" | "bottom" | number;
   scrollStart?: string;
   scrollEnd?: string;
-  /** Euclidean radius of the mouse tracking influence. Default 2. */
   reach?: number;
-  /** Power curve of the proximity ease. Default 2.4. */
   falloff?: number;
-  /** Physics entry mapping duration. Default 0.2. */
   duration?: number;
-  /** Physics reset mapping duration when pointer leaves bounds. Default 0.4. */
   resetDuration?: number;
   delay?: number;
   resetDelay?: number;
@@ -74,36 +68,26 @@ export interface ProximityConfig {
   resetScrub?: boolean | number;
   start?: gsap.TweenVars;
   end?: gsap.TweenVars;
-  /** Track cursor across the entire window, not just over the container. */
   global?: boolean;
-  /** Require the cursor to physically enter the bounding box before activating. */
   explicit?: boolean;
-  /** Chain multiple presets with dash syntax (e.g. 'blur-scale-rotate'). */
   preset?: ProximityPreset;
-  /** Override preset applied only to the element closest to the cursor. */
   nearestPreset?: ProximityPreset;
-  /** Override preset applied only to elements neighbouring the nearest one. */
   neighborPreset?: ProximityPreset;
-  /** GSAP ease string. Also accepts custom preset names. */
   ease?: EasePreset;
   resetEase?: EasePreset;
-  /** Clamp physical movement. Accepts [x,y], {x,y}, or a global number. */
   maxTravel?: number | [number, number] | { x: number; y: number };
-  /** Lock spatial physics to one axis. */
   lockAxis?: AxisLock;
   splitBy?: "letter" | "word" | "line";
   targets?: ProximityTargetOverride[];
   timeline?: Record<string, ProximityTimelineConfig>;
-  /** Minimum intensity delta before an element is re-animated. Default 0.002. */
   precision?: number;
-  // ─── Numeric preset bounds ───
   scale?: [number, number];
   flexScale?: [number, number];
   y?: [number, number];
   x?: [number, number];
   opacity?: [number, number];
   blur?: [number, number];
-  rotate?: [number, number];
+  rotate?:[number, number];
   weight?: [number, number];
   skew?: [number, number];
   magnetic?: [number, number];
@@ -111,22 +95,17 @@ export interface ProximityConfig {
   tiltCard?: [number, number];
   repel?: [number, number];
   cipher?: [number, number];
-  reveal?: [number, number];
+  reveal?:[number, number];
   glow?: [number, number];
   brightness?: [number, number];
   contrast?: [number, number];
   borderRadius?: [number, number];
-  letterSpacing?: [number, number];
+  letterSpacing?:[number, number];
   grayScale?: [number, number];
-  // ─── Color preset bounds ───
-  /** Interpolate text color: [fromColor, toColor] */
   color?: [string, string];
-  /** Interpolate background color: [fromColor, toColor] */
   background?: [string, string];
-  // ─── Escape hatches ───
   onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
   onReset?: () => gsap.TweenVars;
-  /** Disable on mobile. true = all, string/array = specific presets only. */
   disableOnMobile?: boolean | string | string[];
   waitForAnimationEnd?: boolean;
   waitForEnterAnimationEnd?: boolean;
@@ -183,7 +162,7 @@ interface ContainerBounds {
 // CONSTANTS
 // ─────────────────────────────────────────────
 
-const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
+const PRESET_DEFAULTS: Record<string, [number, number] |[string, string]> = {
   scale:        [1, 1.5],
   flexScale:    [1, 1.5],
   y:            [0, -30],
@@ -196,17 +175,17 @@ const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
   magnetic:     [0, 0.1],
   tilt:         [0, 30],
   tiltCard:     [0, 15],
-  repel:        [0, 0.4],
+  repel:[0, 0.4],
   cipher:       [0, 1],
-  reveal:       [110, 0],
+  reveal:[110, 0],
   glow:         [0, 20],
-  brightness:   [0.6, 1.2],
+  brightness:[0.6, 1.2],
   contrast:     [0.8, 1.4],
   borderRadius: [0, 50],
   letterSpacing:[-0.05, 0.2],
   grayScale:    [1, 0],
-  color:        ["#888888", "#ffffff"],
-  background:   ["transparent", "rgba(255,255,255,0.1)"],
+  color:["#888888", "#ffffff"],
+  background:["transparent", "rgba(255,255,255,0.1)"],
 };
 
 const EASE_MAP: Record<string, string> = {
@@ -235,12 +214,9 @@ const EASE_MAP: Record<string, string> = {
 };
 
 const OPTIMIZED_WILL_CHANGE = "transform, filter, opacity, font-variation-settings, clip-path";
-
-// Filter-based presets that must be merged into a single filter string
 const FILTER_PRESETS = new Set(["blur", "glow", "brightness", "contrast", "grayScale"]);
 
-// Props that get pre-built quickTo functions on init
-const QUICK_TO_PROPS = [
+const QUICK_TO_PROPS =[
   "scaleX", "scaleY", "x", "y", "rotation", "skewX", "opacity",
   "rotationX", "rotationY", "transformPerspective",
   "marginLeft", "marginRight", "marginTop", "marginBottom", "fontWeight",
@@ -271,10 +247,9 @@ function useDeepMemo<T>(value: T): T {
 }
 
 // ─────────────────────────────────────────────
-// PRESET CALCULATOR  (single shared result object — zero allocation per frame)
+// PRESET CALCULATOR 
 // ─────────────────────────────────────────────
 
-// Module-level reusable result — cleared and reused every call
 const CALC_RESULT: Record<string, gsap.TweenVars> = {};
 
 const calculatePresetValues = (
@@ -295,7 +270,6 @@ const calculatePresetValues = (
 ): Record<string, gsap.TweenVars> => {
   if (skipAll) return {};
 
-  // Clear previous result
   for (const k in CALC_RESULT) delete CALC_RESULT[k];
 
   const activeProps = new Set(activePresetString.split("-").filter(Boolean));
@@ -320,8 +294,7 @@ const calculatePresetValues = (
     return Math.max(-limit, Math.min(val, limit));
   };
 
-  // Collect filter chunks — all filter-based presets merge into one string
-  const filterChunks: string[] = [];
+  const filterChunks: string[] =[];
 
   for (const prop of allPropsArray) {
     if (disabledPresets.has(prop)) continue;
@@ -333,26 +306,23 @@ const calculatePresetValues = (
     const useBase    = isReset || !isActive;
     const curIntensity = useBase ? 0 : intensity;
 
-    // ── Color presets (string interpolation) ──────────────────────────────
     if (prop === "color" || prop === "background") {
       if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
-      const [baseColor, maxColor] = bounds as [string, string];
+      const[baseColor, maxColor] = bounds as [string, string];
       const interpolated = gsap.utils.interpolate(baseColor, maxColor, curIntensity);
       CALC_RESULT[prop][prop === "color" ? "color" : "backgroundColor"] = interpolated;
       continue;
     }
 
-    const [base, max] = bounds as [number, number];
+    const[base, max] = bounds as [number, number];
     const curValue = base + (max - base) * curIntensity;
 
-    // ── Filter presets (merged later) ─────────────────────────────────────
     if (prop === "blur")       { filterChunks.push(`blur(${curValue}px)`);                              continue; }
     if (prop === "glow")       { filterChunks.push(`drop-shadow(0 0 ${curValue}px currentColor)`);      continue; }
     if (prop === "brightness") { filterChunks.push(`brightness(${curValue})`);                          continue; }
     if (prop === "contrast")   { filterChunks.push(`contrast(${curValue})`);                            continue; }
     if (prop === "grayScale")  { filterChunks.push(`grayscale(${curValue})`);                           continue; }
 
-    // ── All other presets ──────────────────────────────────────────────────
     if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
     const res = CALC_RESULT[prop];
 
@@ -426,11 +396,9 @@ const calculatePresetValues = (
     }
   }
 
-  // ── Always write _filters so the reset path always has a target ──────────
   if (!CALC_RESULT["_filters"]) CALC_RESULT["_filters"] = {};
   CALC_RESULT["_filters"].filter = filterChunks.length > 0 ? filterChunks.join(" ") : "none";
 
-  // ── Custom start/end style interpolation ──────────────────────────────────
   if (startStyles || endStyles) {
     if (!CALC_RESULT["customStartEnd"]) CALC_RESULT["customStartEnd"] = {};
     const custom = CALC_RESULT["customStartEnd"];
@@ -519,7 +487,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   borderRadius, letterSpacing, grayScale,
   scroll, timeline, delay, resetDelay, scrub, resetScrub,
   start, end, stagger, resetStagger, targets,
-  ignoreSelectors = [],
+  ignoreSelectors =[],
   excludeElements,
   className       = "",
   style           = {},
@@ -539,7 +507,6 @@ export const Proximity: React.FC<ProximityProps> = ({
   const resetPropsRef     = useRef<Record<string, gsap.TweenVars>[]>([]);
   const spatialGridRef    = useRef<Map<string, number[]>>(new Map());
 
-  // ── Resolve active config (prop wins over config object) ─────────────────
   const activeMode             = config.mode              ?? mode;
   const activeReach            = config.reach             ?? reach;
   const activeFalloff          = config.falloff           ?? falloff;
@@ -557,7 +524,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   const activePrecision        = config.precision         ?? precision;
   const activeOnCalculate      = config.onCalculate       ?? onCalculate;
   const activeOnReset          = config.onReset           ?? onReset;
-  const activeTargets          = config.targets           ?? targets          ?? [];
+  const activeTargets          = config.targets           ?? targets          ??[];
   const activeScrollStart      = config.scrollStart       ?? scrollStart;
   const activeScrollEnd        = config.scrollEnd         ?? scrollEnd;
   const activeScrollFocus      = config.scrollFocus       ?? scrollFocus;
@@ -572,7 +539,6 @@ export const Proximity: React.FC<ProximityProps> = ({
   const targetEase      = EASE_MAP[config.ease      ?? (ease as string)]      ?? config.ease      ?? ease      ?? "power1.out";
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] ?? config.resetEase ?? resetEase ?? "power2.out";
 
-  // ── Deep-memoised values ────────────────────────────────────────────────
   const mergedBounds = useDeepMemo({
     scale:        config.scale        ?? scale,
     flexScale:    config.flexScale    ?? flexScale,
@@ -609,22 +575,19 @@ export const Proximity: React.FC<ProximityProps> = ({
   const memoizedResetStagger= useDeepMemo(activeResetStagger);
   const memoizedDisableOnMobile = useDeepMemo(activeDisableOnMobile);
 
-  // ── Preset string — all presets unified for calculatePresetValues ────────
   const allPresetsStr = useMemo(() => {
-    const base   = [activePreset, activeNearestPreset, activeNeighborPreset]
+    const base   =[activePreset, activeNearestPreset, activeNeighborPreset]
       .filter(Boolean).flatMap((p) => p.split("-"));
     const tgt    = parsedTargets
-      .flatMap((t) => [t.preset, t.nearestPreset, t.neighborPreset])
+      .flatMap((t) =>[t.preset, t.nearestPreset, t.neighborPreset])
       .filter(Boolean).flatMap((p) => (p as string).split("-"));
     return Array.from(new Set([...base, ...tgt])).join("-");
-  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
+  },[activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
 
-  // ── Keys the animation loop iterates over ───────────────────────────────
   const activePresetKeys = useMemo(() => {
     const keys = new Set<string>();
     allPresetsStr.split("-").forEach((k) => {
       if (!k) return;
-      // All filter presets collapse into one "_filters" key
       if (FILTER_PRESETS.has(k)) keys.add("_filters");
       else keys.add(k);
     });
@@ -632,9 +595,8 @@ export const Proximity: React.FC<ProximityProps> = ({
       keys.add("customStartEnd");
     if (activeOnCalculate) keys.add("custom");
     return Array.from(keys);
-  }, [allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
+  },[allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
   const parseScrollPosition = (pos: string, isStart: boolean): string => {
     if (pos === "appear")    return "top bottom";
     if (pos === "disappear") return "bottom top";
@@ -655,7 +617,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     }
   };
 
-  // ── will-change ref counter (prevents race-condition leaks) ──────────────
   const addWillChange = (item: ProxHTMLElement): void => {
     item._willChangeCount = (item._willChangeCount ?? 0) + 1;
     if (item._willChangeCount === 1)
@@ -667,10 +628,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     if (item._willChangeCount === 0)
       gsap.set(item, { willChange: "auto" });
   };
-
-  // ────────────────────────────────────────────────────────────────────────
-  // MAIN EFFECT
-  // ────────────────────────────────────────────────────────────────────────
 
   useGSAP(() => {
     const container = containerRef.current;
@@ -695,7 +652,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     let isCancelled = false;
     let io: IntersectionObserver | null = null;
 
-    // ── updateCenters: measure items and rebuild spatial grid ────────────
     const updateCenters = (): void => {
       if (!container) return;
       const cRect  = container.getBoundingClientRect();
@@ -710,29 +666,46 @@ export const Proximity: React.FC<ProximityProps> = ({
         bottom:cRect.bottom + sy,
       };
 
-      // Strip inline transforms so getBoundingClientRect is accurate
+      // 1. MARGIN/BOUNDING BOX FIX: 
+      // Only clear margins if we actually need flexScale. 
+      // This stops ProximityText from stripping its own clipFix margins and calculating incorrect offset centers.
+      const hasFlexScale = allPresetsStr.includes("flexScale");
       const saved = itemsRef.current.map((item) => {
-        const s = { ml: item.style.marginLeft, mr: item.style.marginRight,
-                    mt: item.style.marginTop,  mb: item.style.marginBottom, tf: item.style.transform };
-        item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = item.style.transform = "";
+        const s: any = { tf: item.style.transform };
+        item.style.transform = "";
+        
+        if (hasFlexScale) {
+          s.ml = item.style.marginLeft;
+          s.mr = item.style.marginRight;
+          s.mt = item.style.marginTop;
+          s.mb = item.style.marginBottom;
+          item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = "";
+        }
         return s;
       });
 
       const measurements = itemsRef.current.map((item) => {
         const rect = item.getBoundingClientRect();
         const comp = window.getComputedStyle(item);
-        return { rect,
+        return { 
+          rect,
           ml: parseFloat(comp.marginLeft)  || 0,
           mr: parseFloat(comp.marginRight) || 0,
           mt: parseFloat(comp.marginTop)   || 0,
-          mb: parseFloat(comp.marginBottom)|| 0 };
+          mb: parseFloat(comp.marginBottom)|| 0 
+        };
       });
 
       centersRef.current = itemsRef.current.map((item, i) => {
         const s = saved[i];
-        item.style.marginLeft  = s.ml; item.style.marginRight = s.mr;
-        item.style.marginTop   = s.mt; item.style.marginBottom= s.mb;
-        item.style.transform   = s.tf;
+        item.style.transform = s.tf;
+        if (hasFlexScale) {
+          item.style.marginLeft  = s.ml; 
+          item.style.marginRight = s.mr;
+          item.style.marginTop   = s.mt; 
+          item.style.marginBottom= s.mb;
+        }
+
         const { rect, ml, mr, mt, mb } = measurements[i];
         return {
           left:  rect.left   + sx, right: rect.right  + sx,
@@ -743,16 +716,14 @@ export const Proximity: React.FC<ProximityProps> = ({
         };
       });
 
-      // Rebuild spatial hash grid
       spatialGridRef.current.clear();
       centersRef.current.forEach((c, i) => {
         const key = `${Math.floor(c.x / 150)},${Math.floor(c.y / 150)}`;
-        if (!spatialGridRef.current.has(key)) spatialGridRef.current.set(key, []);
+        if (!spatialGridRef.current.has(key)) spatialGridRef.current.set(key,[]);
         spatialGridRef.current.get(key)!.push(i);
       });
     };
 
-    // ── initItems: query DOM, build quickTo cache, compute reset state ───
     const initItems = (): void => {
       if (itemsRef.current.length > 0) gsap.killTweensOf(itemsRef.current);
 
@@ -774,7 +745,6 @@ export const Proximity: React.FC<ProximityProps> = ({
           item.dataset.proxOriginal = item.textContent ?? "";
         if (item.proxCipher === undefined) item.proxCipher = 0;
 
-        // ── Always rebuild quickTo cache (ensures fresh duration/ease) ──
         item._quickTos = {};
         const lc  = targetMapRef.current.get(item);
         const dur = lc?.duration ?? activeDuration;
@@ -804,7 +774,6 @@ export const Proximity: React.FC<ProximityProps> = ({
         io!.observe(item);
       });
 
-      // Compute reset props for every item
       resetPropsRef.current = itemsRef.current.map((_, i) => {
         if (skipAllAnimations) return {};
         if (activeOnReset)     return { custom: activeOnReset() };
@@ -817,7 +786,6 @@ export const Proximity: React.FC<ProximityProps> = ({
         return clone;
       });
 
-      // Apply initial reset state
       if (!skipAllAnimations && itemsRef.current.length > 0) {
         const flatProps: gsap.TweenVars = { willChange: "auto" };
         if (resetPropsRef.current[0])
@@ -826,7 +794,6 @@ export const Proximity: React.FC<ProximityProps> = ({
       }
     };
 
-    // ── Observers ────────────────────────────────────────────────────────
     const handleMotionChange = (e: MediaQueryListEvent): void => {
       isReducedMotion   = e.matches;
       skipAllAnimations = isReducedMotion || (isMobile && memoizedDisableOnMobile === true);
@@ -860,16 +827,20 @@ export const Proximity: React.FC<ProximityProps> = ({
     resizeObserver.observe(container);
     resizeObserver.observe(document.body);
 
-    // ── Scroll listener — keeps spatial grid accurate after scroll ───────
+    // 2. SCROLL LAG FIX:
+    // Completely removed the `updateCenters` loop from the standard window scroll. 
+    // Document-absolute coordinates do not change on window scroll.
+    // We ONLY listen to scroll if there's a specialized, internal scroll container passed via scrollerRef.
     let scrollTimeout: ReturnType<typeof setTimeout>;
     const onScroll = (): void => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(updateCenters, 100);
     };
-    const scrollListenTarget = scrollerRef?.current ?? window;
-    scrollListenTarget.addEventListener("scroll", onScroll as EventListener, { passive: true });
+    const scrollListenTarget = scrollerRef?.current;
+    if (scrollListenTarget && scrollListenTarget !== (window as unknown) && scrollListenTarget !== document.documentElement && scrollListenTarget !== document.body) {
+      scrollListenTarget.addEventListener("scroll", onScroll as EventListener, { passive: true });
+    }
 
-    // ── Stagger helper ───────────────────────────────────────────────────
     const getStaggerValue = (
       i: number, target: HTMLElement, list: HTMLElement[],
       staggerVal: number | gsap.StaggerVars
@@ -879,7 +850,6 @@ export const Proximity: React.FC<ProximityProps> = ({
       return gsap.utils.distribute(staggerVal)(i, target, list);
     };
 
-    // ── Inline apply helper (uses quickTo where possible) ────────────────
     const applyVars = (
       item: ProxHTMLElement,
       key: string,
@@ -907,15 +877,12 @@ export const Proximity: React.FC<ProximityProps> = ({
       }
     };
 
-    // ═════════════════════════════════════════
-    // SCROLL MODE
-    // ═════════════════════════════════════════
     if (activeMode === "scroll") {
       const setupScroll = (): void => {
         if (isCancelled) return;
         initItems();
         scrollTriggersRef.current.forEach((t) => t.kill());
-        scrollTriggersRef.current = [];
+        scrollTriggersRef.current =[];
 
         const isTriggerMode  = activeScrollConfig.scrub === false;
         const scrollerTarget = scrollerRef?.current ?? activeScrollConfig.scroller ?? window;
@@ -1027,7 +994,6 @@ export const Proximity: React.FC<ProximityProps> = ({
               const vel     = self.getVelocity();
               const simDy   = Math.min(Math.max(vel * 0.05, -100), 100);
 
-              // Precision guard
               if (
                 Math.abs(intens - statesRef.current[i].lastIntensity) < activePrecision &&
                 Math.abs(simDy  - statesRef.current[i].lastDy)         < 1.0
@@ -1059,34 +1025,33 @@ export const Proximity: React.FC<ProximityProps> = ({
 
       if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
 
-    // ═════════════════════════════════════════
-    // POINTER MODE
-    // ═════════════════════════════════════════
     } else {
       if (document.fonts) document.fonts.ready.then(initItems); else initItems();
 
-      const actualSpread = activeReach * 10000;
       const maxDistance  = activeReach * 200;
 
       const onTick = (): void => {
-        // ── POINTER BATCHING: skip frame if cursor hasn't moved ──────────
+        const hasCipher = allPresetsStr.includes("cipher");
+
+        // CIPHER BUG FIX:
+        // By ticking ciphers at the top of the function, they continuously decode [1, 0] properly
+        // without getting blocked by the idle-mouse return statement below.
+        if (hasCipher && !skipAllAnimations) {
+          for (let i = 0; i < itemsRef.current.length; i++) {
+            const item = itemsRef.current[i];
+            if (item.proxCipher! > 0.01) {
+              cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
+            }
+          }
+        }
+
         if (
           pointer.current.x === lastPointer.current.x &&
           pointer.current.y === lastPointer.current.y
         ) {
-            // If the mouse is idle, ensure active ciphers keep ticking
-            if (allPresetsStr.includes("cipher")) {
-              for (let i = 0; i < itemsRef.current.length; i++) {
-                if (!statesRef.current[i].isOutside) {
-                  const item = itemsRef.current[i];
-                    if (item.proxCipher! > 0.01) {
-                      cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
-                        }
-                      }
-                    }
-                  }
-          return
+          return;
         }
+        
         lastPointer.current.x = pointer.current.x;
         lastPointer.current.y = pointer.current.y;
 
@@ -1102,7 +1067,6 @@ export const Proximity: React.FC<ProximityProps> = ({
           (pointer.current.target as HTMLElement)?.closest?.(sel)
         );
 
-        // Early exit if cursor is far outside container and all items are idle
         if (containerBoundsRef.current && !activeGlobal) {
           const cb = containerBoundsRef.current;
           if (
@@ -1112,26 +1076,24 @@ export const Proximity: React.FC<ProximityProps> = ({
           ) return;
         }
 
-        // ── SPATIAL GRID: only check items near the cursor ───────────────
         const toCheck = new Set<number>();
         if (activeGlobal) {
           itemsRef.current.forEach((_, i) => toCheck.add(i));
         } else {
           const CELL = 150;
+          const cellRadius = Math.ceil(maxDistance / CELL);
           const cx   = Math.floor(pageX / CELL);
           const cy   = Math.floor(pageY / CELL);
-          for (let ox = -1; ox <= 1; ox++) {
-            for (let oy = -1; oy <= 1; oy++) {
+          for (let ox = -cellRadius; ox <= cellRadius; ox++) {
+            for (let oy = -cellRadius; oy <= cellRadius; oy++) {
               const cells = spatialGridRef.current.get(`${cx + ox},${cy + oy}`);
               if (cells) for (const idx of cells) toCheck.add(idx);
             }
           }
         }
-        // Also always check items that are currently active (so they can reset)
+        
         statesRef.current.forEach((s, i) => { if (!s.isOutside) toCheck.add(i); });
 
-        // ── Distance pass ────────────────────────────────────────────────
-        // FIX: use .map() not .fill() to avoid shared object reference
         const dData: { d: number; dx: number; dy: number }[] =
           itemsRef.current.map(() => ({ d: Infinity, dx: 0, dy: 0 }));
 
@@ -1155,14 +1117,12 @@ export const Proximity: React.FC<ProximityProps> = ({
           dData[i] = { d, dx, dy };
         }
 
-        // ── Animation pass ───────────────────────────────────────────────
         for (const i of toCheck) {
           const item = itemsRef.current[i];
           const { d, dx, dy } = dData[i];
           const isNearest = i === nearestIndex && d <= maxDistance;
           const lc = targetMapRef.current.get(item);
 
-          // Item is outside reach → reset
           if (d > maxDistance) {
             if (!statesRef.current[i].isOutside) {
               const gr   = resetPropsRef.current[i] ?? {};
@@ -1188,17 +1148,15 @@ export const Proximity: React.FC<ProximityProps> = ({
             continue;
           }
 
-          const intensity = Math.exp(-(Math.pow(d, activeFalloff)) / actualSpread);
+          // 3. REACH/FALLOFF FIX:
+          // Traded out the impossible-to-tune exponential mapping for the exact mathematically bounded curve.
+          const intensity = Math.pow(Math.max(0, 1 - (d / maxDistance)), activeFalloff);
 
-          // ── PRECISION GUARD: skip if nothing meaningful changed ────────
           const hasMoved =
             Math.abs(intensity - statesRef.current[i].lastIntensity) >= activePrecision ||
             Math.abs(dx        - statesRef.current[i].lastDx)         >= 1.0;
-          const isCipherActive = (item as ProxHTMLElement).proxCipher! > 0.01;
 
           if (!hasMoved) {
-            if (isCipherActive && allPresetsStr.includes("cipher"))
-              cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
             continue;
           }
 
@@ -1282,13 +1240,17 @@ export const Proximity: React.FC<ProximityProps> = ({
       return () => {};
     }
 
-    // ── Global cleanup ───────────────────────────────────────────────────
     return () => {
       isCancelled = true;
       mediaQuery.removeEventListener("change", handleMotionChange);
       mutationObserver.disconnect();
       resizeObserver.disconnect();
-      scrollListenTarget.removeEventListener("scroll", onScroll as EventListener);
+      
+      const scrollListenTarget = scrollerRef?.current;
+      if (scrollListenTarget && scrollListenTarget !== (window as unknown) && scrollListenTarget !== document.documentElement && scrollListenTarget !== document.body) {
+        scrollListenTarget.removeEventListener("scroll", onScroll as EventListener);
+      }
+      
       clearTimeout(resizeTimeout!);
       clearTimeout(scrollTimeout!);
       if (io) io.disconnect();
@@ -1296,7 +1258,7 @@ export const Proximity: React.FC<ProximityProps> = ({
       gsap.killTweensOf(itemsRef.current);
     };
   }, {
-    dependencies: [
+    dependencies:[
       selector, excludeElements,
       activePreset, activeNearestPreset, activeNeighborPreset,
       activeReach, activeFalloff, activeDuration, activePrecision,

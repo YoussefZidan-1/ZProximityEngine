@@ -66,6 +66,62 @@ vite.config.ts
 <files>
 This section contains the contents of the repository's files.
 
+<file path="eslint.config.js">
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+])
+</file>
+
+<file path="LICENSE">
+MIT License
+
+Copyright (c) 2026 Yousef Zedan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</file>
+
 <file path="src/components/Gamebox.tsx">
 import React, { useState, useEffect, useMemo } from 'react';
 import { Proximity, ProximityText } from '../lib';
@@ -277,62 +333,6 @@ export default function Gamebox() {
 }
 </file>
 
-<file path="eslint.config.js">
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import { defineConfig, globalIgnores } from 'eslint/config'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{js,jsx}'],
-    extends: [
-      js.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
-    ],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        ecmaFeatures: { jsx: true },
-        sourceType: 'module',
-      },
-    },
-    rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
-    },
-  },
-])
-</file>
-
-<file path="LICENSE">
-MIT License
-
-Copyright (c) 2026 Yousef Zedan
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-</file>
-
 <file path="src/components/PresetsSection.tsx">
 import React, { useState } from 'react';
 import { Proximity, ProximityText } from '../lib';
@@ -479,7 +479,7 @@ export interface GlobalProximityConfig {
 }
 
 const ProximityContext = createContext<GlobalProximityConfig>({
-  defaultFont: "'Georama', sans-serif",
+  defaultFont: "sans-serif",
 });
 
 interface ProximityProviderProps {
@@ -612,6 +612,92 @@ export default defineConfig(({ mode }) => {
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path="src/index.css">
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Source Serif 4", serif;
+}
+
+@layer base {
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #0c0c0c;
+    --border-color: #0c0c0c;
+    --grid-dot: #d1d5db; /* Darkened dots for visibility */
+  }
+
+  .dark {
+    --bg-color: #000000;
+    --text-color: #f8fafc;
+    --border-color: #f8fafc;
+    --grid-dot: #1f2937;
+  }
+
+  body {
+    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  * {
+    @apply border-[var(--border-color)];
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  .prox-part {
+    transition: none !important;
+  }
+}
+
+.mono-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@layer utilities {
+  .smooth-strike {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-strike::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-strike:hover::after {
+    width: 100%;
+  }
+
+  .smooth-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-underline:hover::after {
+    width: 100%;
+  }
 }
 </file>
 
@@ -1400,21 +1486,37 @@ export default function Documentation() {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setShowFloatingBtn(window.scrollY > 300);
-      const sections = SECTIONS.map(s => document.getElementById(s.id));
-      let current = SECTIONS[0].id;
-      sections.forEach(sec => {
-        if (sec && sec.getBoundingClientRect().top <= window.innerHeight / 3) {
-          current = sec.id;
+      let ticking = false;
+      const handleScroll = () => {
+        if (!ticking) {
+          window.requestAnimationFrame(() => {
+            setShowFloatingBtn(window.scrollY > 300);
+            ticking = false;
+          });
+          ticking = true;
         }
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll();
+  
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      }, { rootMargin: "-30% 0px -60% 0px" });
+  
+      SECTIONS.forEach(sec => {
+        const el = document.getElementById(sec.id);
+        if (el) observer.observe(el);
       });
-      setActiveSection(current);
-    };
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        observer.disconnect();
+      };
+    },[]);
 
   const scrollToSection = useCallback((id: string) => {
     gsap.to(window, { duration: 1.2, scrollTo: { y: `#${id}`, offsetY: 100 }, ease: 'power3.inOut' });
@@ -2357,92 +2459,6 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 }
 </file>
 
-<file path="src/index.css">
-@import "tailwindcss";
-
-@theme {
-  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-serif: "Source Serif 4", serif;
-}
-
-@layer base {
-  :root {
-    --bg-color: #ffffff;
-    --text-color: #0c0c0c;
-    --border-color: #0c0c0c;
-    --grid-dot: #d1d5db; /* Darkened dots for visibility */
-  }
-
-  .dark {
-    --bg-color: #000000;
-    --text-color: #f8fafc;
-    --border-color: #f8fafc;
-    --grid-dot: #1f2937;
-  }
-
-  body {
-    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-  }
-
-  * {
-    @apply border-[var(--border-color)];
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
-  }
-
-  .prox-part {
-    transition: none !important;
-  }
-}
-
-.mono-grid {
-  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
-  background-size: 24px 24px;
-}
-
-@layer utilities {
-  .smooth-strike {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-strike::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 0;
-    height: 1.5px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-strike:hover::after {
-    width: 100%;
-  }
-
-  .smooth-underline {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-underline::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-underline:hover::after {
-    width: 100%;
-  }
-}
-</file>
-
 <file path=".gitignore">
 logs
 *.log
@@ -2466,6 +2482,194 @@ dist-ssr
 *.sw?
 .npmrc
 *.tgz
+</file>
+
+<file path="src/lib/ProximityText.tsx">
+import React, { Fragment, useMemo, CSSProperties } from "react";
+import { Proximity, ProximityProps } from "./Proximity";
+import { useProximityConfig } from "./ProximityContext";
+
+export interface ProximityTextProps extends ProximityProps {
+  text: string;
+  splitBy?: "letter" | "word" | "line";
+  textClassName?: string;
+  fontFamily?: string;
+  lineHeight?: number;
+  textLetterSpacing?: number;
+  wordSpacing?: number;
+  clipFix?: string;
+  ignoreText?: (string | RegExp)[];
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
+}
+
+export const ProximityText: React.FC<ProximityTextProps> = ({
+  text,
+  splitBy = "letter",
+  className = "",
+  textClassName = "",
+  fontFamily,
+  lineHeight = 1.2,
+  textLetterSpacing = 0,
+  wordSpacing = 0.5,
+  clipFix = "0.15em",
+  ignoreText,
+  textAlign,
+  justifyContent,
+  style,
+  ...proximityProps
+}) => {
+  const globalConfig = useProximityConfig();
+  const actualFontFamily = fontFamily || globalConfig.defaultFont;
+
+  const activeSplitBy = proximityProps.config?.splitBy ?? splitBy;
+
+  const containerStyle = useMemo<CSSProperties>(() => {
+    const base: CSSProperties = {
+      display: "flex",
+      fontFamily: actualFontFamily,
+      lineHeight: lineHeight,
+      letterSpacing: `${textLetterSpacing}em`,
+      textAlign: textAlign,
+      justifyContent: justifyContent,
+    };
+    if (activeSplitBy === "word") {
+      return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
+    }
+    if (activeSplitBy === "line") {
+      return { ...base, display: "block" };
+    }
+    return { ...base, flexWrap: "wrap", rowGap: "0.1em" };
+  },[activeSplitBy, actualFontFamily, lineHeight, textLetterSpacing, wordSpacing, textAlign, justifyContent]);
+
+  const renderedContent = useMemo(() => {
+    const checkIgnore = (str: string): boolean => {
+      if (!ignoreText || !Array.isArray(ignoreText)) return false;
+      return ignoreText.some((rule) => {
+        if (typeof rule === "string") return rule === str;
+        if (rule instanceof RegExp) return rule.test(str);
+        return false;
+      });
+    };
+
+    const spanStyle = (ignored: boolean): CSSProperties => ({
+      display: "inline-block",
+      userSelect: "none",
+      padding: clipFix ? clipFix : undefined,
+      margin: clipFix ? `calc(-1 * ${clipFix})` : undefined,
+    });
+
+    const lines = text.split("\n");
+
+    if (activeSplitBy === "word") {
+      return lines.map((line, lineIdx) => (
+        <Fragment key={`line-group-${lineIdx}`}>
+          {line.split(" ").filter(w => w.length > 0).map((word, i) => {
+            const isIgnored = checkIgnore(word);
+            const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
+            return (
+              <span
+                key={`word-${lineIdx}-${i}`}
+                aria-hidden="true"
+                className={partClass}
+                style={{ ...spanStyle(isIgnored), whiteSpace: "nowrap" }}
+              >
+                {word}
+              </span>
+            );
+          })}
+          {lineIdx < lines.length - 1 && (
+            <div style={{ width: "100%", height: 0 }} />
+          )}
+        </Fragment>
+      ));
+    }
+
+    if (activeSplitBy === "line") {
+      return lines.map((line, i) => {
+        const isIgnored = checkIgnore(line);
+        const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
+        return (
+          <Fragment key={`line-${i}`}>
+            <span
+              aria-hidden="true"
+              className={partClass}
+              style={{ ...spanStyle(isIgnored), whiteSpace: "nowrap" }}
+            >
+              {line}
+            </span>
+            {i < lines.length - 1 && <br />}
+          </Fragment>
+        );
+      });
+    }
+    return lines.map((line, lineIdx) => {
+      const words = line.split(" ");
+      return (
+        <Fragment key={`line-${lineIdx}`}>
+          {words.map((word, wordIdx) => (
+            <Fragment key={`word-wrapper-${lineIdx}-${wordIdx}`}>
+              <span style={{ display: "inline-flex", flexWrap: "nowrap" }}>
+                {[...word].map((char, charIdx) => {
+                  const isIgnored = checkIgnore(char);
+                  const partClass = isIgnored
+                    ? textClassName
+                    : `prox-part ${textClassName}`.trim();
+                  return (
+                    <span
+                      aria-hidden="true"
+                      key={`char-${charIdx}`}
+                      className={partClass}
+                      style={spanStyle(isIgnored)}
+                    >
+                      {char}
+                    </span>
+                  );
+                })}
+              </span>
+              {wordIdx < words.length - 1 && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-block",
+                    width: `${wordSpacing}em`,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </Fragment>
+          ))}
+          {lineIdx < lines.length - 1 && (
+            <div style={{ width: "100%", height: 0 }} />
+          )}
+        </Fragment>
+      );
+    });
+  },[text, activeSplitBy, textClassName, clipFix, ignoreText, wordSpacing]);
+
+  return (
+    <Proximity selector=".prox-part" className={className} {...proximityProps}>
+      <span
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          padding: 0,
+          margin: "-1px",
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        {text}
+      </span>
+      <div aria-hidden="true" style={containerStyle}>
+        {renderedContent}
+      </div>
+    </Proximity>
+  );
+};
 </file>
 
 <file path="index.html">
@@ -2511,139 +2715,6 @@ dist-ssr
         <script type="module" src="/src/main.tsx"></script>
     </body>
 </html>
-</file>
-
-<file path="src/lib/ProximityText.tsx">
-import React, { Fragment, useMemo, CSSProperties } from "react";
-import { Proximity, ProximityProps } from "./Proximity";
-import { useProximityConfig } from "./ProximityContext";
-
-export interface ProximityTextProps extends ProximityProps {
-  text: string;
-  splitBy?: "letter" | "word" | "line";
-  textClassName?: string;
-  fontFamily?: string;
-  lineHeight?: number;
-  letterSpacing?: number;
-  wordSpacing?: number;
-  clipFix?: string;
-  ignoreText?: (string | RegExp)[];
-  textAlign?: 'left' | 'center' | 'right' | 'justify'; 
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
-}
-
-export const ProximityText: React.FC<ProximityTextProps> = ({
-  text, splitBy = "letter", className = "", textClassName = "", fontFamily,
-  lineHeight = 1.2, letterSpacing = 0, wordSpacing = 0.5, clipFix = "0.2em",
-  ignoreText, textAlign, justifyContent, style, ...proximityProps
-}) => {
-  const globalConfig = useProximityConfig();
-  const actualFontFamily = fontFamily || globalConfig.defaultFont;
-  
-  // Parity Logic: Check config object first, then direct prop
-  const activeSplitBy = proximityProps.config?.splitBy ?? splitBy;
-
-  const containerStyle = useMemo<CSSProperties>(() => {
-    const base: CSSProperties = { 
-      display: "flex", fontFamily: actualFontFamily, lineHeight: lineHeight,
-      letterSpacing: `${letterSpacing}em`, textAlign: textAlign, justifyContent: justifyContent
-    };
-    if (activeSplitBy === "word") return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
-    if (activeSplitBy === "line") return { ...base, display: "block" };
-    return { ...base, flexWrap: "wrap", rowGap: "0.1em" }; 
-  },[activeSplitBy, actualFontFamily, lineHeight, letterSpacing, wordSpacing, textAlign, justifyContent]);
-
-  const renderedContent = useMemo(() => {
-    const getStyles = (ignored: boolean): CSSProperties => ({
-      display: "inline-block", userSelect: "none",
-      willChange: ignored ? "auto" : "transform, filter, opacity",
-      padding: clipFix, margin: clipFix ? `-${clipFix}` : "0",
-    });
-
-    const checkIgnore = (str: string) => {
-      if (!ignoreText || !Array.isArray(ignoreText)) return false;
-      return ignoreText.some((rule) => {
-        if (typeof rule === "string") return rule === str;
-        if (rule instanceof RegExp) return rule.test(str);
-        return false;
-      });
-    };
-
-    const lines = text.split("\n");
-
-    if (activeSplitBy === "word") {
-      return lines.map((line, lineIdx) => (
-        <Fragment key={`line-group-${lineIdx}`}>
-          {line.split(" ").map((word, i) => {
-            const isIgnored = checkIgnore(word);
-            const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
-            return (
-              <span key={`word-${lineIdx}-${i}`} aria-hidden="true" className={partClass} style={{ ...getStyles(isIgnored), whiteSpace: "nowrap" }}>
-                {word}
-              </span>
-            );
-          })}
-          {lineIdx < lines.length - 1 && <div style={{ width: "100%", height: 0 }} />}
-        </Fragment>
-      ));
-    }
-
-    if (activeSplitBy === "line") {
-      return lines.map((line, i) => {
-        const isIgnored = checkIgnore(line);
-        const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
-        return (
-          <Fragment key={`line-${i}`}>
-            <span aria-hidden="true" className={partClass} style={{ ...getStyles(isIgnored), whiteSpace: "nowrap" }}>
-              {line}
-            </span>
-            {i < lines.length - 1 && <br />}
-          </Fragment>
-        );
-      });
-    }
-
-    return lines.map((line, lineIdx) => {
-      const words = line.split(" ");
-      return (
-        <Fragment key={`line-${lineIdx}`}>
-          {words.map((word, wordIdx) => (
-            <span key={`word-wrapper-${lineIdx}-${wordIdx}`} style={{ display: "inline-block", whiteSpace: "nowrap" }}>
-              {[...word].map((char, charIdx) => {
-                const isIgnored = checkIgnore(char);
-                const partClass = isIgnored ? textClassName : `prox-part ${textClassName}`.trim();
-                return (
-                  <span 
-                    aria-hidden="true" 
-                    key={`char-${charIdx}`} 
-                    className={partClass} 
-                    style={{ ...getStyles(isIgnored) }}
-                  >
-                    {char}
-                  </span>
-                );
-              })}
-              {wordIdx < words.length - 1 && (
-                <span aria-hidden="true" className={textClassName} style={{ ...getStyles(true), whiteSpace: "pre" }}>
-                  {" "}
-                </span>
-              )}
-            </span>
-          ))}
-          {lineIdx < lines.length - 1 && <div style={{ width: "100%", height: 0 }} />}
-        </Fragment>
-      );
-    });
-  },[text, activeSplitBy, textClassName, clipFix, ignoreText]);
-
-  return (
-    <Proximity selector=".prox-part" className={className} {...proximityProps}>
-      <div aria-label={text} role="img" style={containerStyle}>
-        {renderedContent}
-      </div>
-    </Proximity>
-  );
-};
 </file>
 
 <file path="README.md">
@@ -2843,7 +2914,7 @@ MIT © [Yousef Zedan](https://github.com/YoussefZidan-1/ZProximityEngine)
 <file path="package.json">
 {
   "name": "z-proximity-engine",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "High-performance proximity-based motion engine for React.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -3069,7 +3140,7 @@ export default function App() {
                   <Moon size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-100 dark:opacity-0" />
                   <Sun size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-0 dark:opacity-100" />
                 </button>
-                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.4.1 — STABLE</span>
+                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.4.2 — STABLE</span>
                 <div className="reveal-item px-5 py-2.5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-mono flex items-center gap-2">
                   <Terminal size={12} />
                   npm i z-proximity-engine
@@ -3433,7 +3504,8 @@ const FILTER_PRESETS = new Set(["blur", "glow", "brightness", "contrast", "grayS
 const QUICK_TO_PROPS = [
   "scaleX", "scaleY", "x", "y", "rotation", "skewX", "opacity",
   "rotationX", "rotationY", "transformPerspective",
-  "marginLeft", "marginRight", "marginTop", "marginBottom", "fontWeight"
+  "marginLeft", "marginRight", "marginTop", "marginBottom", "fontWeight",
+  "proxCipher",
 ];
 
 // ─────────────────────────────────────────────
