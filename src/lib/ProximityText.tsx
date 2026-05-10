@@ -14,7 +14,55 @@ export interface ProximityTextProps extends ProximityProps {
   ignoreText?: (string | RegExp)[];
   textAlign?: 'left' | 'center' | 'right' | 'justify';
   justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
+  dir?: 'ltr' | 'rtl' | 'auto';
 }
+
+// --- ARABIC TYPOGRAPHY ENGINE ---
+const ARABIC_NON_CONNECTING_LEFT = /[اأإآدذرزوؤءة\s]/;
+const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670]/;
+const LAM = "\u0644";
+const ALEFS = /[\u0622\u0623\u0625\u0627]/;
+const ZWJ = "\u200D";
+
+// Safely groups diacritics and preserves essential ligatures (like Lam-Alef)
+const getArabicSegments = (word: string) => {
+  const segments: string[] =[];
+  let i = 0;
+  
+  while (i < word.length) {
+    let char = word[i];
+    
+    // Look-ahead for Lam-Alef (لا) ligature to prevent it from splitting
+    if (char === LAM && i + 1 < word.length) {
+      let nextIdx = i + 1;
+      let tempDiacritics = "";
+      while (nextIdx < word.length && ARABIC_DIACRITICS.test(word[nextIdx])) {
+        tempDiacritics += word[nextIdx];
+        nextIdx++;
+      }
+      if (nextIdx < word.length && ALEFS.test(word[nextIdx])) {
+        char += tempDiacritics + word[nextIdx];
+        i = nextIdx;
+      }
+    }
+    
+    // Attach diacritics to the previous letter segment
+    if (ARABIC_DIACRITICS.test(char) && segments.length > 0) {
+      segments[segments.length - 1] += char;
+    } else {
+      segments.push(char);
+    }
+    i++;
+  }
+  return segments;
+};
+
+// Determines if a segment allows connection to the subsequent letter
+const doesSegmentConnectLeft = (seg: string) => {
+  const baseStr = seg.replace(ARABIC_DIACRITICS, '');
+  if (!baseStr) return false;
+  return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
+};
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
   text,
@@ -29,6 +77,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   ignoreText,
   textAlign,
   justifyContent,
+  dir = "auto",
   style,
   ...proximityProps
 }) => {
@@ -36,6 +85,12 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
 
   const activeSplitBy = proximityProps.config?.splitBy ?? splitBy;
+
+  // Auto-detect RTL if Arabic characters are present
+  const computedDir = useMemo(() => {
+    if (dir !== "auto") return dir;
+    return /[\u0600-\u06FF]/.test(text) ? "rtl" : undefined;
+  }, [dir, text]);
 
   const containerStyle = useMemo<CSSProperties>(() => {
     const base: CSSProperties = {
@@ -45,6 +100,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       letterSpacing: `${textLetterSpacing}em`,
       textAlign: textAlign,
       justifyContent: justifyContent,
+      direction: computedDir,
     };
     if (activeSplitBy === "word") {
       return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
@@ -53,7 +109,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       return { ...base, display: "block" };
     }
     return { ...base, flexWrap: "wrap", rowGap: "0.1em" };
-  },[activeSplitBy, actualFontFamily, lineHeight, textLetterSpacing, wordSpacing, textAlign, justifyContent]);
+  },[activeSplitBy, actualFontFamily, lineHeight, textLetterSpacing, wordSpacing, textAlign, justifyContent, computedDir]);
 
   const renderedContent = useMemo(() => {
     const checkIgnore = (str: string): boolean => {
@@ -65,12 +121,39 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       });
     };
 
-    const spanStyle = (ignored: boolean): CSSProperties => ({
-      display: "inline-block",
-      userSelect: "none",
-      padding: clipFix ? clipFix : undefined,
-      margin: clipFix ? `calc(-1 * ${clipFix})` : undefined,
-    });
+    // Advanced dynamic span styler: Removes padding rounding errors & forcefully overlaps connecting edges
+    const spanStyle = (ignored: boolean, isArabic = false, connectsRight = false, connectsLeft = false): CSSProperties => {
+      const cf = clipFix || "0px";
+      
+      let pTop = cf, pBottom = cf, pRight = cf, pLeft = cf;
+      let mTop = `calc(-1 * ${cf})`, mBottom = `calc(-1 * ${cf})`;
+      let mRight = `calc(-1 * ${cf})`, mLeft = `calc(-1 * ${cf})`;
+
+      if (isArabic) {
+        // Right side (visually): Connects to the PREVIOUS letter
+        if (connectsRight) {
+          pRight = "0px";
+          mRight = "0px";
+        }
+        
+        // Left side (visually): Connects to the NEXT letter
+        if (connectsLeft) {
+          pLeft = "0px";
+          // Micro-overlap completely destroys the white anti-aliasing gap
+          mLeft = "-0.04em"; 
+        }
+      }
+
+      return {
+        display: "inline-block",
+        userSelect: "none",
+        padding: `${pTop} ${pRight} ${pBottom} ${pLeft}`,
+        margin: `${mTop} ${mRight} ${mBottom} ${mLeft}`,
+        textRendering: isArabic ? "optimizeLegibility" : undefined,
+        // Prevent external CSS (like Tailwind tracking) from ripping cursive letters apart
+        letterSpacing: isArabic ? "normal" : undefined, 
+      };
+    };
 
     const lines = text.split("\n");
 
@@ -85,7 +168,13 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
                 key={`word-${lineIdx}-${i}`}
                 aria-hidden="true"
                 className={partClass}
-                style={{ ...spanStyle(isIgnored), whiteSpace: "nowrap" }}
+                style={{
+                  display: "inline-block",
+                  userSelect: "none",
+                  padding: clipFix ? clipFix : undefined,
+                  margin: clipFix ? `calc(-1 * ${clipFix})` : undefined,
+                  whiteSpace: "nowrap"
+                }}
               >
                 {word}
               </span>
@@ -107,7 +196,13 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
             <span
               aria-hidden="true"
               className={partClass}
-              style={{ ...spanStyle(isIgnored), whiteSpace: "nowrap" }}
+              style={{
+                display: "inline-block",
+                userSelect: "none",
+                padding: clipFix ? clipFix : undefined,
+                margin: clipFix ? `calc(-1 * ${clipFix})` : undefined,
+                whiteSpace: "nowrap"
+              }}
             >
               {line}
             </span>
@@ -116,42 +211,64 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
         );
       });
     }
+
+    // --- LETTER SPLIT (With Typographic Gap Fixing) ---
     return lines.map((line, lineIdx) => {
       const words = line.split(" ");
       return (
         <Fragment key={`line-${lineIdx}`}>
-          {words.map((word, wordIdx) => (
-            <Fragment key={`word-wrapper-${lineIdx}-${wordIdx}`}>
-              <span style={{ display: "inline-flex", flexWrap: "nowrap" }}>
-                {[...word].map((char, charIdx) => {
-                  const isIgnored = checkIgnore(char);
-                  const partClass = isIgnored
-                    ? textClassName
-                    : `prox-part ${textClassName}`.trim();
-                  return (
-                    <span
-                      aria-hidden="true"
-                      key={`char-${charIdx}`}
-                      className={partClass}
-                      style={spanStyle(isIgnored)}
-                    >
-                      {char}
-                    </span>
-                  );
-                })}
-              </span>
-              {wordIdx < words.length - 1 && (
-                <span
-                  aria-hidden="true"
-                  style={{
-                    display: "inline-block",
-                    width: `${wordSpacing}em`,
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-            </Fragment>
-          ))}
+          {words.map((word, wordIdx) => {
+            const segments = getArabicSegments(word);
+            return (
+              <Fragment key={`word-wrapper-${lineIdx}-${wordIdx}`}>
+                <span style={{ display: "inline-flex", flexWrap: "nowrap" }}>
+                  {segments.map((segment, charIdx) => {
+                    const isIgnored = checkIgnore(segment);
+                    const partClass = isIgnored
+                      ? textClassName
+                      : `prox-part ${textClassName}`.trim();
+                    
+                    let displayChar = segment;
+                    const isArabic = /[\u0600-\u06FF]/.test(segment);
+                    
+                    let connectsRight = false;
+                    let connectsLeft = false;
+                    
+                    if (isArabic) {
+                      const prevSeg = charIdx > 0 ? segments[charIdx - 1] : null;
+                      connectsRight = prevSeg ? doesSegmentConnectLeft(prevSeg) : false;
+                      connectsLeft = charIdx < segments.length - 1 ? doesSegmentConnectLeft(segment) : false;
+                      
+                      // Inject Zero-Width Joiners to enforce contextual cursive shaping
+                      if (connectsRight) displayChar = ZWJ + displayChar;
+                      if (connectsLeft) displayChar = displayChar + ZWJ;
+                    }
+
+                    return (
+                      <span
+                        aria-hidden="true"
+                        key={`char-${charIdx}`}
+                        className={partClass}
+                        style={spanStyle(isIgnored, isArabic, connectsRight, connectsLeft)}
+                      >
+                        {displayChar}
+                      </span>
+                    );
+                  })}
+                </span>
+                {wordIdx < words.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: "inline-block",
+                      width: `${wordSpacing}em`,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+              </Fragment>
+            );
+          })}
           {lineIdx < lines.length - 1 && (
             <div style={{ width: "100%", height: 0 }} />
           )}
