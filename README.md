@@ -4,6 +4,7 @@
   # 🚀 ZProximity Engine
   **The Physics of Attraction for the Modern Web.**
   
+  [![NPM Downloads](https://img.shields.io/npm/dt/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
   [![NPM Version](https://img.shields.io/npm/v/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
   [![Bundle Size](https://img.shields.io/bundlephobia/minzip/z-proximity-engine?color=black&label=Core%20Weight&style=for-the-badge)](https://bundlephobia.com/package/z-proximity-engine)
   [![License](https://img.shields.io/npm/l/z-proximity-engine?color=black&style=for-the-badge)](#license)
