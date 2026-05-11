@@ -8,7 +8,9 @@ export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
 
   return {
-    plugins: [
+    publicDir: isLib ? false : 'public',
+
+    plugins:[
       react(),
       tailwindcss(),
       isLib && dts({ 
@@ -17,9 +19,17 @@ export default defineConfig(({ mode }) => {
       })
     ].filter(Boolean),
 
+    esbuild: {
+      drop: isLib ?['console', 'debugger'] :[],
+      legalComments: 'none', 
+    },
+
     build: {
       outDir: 'dist',
       emptyOutDir: true,
+      minify: 'esbuild',
+      chunkSizeWarningLimit: 500,
+
       ...(isLib ? {
         // --- LIBRARY CONFIG ---
         lib: {
@@ -29,12 +39,22 @@ export default defineConfig(({ mode }) => {
           fileName: (format) => `index.${format}.js`,
         },
         rollupOptions: {
-          external: ['react', 'react-dom', 'gsap', '@gsap/react'],
+          external:[
+            'react', 
+            'react-dom', 
+            'react/jsx-runtime', 
+            '@gsap/react', 
+            /^gsap(\/.*)?$/
+          ],
           output: {
+            compact: true, 
+            format: 'es',
             globals: {
               react: 'React',
               'react-dom': 'ReactDOM',
+              'react/jsx-runtime': 'jsxRuntime',
               gsap: 'gsap',
+              'gsap/ScrollTrigger': 'ScrollTrigger',
               '@gsap/react': 'gsapReact'
             },
           },
