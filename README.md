@@ -182,11 +182,14 @@ Need custom flocking behaviors, spring dynamics, or color shifting? Use `onCalcu
 
 ---
 
+## Maintainer
+Created and maintained by [Youssef Zidan](https://yzportfolio.vercel.app)
+
 ## 🤝 Contributing
-Built by **Yousef Zedan**. This is an open-source project aimed at pushing the boundaries of what React can do on the presentation layer. 
+Built by **Youssef Zidan**. This is an open-source project aimed at pushing the boundaries of what React can do on the presentation layer. 
 
 1. Star the repo ⭐
 2. Submit a PR with your creative presets or math optimizations!
 
 ## 📄 License
-MIT © [Yousef Zedan](https://github.com/YoussefZidan-1/ZProximityEngine)
+MIT © [Youssef Zidan](https://github.com/YoussefZidan-1/ZProximityEngine)
