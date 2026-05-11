@@ -615,92 +615,6 @@ export const useProximityConfig = () => useContext(ProximityContext);
 }
 </file>
 
-<file path="src/index.css">
-@import "tailwindcss";
-
-@theme {
-  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-serif: "Source Serif 4", serif;
-}
-
-@layer base {
-  :root {
-    --bg-color: #ffffff;
-    --text-color: #0c0c0c;
-    --border-color: #0c0c0c;
-    --grid-dot: #d1d5db; /* Darkened dots for visibility */
-  }
-
-  .dark {
-    --bg-color: #000000;
-    --text-color: #f8fafc;
-    --border-color: #f8fafc;
-    --grid-dot: #1f2937;
-  }
-
-  body {
-    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-  }
-
-  * {
-    @apply border-[var(--border-color)];
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
-  }
-
-  .prox-part {
-    transition: none !important;
-  }
-}
-
-.mono-grid {
-  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
-  background-size: 24px 24px;
-}
-
-@layer utilities {
-  .smooth-strike {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-strike::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 0;
-    height: 1.5px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-strike:hover::after {
-    width: 100%;
-  }
-
-  .smooth-underline {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-underline::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-underline:hover::after {
-    width: 100%;
-  }
-}
-</file>
-
 <file path="src/Documentation.tsx">
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Proximity, ProximityText } from './lib';
@@ -2459,6 +2373,93 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 }
 </file>
 
+<file path="src/index.css">
+@import "tailwindcss";
+
+@theme {
+  --font-arabic: "Cairo";
+  --font-sans: "Bricolage Grotesque", "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Source Serif 4", serif;
+}
+
+@layer base {
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #0c0c0c;
+    --border-color: #0c0c0c;
+    --grid-dot: #d1d5db; /* Darkened dots for visibility */
+  }
+
+  .dark {
+    --bg-color: #000000;
+    --text-color: #f8fafc;
+    --border-color: #f8fafc;
+    --grid-dot: #1f2937;
+  }
+
+  body {
+    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  * {
+    @apply border-[var(--border-color)];
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  .prox-part {
+    transition: none !important;
+  }
+}
+
+.mono-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@layer utilities {
+  .smooth-strike {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-strike::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-strike:hover::after {
+    width: 100%;
+  }
+
+  .smooth-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-underline:hover::after {
+    width: 100%;
+  }
+}
+</file>
+
 <file path=".gitignore">
 logs
 *.log
@@ -2515,12 +2516,9 @@ dist-ssr
             <meta property="twitter:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
     
             <!-- Fonts optimization -->
-            <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-            <link
-                href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap"
-                rel="stylesheet"
-            />
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cairo:wght@200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,200..900&display=swap" rel="stylesheet">
         </head>
     <body>
         <div id="root"></div>
@@ -2546,7 +2544,55 @@ export interface ProximityTextProps extends ProximityProps {
   ignoreText?: (string | RegExp)[];
   textAlign?: 'left' | 'center' | 'right' | 'justify';
   justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
+  dir?: 'ltr' | 'rtl' | 'auto';
 }
+
+// --- ARABIC TYPOGRAPHY ENGINE ---
+const ARABIC_NON_CONNECTING_LEFT = /[اأإآدذرزوؤءة\s]/;
+const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670]/;
+const LAM = "\u0644";
+const ALEFS = /[\u0622\u0623\u0625\u0627]/;
+const ZWJ = "\u200D";
+
+// Safely groups diacritics and preserves essential ligatures (like Lam-Alef)
+const getArabicSegments = (word: string) => {
+  const segments: string[] =[];
+  let i = 0;
+  
+  while (i < word.length) {
+    let char = word[i];
+    
+    // Look-ahead for Lam-Alef (لا) ligature to prevent it from splitting
+    if (char === LAM && i + 1 < word.length) {
+      let nextIdx = i + 1;
+      let tempDiacritics = "";
+      while (nextIdx < word.length && ARABIC_DIACRITICS.test(word[nextIdx])) {
+        tempDiacritics += word[nextIdx];
+        nextIdx++;
+      }
+      if (nextIdx < word.length && ALEFS.test(word[nextIdx])) {
+        char += tempDiacritics + word[nextIdx];
+        i = nextIdx;
+      }
+    }
+    
+    // Attach diacritics to the previous letter segment
+    if (ARABIC_DIACRITICS.test(char) && segments.length > 0) {
+      segments[segments.length - 1] += char;
+    } else {
+      segments.push(char);
+    }
+    i++;
+  }
+  return segments;
+};
+
+// Determines if a segment allows connection to the subsequent letter
+const doesSegmentConnectLeft = (seg: string) => {
+  const baseStr = seg.replace(ARABIC_DIACRITICS, '');
+  if (!baseStr) return false;
+  return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
+};
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
   text,
@@ -2561,6 +2607,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   ignoreText,
   textAlign,
   justifyContent,
+  dir = "auto",
   style,
   ...proximityProps
 }) => {
@@ -2568,6 +2615,12 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
 
   const activeSplitBy = proximityProps.config?.splitBy ?? splitBy;
+
+  // Auto-detect RTL if Arabic characters are present
+  const computedDir = useMemo(() => {
+    if (dir !== "auto") return dir;
+    return /[\u0600-\u06FF]/.test(text) ? "rtl" : undefined;
+  }, [dir, text]);
 
   const containerStyle = useMemo<CSSProperties>(() => {
     const base: CSSProperties = {
@@ -2577,6 +2630,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       letterSpacing: `${textLetterSpacing}em`,
       textAlign: textAlign,
       justifyContent: justifyContent,
+      direction: computedDir,
     };
     if (activeSplitBy === "word") {
       return { ...base, flexWrap: "wrap", columnGap: `${wordSpacing}em`, rowGap: "0.1em" };
@@ -2585,7 +2639,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       return { ...base, display: "block" };
     }
     return { ...base, flexWrap: "wrap", rowGap: "0.1em" };
-  },[activeSplitBy, actualFontFamily, lineHeight, textLetterSpacing, wordSpacing, textAlign, justifyContent]);
+  },[activeSplitBy, actualFontFamily, lineHeight, textLetterSpacing, wordSpacing, textAlign, justifyContent, computedDir]);
 
   const renderedContent = useMemo(() => {
     const checkIgnore = (str: string): boolean => {
@@ -2597,12 +2651,39 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       });
     };
 
-    const spanStyle = (ignored: boolean): CSSProperties => ({
-      display: "inline-block",
-      userSelect: "none",
-      padding: clipFix ? clipFix : undefined,
-      margin: clipFix ? `calc(-1 * ${clipFix})` : undefined,
-    });
+    // Advanced dynamic span styler: Removes padding rounding errors & forcefully overlaps connecting edges
+    const spanStyle = (ignored: boolean, isArabic = false, connectsRight = false, connectsLeft = false): CSSProperties => {
+      const cf = clipFix || "0px";
+      
+      let pTop = cf, pBottom = cf, pRight = cf, pLeft = cf;
+      let mTop = `calc(-1 * ${cf})`, mBottom = `calc(-1 * ${cf})`;
+      let mRight = `calc(-1 * ${cf})`, mLeft = `calc(-1 * ${cf})`;
+
+      if (isArabic) {
+        // Right side (visually): Connects to the PREVIOUS letter
+        if (connectsRight) {
+          pRight = "0px";
+          mRight = "0px";
+        }
+        
+        // Left side (visually): Connects to the NEXT letter
+        if (connectsLeft) {
+          pLeft = "0px";
+          // Micro-overlap completely destroys the white anti-aliasing gap
+          mLeft = "-0.04em"; 
+        }
+      }
+
+      return {
+        display: "inline-block",
+        userSelect: "none",
+        padding: `${pTop} ${pRight} ${pBottom} ${pLeft}`,
+        margin: `${mTop} ${mRight} ${mBottom} ${mLeft}`,
+        textRendering: isArabic ? "optimizeLegibility" : undefined,
+        // Prevent external CSS (like Tailwind tracking) from ripping cursive letters apart
+        letterSpacing: isArabic ? "normal" : undefined, 
+      };
+    };
 
     const lines = text.split("\n");
 
@@ -2617,7 +2698,13 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
                 key={`word-${lineIdx}-${i}`}
                 aria-hidden="true"
                 className={partClass}
-                style={{ ...spanStyle(isIgnored), whiteSpace: "nowrap" }}
+                style={{
+                  display: "inline-block",
+                  userSelect: "none",
+                  padding: clipFix ? clipFix : undefined,
+                  margin: clipFix ? `calc(-1 * ${clipFix})` : undefined,
+                  whiteSpace: "nowrap"
+                }}
               >
                 {word}
               </span>
@@ -2639,7 +2726,13 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
             <span
               aria-hidden="true"
               className={partClass}
-              style={{ ...spanStyle(isIgnored), whiteSpace: "nowrap" }}
+              style={{
+                display: "inline-block",
+                userSelect: "none",
+                padding: clipFix ? clipFix : undefined,
+                margin: clipFix ? `calc(-1 * ${clipFix})` : undefined,
+                whiteSpace: "nowrap"
+              }}
             >
               {line}
             </span>
@@ -2648,42 +2741,64 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
         );
       });
     }
+
+    // --- LETTER SPLIT (With Typographic Gap Fixing) ---
     return lines.map((line, lineIdx) => {
       const words = line.split(" ");
       return (
         <Fragment key={`line-${lineIdx}`}>
-          {words.map((word, wordIdx) => (
-            <Fragment key={`word-wrapper-${lineIdx}-${wordIdx}`}>
-              <span style={{ display: "inline-flex", flexWrap: "nowrap" }}>
-                {[...word].map((char, charIdx) => {
-                  const isIgnored = checkIgnore(char);
-                  const partClass = isIgnored
-                    ? textClassName
-                    : `prox-part ${textClassName}`.trim();
-                  return (
-                    <span
-                      aria-hidden="true"
-                      key={`char-${charIdx}`}
-                      className={partClass}
-                      style={spanStyle(isIgnored)}
-                    >
-                      {char}
-                    </span>
-                  );
-                })}
-              </span>
-              {wordIdx < words.length - 1 && (
-                <span
-                  aria-hidden="true"
-                  style={{
-                    display: "inline-block",
-                    width: `${wordSpacing}em`,
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-            </Fragment>
-          ))}
+          {words.map((word, wordIdx) => {
+            const segments = getArabicSegments(word);
+            return (
+              <Fragment key={`word-wrapper-${lineIdx}-${wordIdx}`}>
+                <span style={{ display: "inline-flex", flexWrap: "nowrap" }}>
+                  {segments.map((segment, charIdx) => {
+                    const isIgnored = checkIgnore(segment);
+                    const partClass = isIgnored
+                      ? textClassName
+                      : `prox-part ${textClassName}`.trim();
+                    
+                    let displayChar = segment;
+                    const isArabic = /[\u0600-\u06FF]/.test(segment);
+                    
+                    let connectsRight = false;
+                    let connectsLeft = false;
+                    
+                    if (isArabic) {
+                      const prevSeg = charIdx > 0 ? segments[charIdx - 1] : null;
+                      connectsRight = prevSeg ? doesSegmentConnectLeft(prevSeg) : false;
+                      connectsLeft = charIdx < segments.length - 1 ? doesSegmentConnectLeft(segment) : false;
+                      
+                      // Inject Zero-Width Joiners to enforce contextual cursive shaping
+                      if (connectsRight) displayChar = ZWJ + displayChar;
+                      if (connectsLeft) displayChar = displayChar + ZWJ;
+                    }
+
+                    return (
+                      <span
+                        aria-hidden="true"
+                        key={`char-${charIdx}`}
+                        className={partClass}
+                        style={spanStyle(isIgnored, isArabic, connectsRight, connectsLeft)}
+                      >
+                        {displayChar}
+                      </span>
+                    );
+                  })}
+                </span>
+                {wordIdx < words.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: "inline-block",
+                      width: `${wordSpacing}em`,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+              </Fragment>
+            );
+          })}
           {lineIdx < lines.length - 1 && (
             <div style={{ width: "100%", height: 0 }} />
           )}
@@ -2724,6 +2839,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   # 🚀 ZProximity Engine
   **The Physics of Attraction for the Modern Web.**
   
+  [![NPM Downloads](https://img.shields.io/npm/dt/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
   [![NPM Version](https://img.shields.io/npm/v/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
   [![Bundle Size](https://img.shields.io/bundlephobia/minzip/z-proximity-engine?color=black&label=Core%20Weight&style=for-the-badge)](https://bundlephobia.com/package/z-proximity-engine)
   [![License](https://img.shields.io/npm/l/z-proximity-engine?color=black&style=for-the-badge)](#license)
