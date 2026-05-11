@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
+import Sitemap from 'vite-plugin-sitemap';
 
 export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
@@ -16,6 +17,10 @@ export default defineConfig(({ mode }) => {
       isLib && dts({ 
         insertTypesEntry: true, 
         include: ['src/lib']
+      }),
+      !isLib && Sitemap({ 
+        hostname: 'https://z-proximity-engine.vercel.app',
+        dynamicRoutes: ['/'] 
       })
     ].filter(Boolean),
 
@@ -60,6 +65,7 @@ export default defineConfig(({ mode }) => {
           },
         },
       } : {
+        // --- APP CONFIG ---
       })
     },
   };
