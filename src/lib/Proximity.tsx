@@ -638,73 +638,65 @@ export const Proximity: React.FC<ProximityProps> = ({
     let io: IntersectionObserver | null = null;
 
     const updateCenters = (): void => {
-      if (!container) return;
-      const cRect = container.getBoundingClientRect();
-      const scrollEl = scrollerRef?.current;
-      const sx = scrollEl ? scrollEl.scrollLeft : window.scrollX;
-      const sy = scrollEl ? scrollEl.scrollTop : window.scrollY;
-
-      containerBoundsRef.current = {
-        left: cRect.left + sx,
-        right: cRect.right + sx,
-        top: cRect.top + sy,
-        bottom: cRect.bottom + sy,
-      };
-
-      const hasFlexScale = allPresetsStr.includes("flexScale");
-      const saved = itemsRef.current.map((item) => {
-        const s: any = { tf: item.style.transform };
-        item.style.transform = "";
-
-        if (hasFlexScale) {
-          s.ml = item.style.marginLeft;
-          s.mr = item.style.marginRight;
-          s.mt = item.style.marginTop;
-          s.mb = item.style.marginBottom;
-          item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = "";
-        }
-        return s;
-      });
-
-      const measurements = itemsRef.current.map((item) => {
-        const rect = item.getBoundingClientRect();
-        const comp = window.getComputedStyle(item);
-        return {
-          rect,
-          ml: parseFloat(comp.marginLeft) || 0,
-          mr: parseFloat(comp.marginRight) || 0,
-          mt: parseFloat(comp.marginTop) || 0,
-          mb: parseFloat(comp.marginBottom) || 0
+          if (!container) return;
+          const cRect = container.getBoundingClientRect();
+          containerBoundsRef.current = {
+            left: 0,
+            right: cRect.width,
+            top: 0,
+            bottom: cRect.height,
+          };
+          
+          const hasFlexScale = allPresetsStr.includes("flexScale");
+          const saved = itemsRef.current.map((item) => {
+            const s: any = { tf: item.style.transform };
+            item.style.transform = "";
+            if (hasFlexScale) {
+              s.ml = item.style.marginLeft; s.mr = item.style.marginRight;
+              s.mt = item.style.marginTop; s.mb = item.style.marginBottom;
+              item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = "";
+            }
+            return s;
+          });
+    
+          const measurements = itemsRef.current.map((item) => {
+            const rect = item.getBoundingClientRect();
+            const comp = window.getComputedStyle(item);
+            return {
+              rect,
+              ml: parseFloat(comp.marginLeft) || 0, mr: parseFloat(comp.marginRight) || 0,
+              mt: parseFloat(comp.marginTop) || 0, mb: parseFloat(comp.marginBottom) || 0
+            };
+          });
+    
+          centersRef.current = itemsRef.current.map((item, i) => {
+            const s = saved[i];
+            item.style.transform = s.tf;
+            if (hasFlexScale) {
+              item.style.marginLeft = s.ml; item.style.marginRight = s.mr;
+              item.style.marginTop = s.mt; item.style.marginBottom = s.mb;
+            }
+    
+            const { rect, ml, mr, mt, mb } = measurements[i];
+            
+            return {
+              left: rect.left - cRect.left, 
+              right: rect.right - cRect.left,
+              top: rect.top - cRect.top, 
+              bottom: rect.bottom - cRect.top,
+              x: (rect.left + rect.width / 2) - cRect.left, // Local Center X
+              y: (rect.top + rect.height / 2) - cRect.top,  // Local Center Y
+              w: rect.width, h: rect.height, ml, mr, mt, mb,
+            };
+          });
+    
+          spatialGridRef.current.clear();
+          centersRef.current.forEach((c, i) => {
+            const key = `${Math.floor(c.x / 150)},${Math.floor(c.y / 150)}`;
+            if (!spatialGridRef.current.has(key)) spatialGridRef.current.set(key,[]);
+            spatialGridRef.current.get(key)!.push(i);
+          });
         };
-      });
-
-      centersRef.current = itemsRef.current.map((item, i) => {
-        const s = saved[i];
-        item.style.transform = s.tf;
-        if (hasFlexScale) {
-          item.style.marginLeft = s.ml;
-          item.style.marginRight = s.mr;
-          item.style.marginTop = s.mt;
-          item.style.marginBottom = s.mb;
-        }
-
-        const { rect, ml, mr, mt, mb } = measurements[i];
-        return {
-          left: rect.left + sx, right: rect.right + sx,
-          top: rect.top + sy, bottom: rect.bottom + sy,
-          x: rect.left + sx + rect.width / 2,
-          y: rect.top + sy + rect.height / 2,
-          w: rect.width, h: rect.height, ml, mr, mt, mb,
-        };
-      });
-
-      spatialGridRef.current.clear();
-      centersRef.current.forEach((c, i) => {
-        const key = `${Math.floor(c.x / 150)},${Math.floor(c.y / 150)}`;
-        if (!spatialGridRef.current.has(key)) spatialGridRef.current.set(key,[]);
-        spatialGridRef.current.get(key)!.push(i);
-      });
-    };
 
     const initItems = (): void => {
       if (itemsRef.current.length > 0) gsap.killTweensOf(itemsRef.current);
@@ -845,48 +837,61 @@ export const Proximity: React.FC<ProximityProps> = ({
 
       if (needsGsapTo) {
         if (key === "scroll") {
-          const shouldScroll = vars.proxScroll === 1;
-          const travel = vars.proxScrollTravel || 100;
-          const currentState = item._scrollState || "resting";
-          
-          if (shouldScroll && currentState !== "hovered") {
-            item._scrollState = "hovered";
-            gsap.killTweensOf(item, "yPercent,clipPath");
-            
-            gsap.to(item, {
-              yPercent: -travel,
-              clipPath: `inset(0% 0% 100% 0%)`,
-              duration: dur * 0.8,
-              ease: "power2.in",
-              overwrite: "auto",
-              onComplete: () => {
-                gsap.fromTo(item,
-                  { yPercent: travel, clipPath: `inset(100% 0% 0% 0%)` },
-                  { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.8, ease: "power2.out" }
-                );
-              }
-            });
-          } else if (!shouldScroll && currentState === "hovered") {
-            item._scrollState = "resting";
-            gsap.killTweensOf(item, "yPercent,clipPath");
-            
-            gsap.to(item, {
-              yPercent: travel,
-              clipPath: `inset(100% 0% 0% 0%)`,
-              duration: dur * 0.8,
-              ease: "power2.in",
-              overwrite: "auto",
-              onComplete: () => {
-                gsap.fromTo(item,
-                  { yPercent: -travel, clipPath: `inset(0% 0% 100% 0%)` },
-                  { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.8, ease: "power2.out" }
-                );
-              }
-            });
-          }
-          return;
-        }
-
+                  const shouldScroll = vars.proxScroll === 1;
+                  const travel = vars.proxScrollTravel || 100;
+                  const currentState = item._scrollState || "resting";
+                  
+                  if (shouldScroll && currentState !== "hovered") {
+                    item._scrollState = "hovered";
+                    gsap.killTweensOf(item, "yPercent,clipPath");
+                    
+                    gsap.to(item, {
+                      yPercent: -travel,
+                      clipPath: `inset(${travel}% 0% 0% 0%)`,
+                      duration: dur * 0.5,
+                      delay: del,
+                      ease: ez,
+                      overwrite: "auto",
+                      onComplete: () => {
+                        gsap.fromTo(item,
+                          { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` },
+                          { 
+                            yPercent: 0, 
+                            clipPath: `inset(0% 0% 0% 0%)`, 
+                            duration: dur * 0.5, 
+                            ease: ez 
+                          }
+                        );
+                      }
+                    });
+                  } else if (!shouldScroll && currentState === "hovered") {
+                    item._scrollState = "resting";
+                    gsap.killTweensOf(item, "yPercent,clipPath");
+                    
+                    // Phase 1 (Unhover): Redo backward! Scroll DOWN and mask out bottom
+                    gsap.to(item, {
+                      yPercent: travel,
+                      clipPath: `inset(0% 0% ${travel}% 0%)`,
+                      duration: dur * 0.5,
+                      delay: del,
+                      ease: ez,
+                      overwrite: "auto",
+                      onComplete: () => {
+                        // Phase 2: Teleport to TOP and scroll DOWN to rest, masking out top
+                        gsap.fromTo(item,
+                          { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
+                          { 
+                            yPercent: 0, 
+                            clipPath: `inset(0% 0% 0% 0%)`, 
+                            duration: dur * 0.5, 
+                            ease: ez 
+                          }
+                        );
+                      }
+                    });
+                  }
+                  return;
+                }
         gsap.to(item, {
           ...vars, duration: dur, delay: del, ease: ez,
           overwrite: "auto",
@@ -1055,85 +1060,97 @@ export const Proximity: React.FC<ProximityProps> = ({
       const maxDistance = activeReach * 200;
 
       const onTick = (): void => {
-        const hasCipher = allPresetsStr.includes("cipher");
-
-        if (hasCipher && !skipAllAnimations) {
-          for (let i = 0; i < itemsRef.current.length; i++) {
-            const item = itemsRef.current[i];
-            if (item.proxCipher! > 0.01) {
-              cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
-            }
-          }
-        }
-
-        if (
-          pointer.current.x === lastPointer.current.x &&
-          pointer.current.y === lastPointer.current.y
-        ) {
-          return;
-        }
-
-        lastPointer.current.x = pointer.current.x;
-        lastPointer.current.y = pointer.current.y;
-
-        if (!pointer.current.active || !container || skipAllAnimations) return;
-
-        const scrollEl = scrollerRef?.current;
-        const sx = scrollEl ? scrollEl.scrollLeft : window.scrollX;
-        const sy = scrollEl ? scrollEl.scrollTop : window.scrollY;
-        const pageX = pointer.current.x + sx;
-        const pageY = pointer.current.y + sy;
-
-        const isBlocked = ignoreSelectors.some((sel) =>
-          (pointer.current.target as HTMLElement)?.closest?.(sel)
-        );
-
-        if (containerBoundsRef.current && !activeGlobal) {
-          const cb = containerBoundsRef.current;
-          if (
-            (pageX < cb.left - maxDistance || pageX > cb.right + maxDistance ||
-              pageY < cb.top - maxDistance || pageY > cb.bottom + maxDistance || isBlocked) &&
-            statesRef.current.every((s) => s.isOutside)
-          ) return;
-        }
-
-        const toCheck = new Set<number>();
-        if (activeGlobal) {
-          itemsRef.current.forEach((_, i) => toCheck.add(i));
-        } else {
-          const CELL = 150;
-          const cellRadius = Math.ceil(maxDistance / CELL);
-          const cx = Math.floor(pageX / CELL);
-          const cy = Math.floor(pageY / CELL);
-          for (let ox = -cellRadius; ox <= cellRadius; ox++) {
-            for (let oy = -cellRadius; oy <= cellRadius; oy++) {
-              const cells = spatialGridRef.current.get(`${cx + ox},${cy + oy}`);
-              if (cells) for (const idx of cells) toCheck.add(idx);
-            }
-          }
-        }
-
-        statesRef.current.forEach((s, i) => { if (!s.isOutside) toCheck.add(i); });
-
-        const dData: { d: number; dx: number; dy: number }[] =
-          itemsRef.current.map(() => ({ d: Infinity, dx: 0, dy: 0 }));
-
-        let nearestIndex = -1;
-        let minDist = Infinity;
+              const hasCipher = allPresetsStr.includes("cipher");
+      
+              if (hasCipher && !skipAllAnimations) {
+                for (let i = 0; i < itemsRef.current.length; i++) {
+                  const item = itemsRef.current[i];
+                  if (item.proxCipher! > 0.01) {
+                    cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
+                  }
+                }
+              }
+      
+              if (
+                pointer.current.x === lastPointer.current.x &&
+                pointer.current.y === lastPointer.current.y
+              ) {
+                return;
+              }
+      
+              lastPointer.current.x = pointer.current.x;
+              lastPointer.current.y = pointer.current.y;
+      
+              if (!pointer.current.active || !container || skipAllAnimations) return;
+              
+              const cRect = container.getBoundingClientRect();
+              
+              const localX = pointer.current.x - cRect.left;
+              const localY = pointer.current.y - cRect.top;
+      
+              const isBlocked = ignoreSelectors.some((sel) =>
+                (pointer.current.target as HTMLElement)?.closest?.(sel)
+              );
+      
+              if (containerBoundsRef.current && !activeGlobal) {
+                const cb = containerBoundsRef.current;
+                if (
+                  (localX < cb.left - maxDistance || localX > cb.right + maxDistance ||
+                   localY < cb.top - maxDistance || localY > cb.bottom + maxDistance || isBlocked) &&
+                  statesRef.current.every((s) => s.isOutside)
+                ) return;
+              }
+      
+              const toCheck = new Set<number>();
+              if (activeGlobal) {
+                itemsRef.current.forEach((_, i) => toCheck.add(i));
+              } else {
+                const CELL = 150;
+                const cellRadius = Math.ceil(maxDistance / CELL);
+                const cx = Math.floor(localX / CELL);
+                const cy = Math.floor(localY / CELL);
+                for (let ox = -cellRadius; ox <= cellRadius; ox++) {
+                  for (let oy = -cellRadius; oy <= cellRadius; oy++) {
+                    const cells = spatialGridRef.current.get(`${cx + ox},${cy + oy}`);
+                    if (cells) for (const idx of cells) toCheck.add(idx);
+                  }
+                }
+              }
+      
+              statesRef.current.forEach((s, i) => { if (!s.isOutside) toCheck.add(i); });
+      
+              const dData: { d: number; dx: number; dy: number }[] =
+                itemsRef.current.map(() => ({ d: Infinity, dx: 0, dy: 0 }));
+      
+              let nearestIndex = -1;
+              let minDist = Infinity;
+      
+              for (const i of toCheck) {
+                const b = centersRef.current[i];
+                if (!b) continue;
+                const dx = localX - b.x;
+                const dy = localY - b.y;
+                const inside = localX >= b.left && localX <= b.right && localY >= b.top && localY <= b.bottom;
+                const offScreen = (itemsRef.current[i] as ProxHTMLElement)._isProxVisible === false;
+                
+                const d = isBlocked || (activeExplicit && !inside) || offScreen
+                            ? Infinity
+                            : Math.sqrt(dx * dx + dy * dy);
+                            
+                if (d < minDist) { minDist = d; nearestIndex = i; }
+                dData[i] = { d, dx, dy };
+              }
 
         for (const i of toCheck) {
           const b = centersRef.current[i];
           if (!b) continue;
-          const dx = pageX - b.x;
-          const dy = pageY - b.y;
-          const inside = pageX >= b.left && pageX <= b.right && pageY >= b.top && pageY <= b.bottom;
+          const dx = localX - b.x;
+          const dy = localY - b.y;
+          const inside = localX >= b.left && localX <= b.right && localY >= b.top && localY <= b.bottom;
           const offScreen = (itemsRef.current[i] as ProxHTMLElement)._isProxVisible === false;
           const d = isBlocked || (activeExplicit && !inside) || offScreen
-            ? Infinity
-            : Math.sqrt(
-              Math.pow(Math.max(b.left - pageX, 0, pageX - b.right), 2) +
-              Math.pow(Math.max(b.top - pageY, 0, pageY - b.bottom), 2)
-            );
+                      ? Infinity
+                      : Math.sqrt(dx * dx + dy * dy);
           if (d < minDist) { minDist = d; nearestIndex = i; }
           dData[i] = { d, dx, dy };
         }

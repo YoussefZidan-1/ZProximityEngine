@@ -1,0 +1,32 @@
+changelog:
+  exclude:
+    labels:
+      - skip-chane-log
+    authors:
+      - bot-account
+  categories:
+    - title: "🚀 New Features"
+      labels:
+        - "feature"
+        - "feat"
+    - title: "🐛 Bug Fixes"
+      labels:
+        - "fix"
+        - "bug"
+    - title: "⚡ Performance Improvements"
+      labels:
+        - "perf"
+        - "optimization"
+    - title: "📝 Documentation"
+      labels:
+        - "docs"
+        - "readme"
+    - title: "🔧 Maintenance & Refactor"
+      labels:
+        - "chore"
+        - "refactor"
+        - "style"
+        - "build"
+    - title: "🧪 Testing"
+      labels:
+        - "test"
