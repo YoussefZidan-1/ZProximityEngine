@@ -25,9 +25,41 @@
       "labels": ["test"]
     }
   ],
+  "ignore_labels": ["ignore"],
   "template": "${{CHANGELOG}}",
   "pr_template": "- ${{TITLE}}",
-  "empty_template": "No major changes in this release.",
-  "ignore_labels": ["ignore"],
-  "extract_authors": true
+  "empty_template": "No recognized changes (ensure your commits start with feat: or fix:)",
+  "tag_resolver": {
+    "method": "semver"
+  },
+  "base_branches": ["main", "master"],
+  "sort": "DESC",
+  "search": {
+    "rules": [
+      {
+        "category": "## 🚀 New Features",
+        "regex": "^(feat|feature)(:|\\().*"
+      },
+      {
+        "category": "## 🐛 Bug Fixes",
+        "regex": "^(fix|bug)(:|\\().*"
+      },
+      {
+        "category": "## ⚡ Performance Improvements",
+        "regex": "^(perf|optimization)(:|\\().*"
+      },
+      {
+        "category": "## 🔧 Maintenance",
+        "regex": "^(chore|refactor|style|build|update)(:|\\().*"
+      },
+      {
+        "category": "## 📝 Documentations",
+        "regex": "^(readme|docs)(:|\\().*"
+      },
+      {
+        "category": "## 🧪 Testing",
+        "regex": "^test(:|\\().*"
+      }
+    ]
+  }
 }
