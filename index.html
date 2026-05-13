@@ -1,116 +1,77 @@
 <!doctype html>
 <html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#000000" /> 
     
-    <!-- Enhanced Primary Meta Tags -->
-    <title>ZProximity Engine - React Proximity Animation Library | GSAP Powered</title>
-    <meta name="title" content="ZProximity Engine - React Proximity Animation Library | GSAP Powered" />
-    <meta name="description" content="High-performance React library for proximity-based animations. Create magnetic effects, hover animations, and scroll interactions with 2.96KB core. 120+ FPS performance." />
-    <meta name="author" content="Youssef Zidan" />
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "ZProximity Engine",
+          "alternateName": ["ZProximity", "Z-Proximity"],
+          "url": "https://z-proximity-engine.vercel.app/"
+        }
+        </script>
     
-    <!-- Enhanced Keywords -->
-    <meta name="keywords" content="react animation library, proximity animation, gsap react, hover effects react, magnetic cursor, scroll animations, react motion design, proximity detection, interactive ui react, animation framework, react gsap library, cursor effects, spatial interactions, framer motion alternative, react spring alternative" />
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://z-proximity-engine.vercel.app/" />
-
-    <!-- Enhanced Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "ZProximity Engine",
-      "applicationCategory": "DeveloperApplication",
-      "operatingSystem": "Web",
-      "description": "High-performance React library for proximity-based animations and interactions. GSAP-powered engine for creating magnetic effects, hover animations, and scroll-driven motion with minimal bundle size.",
-      "url": "https://z-proximity-engine.vercel.app/",
-      "downloadUrl": "https://www.npmjs.com/package/z-proximity-engine",
-      "softwareVersion": "2.4.4",
-      "datePublished": "2024-01-01",
-      "dateModified": "2026-05-11",
-      "author": {
-        "@type": "Person",
-        "name": "Youssef Zidan",
-        "url": "https://github.com/YoussefZidan-1",
-        "sameAs": [
-          "https://www.linkedin.com/in/yousef-zedan-6a275a400/",
-          "https://github.com/YoussefZidan-1"
-        ]
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "5",
-        "ratingCount": "1"
-      },
-      "softwareRequirements": "React 18+, GSAP 3.15+",
-      "installUrl": "https://www.npmjs.com/package/z-proximity-engine",
-      "screenshot": "https://z-proximity-engine.vercel.app/og-image.jpg",
-      "featureList": [
-        "Proximity-based animations",
-        "Magnetic cursor effects",
-        "Scroll-driven interactions",
-        "120+ FPS performance",
-        "2.96KB core bundle size",
-        "TypeScript support"
-      ]
-    }
-    </script>
-
-    <!-- Breadcrumb Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [{
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://z-proximity-engine.vercel.app/"
-      },{
-        "@type": "ListItem",
-        "position": 2,
-        "name": "Documentation",
-        "item": "https://z-proximity-engine.vercel.app/#implementation"
-      }]
-    }
-    </script>
-
-    <!-- Google Search Console Verification (if you haven't done this) -->
-    <meta name="google-site-verification" content="kpZpGxomYOeqOMitjEl4EDhlANP33SaBq9WfbGmvdCU" />
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
-    <meta property="og:site_name" content="ZProximity Engine" />
-    <meta property="og:title" content="ZProximity Engine - React Proximity Animation Library" />
-    <meta property="og:description" content="High-performance React library for proximity-based animations. Create magnetic effects with 2.96KB core. 120+ FPS performance." />
-    <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:locale" content="en_US" />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@yourusername" />
-    <meta name="twitter:creator" content="@yourusername" />
-    <meta name="twitter:url" content="https://z-proximity-engine.vercel.app/" />
-    <meta name="twitter:title" content="ZProximity Engine - React Proximity Animation Library" />
-    <meta name="twitter:description" content="High-performance React library for proximity-based animations. 120+ FPS, 2.96KB core." />
-    <meta name="twitter:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cairo:wght@200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,200..900&display=swap" rel="stylesheet">
-</head>
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "ZProximity Engine",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Web",
+          "description": "High-performance React library for proximity-based animations. GSAP-powered engine with 8.7KB bundle size.",
+          "url": "https://z-proximity-engine.vercel.app/",
+          "downloadUrl": "https://www.npmjs.com/package/z-proximity-engine",
+          "softwareVersion": "2.4.4",
+          "author": {
+            "@type": "Person",
+            "name": "Youssef Zidan",
+            "url": "https://github.com/YoussefZidan-1"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Proximity-based animations",
+            "Magnetic cursor effects",
+            "Scroll-driven interactions",
+            "120+ FPS performance",
+            "8.7KB core bundle size"
+          ]
+        }
+        </script>
+    
+        <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48" />
+        <link rel="icon" type="image/png" href="/favicon-144.png" sizes="144x144" />
+        <link rel="apple-touch-icon" href="/favicon-144.png">
+        
+        <title>ZProximity Engine - React Proximity Animation Library | GSAP Powered</title>
+        <meta name="title" content="ZProximity Engine - React Proximity Animation Library | GSAP Powered" />
+        <meta name="description" content="High-performance React library for proximity-based animations. Create magnetic effects, hover animations, and scroll interactions with 8.7KB core. 120+ FPS performance." />
+        
+        <meta name="keywords" content="react animation library, proximity animation, gsap react, hover effects react, magnetic cursor, scroll animations, react motion design, proximity detection, interactive ui react, animation framework, react gsap library, cursor effects, spatial interactions, framer motion alternative, react spring alternative" />
+    
+        <link rel="canonical" href="https://z-proximity-engine.vercel.app/" />
+        <meta name="google-site-verification" content="kpZpGxomYOeqOMitjEl4EDhlANP33SaBq9WfbGmvdCU" />
+    
+        <!-- Open Graph / Facebook -->
+        <meta property="og:site_name" content="ZProximity Engine" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
+        <meta property="og:title" content="ZProximity Engine - React Proximity Animation Library" />
+        <meta property="og:description" content="High-performance React library for proximity-based animations. 120+ FPS performance." />
+        <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
+    
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cairo:wght@200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,200..900&display=swap" rel="stylesheet">
+    </head>
 <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
