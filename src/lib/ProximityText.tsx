@@ -1,5 +1,5 @@
 import React, { Fragment, useMemo, CSSProperties } from "react";
-import { Proximity, ProximityProps } from "./Proximity";
+import { Proximity, ProximityProps, useDeepMemo } from "./Proximity";
 import { useProximityConfig } from "./ProximityContext";
 
 export interface ProximityTextProps extends ProximityProps {
@@ -17,36 +17,33 @@ export interface ProximityTextProps extends ProximityProps {
   dir?: 'ltr' | 'rtl' | 'auto';
 }
 
-// --- ARABIC TYPOGRAPHY ENGINE ---
 const ARABIC_NON_CONNECTING_LEFT = /[اأإآدذرزوؤءة\s]/;
 const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670]/;
 const LAM = "\u0644";
 const ALEFS = /[\u0622\u0623\u0625\u0627]/;
 const ZWJ = "\u200D";
 
-// Safely groups diacritics and preserves essential ligatures (like Lam-Alef)
 const getArabicSegments = (word: string) => {
   const segments: string[] =[];
+  const characters = Array.from(word);
   let i = 0;
   
-  while (i < word.length) {
-    let char = word[i];
+  while (i < characters.length) {
+    let char = characters[i];
     
-    // Look-ahead for Lam-Alef (لا) ligature to prevent it from splitting
-    if (char === LAM && i + 1 < word.length) {
+    if (char === LAM && i + 1 < characters.length) {
       let nextIdx = i + 1;
       let tempDiacritics = "";
-      while (nextIdx < word.length && ARABIC_DIACRITICS.test(word[nextIdx])) {
-        tempDiacritics += word[nextIdx];
+      while (nextIdx < characters.length && ARABIC_DIACRITICS.test(characters[nextIdx])) {
+        tempDiacritics += characters[nextIdx];
         nextIdx++;
       }
-      if (nextIdx < word.length && ALEFS.test(word[nextIdx])) {
-        char += tempDiacritics + word[nextIdx];
+      if (nextIdx < characters.length && ALEFS.test(characters[nextIdx])) {
+        char += tempDiacritics + characters[nextIdx];
         i = nextIdx;
       }
     }
     
-    // Attach diacritics to the previous letter segment
     if (ARABIC_DIACRITICS.test(char) && segments.length > 0) {
       segments[segments.length - 1] += char;
     } else {
@@ -57,7 +54,6 @@ const getArabicSegments = (word: string) => {
   return segments;
 };
 
-// Determines if a segment allows connection to the subsequent letter
 const doesSegmentConnectLeft = (seg: string) => {
   const baseStr = seg.replace(ARABIC_DIACRITICS, '');
   if (!baseStr) return false;
@@ -85,8 +81,8 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
   const actualFontFamily = fontFamily || globalConfig.defaultFont;
 
   const activeSplitBy = proximityProps.config?.splitBy ?? splitBy;
+  const memoizedIgnoreText = useDeepMemo(ignoreText);
 
-  // Auto-detect RTL if Arabic characters are present
   const computedDir = useMemo(() => {
     if (dir !== "auto") return dir;
     return /[\u0600-\u06FF]/.test(text) ? "rtl" : undefined;
@@ -109,19 +105,18 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       return { ...base, display: "block" };
     }
     return { ...base, flexWrap: "wrap", rowGap: "0.1em" };
-  },[activeSplitBy, actualFontFamily, lineHeight, textLetterSpacing, wordSpacing, textAlign, justifyContent, computedDir]);
+  }, [activeSplitBy, actualFontFamily, lineHeight, textLetterSpacing, wordSpacing, textAlign, justifyContent, computedDir]);
 
   const renderedContent = useMemo(() => {
     const checkIgnore = (str: string): boolean => {
-      if (!ignoreText || !Array.isArray(ignoreText)) return false;
-      return ignoreText.some((rule) => {
+      if (!memoizedIgnoreText || !Array.isArray(memoizedIgnoreText)) return false;
+      return memoizedIgnoreText.some((rule) => {
         if (typeof rule === "string") return rule === str;
         if (rule instanceof RegExp) return rule.test(str);
         return false;
       });
     };
 
-    // Advanced dynamic span styler: Removes padding rounding errors & forcefully overlaps connecting edges
     const spanStyle = (ignored: boolean, isArabic = false, connectsRight = false, connectsLeft = false): CSSProperties => {
       const cf = clipFix || "0px";
       
@@ -130,16 +125,13 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       let mRight = `calc(-1 * ${cf})`, mLeft = `calc(-1 * ${cf})`;
 
       if (isArabic) {
-        // Right side (visually): Connects to the PREVIOUS letter
         if (connectsRight) {
           pRight = "0px";
           mRight = "0px";
         }
         
-        // Left side (visually): Connects to the NEXT letter
         if (connectsLeft) {
           pLeft = "0px";
-          // Micro-overlap completely destroys the white anti-aliasing gap
           mLeft = "-0.04em"; 
         }
       }
@@ -150,7 +142,6 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
         padding: `${pTop} ${pRight} ${pBottom} ${pLeft}`,
         margin: `${mTop} ${mRight} ${mBottom} ${mLeft}`,
         textRendering: isArabic ? "optimizeLegibility" : undefined,
-        // Prevent external CSS (like Tailwind tracking) from ripping cursive letters apart
         letterSpacing: isArabic ? "normal" : undefined, 
       };
     };
@@ -212,7 +203,6 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
       });
     }
 
-    // --- LETTER SPLIT (With Typographic Gap Fixing) ---
     return lines.map((line, lineIdx) => {
       const words = line.split(" ");
       return (
@@ -239,7 +229,6 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
                       connectsRight = prevSeg ? doesSegmentConnectLeft(prevSeg) : false;
                       connectsLeft = charIdx < segments.length - 1 ? doesSegmentConnectLeft(segment) : false;
                       
-                      // Inject Zero-Width Joiners to enforce contextual cursive shaping
                       if (connectsRight) displayChar = ZWJ + displayChar;
                       if (connectsLeft) displayChar = displayChar + ZWJ;
                     }
@@ -275,7 +264,7 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
         </Fragment>
       );
     });
-  },[text, activeSplitBy, textClassName, clipFix, ignoreText, wordSpacing]);
+  }, [text, activeSplitBy, textClassName, clipFix, memoizedIgnoreText, wordSpacing]);
 
   return (
     <Proximity selector=".prox-part" className={className} {...proximityProps}>

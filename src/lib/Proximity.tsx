@@ -1,13 +1,10 @@
+// src/lib/Proximity.tsx
 import React, { useRef, useMemo, CSSProperties } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
-
-// ─────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────
 
 export type EasePreset =
   | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic"
@@ -19,7 +16,7 @@ export type ProximityPreset =
   | "scale" | "flexScale" | "y" | "x" | "opacity" | "blur" | "rotate"
   | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
   | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
-  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale"
+  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "scroll"
   | (string & {});
 
 export type ProximityMode = "pointer" | "scroll";
@@ -52,7 +49,7 @@ export interface ProximityTargetOverride extends ProximityConfig {
 
 export interface ProximityConfig {
   mode?: ProximityMode;
-  scroll?: ProximityScrollConfig;
+  scroll?: ProximityScrollConfig | [number, number];
   scrollFocus?: "top" | "center" | "middle" | "bottom" | number;
   scrollStart?: string;
   scrollEnd?: string;
@@ -87,7 +84,7 @@ export interface ProximityConfig {
   x?: [number, number];
   opacity?: [number, number];
   blur?: [number, number];
-  rotate?:[number, number];
+  rotate?: [number, number];
   weight?: [number, number];
   skew?: [number, number];
   magnetic?: [number, number];
@@ -95,12 +92,12 @@ export interface ProximityConfig {
   tiltCard?: [number, number];
   repel?: [number, number];
   cipher?: [number, number];
-  reveal?:[number, number];
+  reveal?: [number, number];
   glow?: [number, number];
   brightness?: [number, number];
   contrast?: [number, number];
   borderRadius?: [number, number];
-  letterSpacing?:[number, number];
+  letterSpacing?: [number, number];
   grayScale?: [number, number];
   color?: [string, string];
   background?: [string, string];
@@ -123,16 +120,13 @@ export interface ProximityProps extends ProximityConfig {
   scrollerRef?: React.RefObject<HTMLElement | null>;
 }
 
-// ─────────────────────────────────────────────
-// INTERNAL TYPES
-// ─────────────────────────────────────────────
-
 interface ProxHTMLElement extends HTMLElement {
   proxCipher?: number;
   _lastCipherUpdate?: number;
   _quickTos?: Record<string, gsap.QuickToFunc>;
   _isProxVisible?: boolean;
   _willChangeCount?: number;
+  _scrollState?: "resting" | "hovered";
 }
 
 interface ItemCenter {
@@ -158,59 +152,56 @@ interface ContainerBounds {
   left: number; right: number; top: number; bottom: number;
 }
 
-// ─────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────
-
-const PRESET_DEFAULTS: Record<string, [number, number] |[string, string]> = {
-  scale:        [1, 1.5],
-  flexScale:    [1, 1.5],
-  y:            [0, -30],
-  x:            [0, 30],
-  opacity:      [0.2, 1],
-  blur:         [8, 0],
-  rotate:       [0, 90],
-  weight:       [100, 900],
-  skew:         [0, 20],
-  magnetic:     [0, 0.1],
-  tilt:         [0, 30],
-  tiltCard:     [0, 15],
-  repel:[0, 0.4],
-  cipher:       [0, 1],
-  reveal:[110, 0],
-  glow:         [0, 20],
-  brightness:[0.6, 1.2],
-  contrast:     [0.8, 1.4],
+const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
+  scale: [1, 1.5],
+  flexScale: [1, 1.5],
+  y: [0, -30],
+  x: [0, 30],
+  opacity: [0.2, 1],
+  blur: [8, 0],
+  rotate: [0, 90],
+  weight: [100, 900],
+  skew: [0, 20],
+  magnetic: [0, 0.1],
+  tilt: [0, 30],
+  tiltCard: [0, 15],
+  repel: [0, 0.4],
+  cipher: [0, 1],
+  reveal: [110, 0],
+  scroll: [0, 100],
+  glow: [0, 20],
+  brightness: [0.6, 1.2],
+  contrast: [0.8, 1.4],
   borderRadius: [0, 50],
-  letterSpacing:[-0.05, 0.2],
-  grayScale:    [1, 0],
-  color:["#888888", "#ffffff"],
-  background:["transparent", "rgba(255,255,255,0.1)"],
+  letterSpacing: [-0.05, 0.2],
+  grayScale: [1, 0],
+  color: ["#888888", "#ffffff"],
+  background: ["transparent", "rgba(255,255,255,0.1)"],
 };
 
 const EASE_MAP: Record<string, string> = {
-  smooth:      "power1.inOut",
-  heavy:       "power4.out",
-  sharp:       "expo.out",
-  fluid:       "circ.inOut",
-  bouncy:      "back.out(1.7)",
-  elastic:     "elastic.out(1, 0.3)",
-  jello:       "elastic.out(1.5, 0.2)",
-  bounce:      "bounce.out",
-  swing:       "back.inOut(3)",
-  vibrate:     "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
-  robot:       "steps(8)",
-  ghost:       "slow(0.6, 0.8, false)",
-  expo:        "expo.inOut",
-  circus:      "back.out(4)",
-  glitch:      "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
-  slowmo:      "slow(0.7, 0.7, false)",
-  spring:      "elastic.out(1, 0.75)",
+  smooth: "power1.inOut",
+  heavy: "power4.out",
+  sharp: "expo.out",
+  fluid: "circ.inOut",
+  bouncy: "back.out(1.7)",
+  elastic: "elastic.out(1, 0.3)",
+  jello: "elastic.out(1.5, 0.2)",
+  bounce: "bounce.out",
+  swing: "back.inOut(3)",
+  vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
+  robot: "steps(8)",
+  ghost: "slow(0.6, 0.8, false)",
+  expo: "expo.inOut",
+  circus: "back.out(4)",
+  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
+  slowmo: "slow(0.7, 0.7, false)",
+  spring: "elastic.out(1, 0.75)",
   heavySpring: "elastic.out(1.2, 0.3)",
-  anticipate:  "back.inOut(2)",
-  launch:      "slow(0.3, 0.4, false)",
-  drift:       "rough({ template: none, strength: 0.5, points: 10, taper: none, randomize: true, clamp: true })",
-  whiplash:    "back.out(4)",
+  anticipate: "back.inOut(2)",
+  launch: "slow(0.3, 0.4, false)",
+  drift: "rough({ template: none, strength: 0.5, points: 10, taper: none, randomize: true, clamp: true })",
+  whiplash: "back.out(4)",
 };
 
 const OPTIMIZED_WILL_CHANGE = "transform, filter, opacity, font-variation-settings, clip-path";
@@ -223,11 +214,7 @@ const QUICK_TO_PROPS =[
   "proxCipher",
 ];
 
-// ─────────────────────────────────────────────
-// UTILITIES
-// ─────────────────────────────────────────────
-
-function deepEqual(a: any, b: any): boolean {
+export function deepEqual(a: any, b: any): boolean {
   if (a === b) return true;
   if (typeof a !== "object" || a === null || typeof b !== "object" || b === null) return false;
   if (Array.isArray(a) !== Array.isArray(b)) return false;
@@ -240,15 +227,11 @@ function deepEqual(a: any, b: any): boolean {
   return true;
 }
 
-function useDeepMemo<T>(value: T): T {
+export function useDeepMemo<T>(value: T): T {
   const ref = useRef<T>(value);
   if (!deepEqual(ref.current, value)) ref.current = value;
   return ref.current;
 }
-
-// ─────────────────────────────────────────────
-// PRESET CALCULATOR 
-// ─────────────────────────────────────────────
 
 const CALC_RESULT: Record<string, gsap.TweenVars> = {};
 
@@ -277,8 +260,8 @@ const calculatePresetValues = (
 
   const lockX = lockAxis === "y";
   const lockY = lockAxis === "x";
-  const w  = center?.w  || 1;
-  const h  = center?.h  || 1;
+  const w = center?.w || 1;
+  const h = center?.h || 1;
   const ml = center?.ml || 0;
   const mr = center?.mr || 0;
   const mt = center?.mt || 0;
@@ -302,33 +285,33 @@ const calculatePresetValues = (
     const bounds = userConfig[prop] ?? PRESET_DEFAULTS[prop];
     if (!bounds) continue;
 
-    const isActive   = activeProps.has(prop);
-    const useBase    = isReset || !isActive;
+    const isActive = activeProps.has(prop);
+    const useBase = isReset || !isActive;
     const curIntensity = useBase ? 0 : intensity;
 
     if (prop === "color" || prop === "background") {
       if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
-      const[baseColor, maxColor] = bounds as [string, string];
+      const [baseColor, maxColor] = bounds as [string, string];
       const interpolated = gsap.utils.interpolate(baseColor, maxColor, curIntensity);
       CALC_RESULT[prop][prop === "color" ? "color" : "backgroundColor"] = interpolated;
       continue;
     }
 
-    const[base, max] = bounds as [number, number];
+    const [base, max] = bounds as [number, number];
     const curValue = base + (max - base) * curIntensity;
 
-    if (prop === "blur")       { filterChunks.push(`blur(${curValue}px)`);                              continue; }
-    if (prop === "glow")       { filterChunks.push(`drop-shadow(0 0 ${curValue}px currentColor)`);      continue; }
-    if (prop === "brightness") { filterChunks.push(`brightness(${curValue})`);                          continue; }
-    if (prop === "contrast")   { filterChunks.push(`contrast(${curValue})`);                            continue; }
-    if (prop === "grayScale")  { filterChunks.push(`grayscale(${curValue})`);                           continue; }
+    if (prop === "blur") { filterChunks.push(`blur(${curValue}px)`); continue; }
+    if (prop === "glow") { filterChunks.push(`drop-shadow(0 0 ${curValue}px currentColor)`); continue; }
+    if (prop === "brightness") { filterChunks.push(`brightness(${curValue})`); continue; }
+    if (prop === "contrast") { filterChunks.push(`contrast(${curValue})`); continue; }
+    if (prop === "grayScale") { filterChunks.push(`grayscale(${curValue})`); continue; }
 
     if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
     const res = CALC_RESULT[prop];
 
     switch (prop) {
       case "weight":
-        res.fontWeight           = Math.round(curValue);
+        res.fontWeight = Math.round(curValue);
         res.fontVariationSettings = `'wght' ${Math.round(curValue)}`;
         break;
       case "borderRadius":
@@ -347,9 +330,14 @@ const calculatePresetValues = (
         res.proxCipher = curValue;
         break;
       case "reveal":
-        res.y        = `${curValue}%`;
+        res.y = `${curValue}%`;
         res.clipPath = `inset(0% 0% ${curValue}% 0%)`;
         break;
+      case "scroll": {
+        res.proxScroll = curIntensity > 0.5 ? 1 : 0;
+        res.proxScrollTravel = max;
+        break;
+      }
       case "magnetic": {
         const pullX = lockX ? 0 : dx * curIntensity * max;
         const pullY = lockY ? 0 : dy * curIntensity * max;
@@ -358,22 +346,22 @@ const calculatePresetValues = (
         break;
       }
       case "repel": {
-        const dist   = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
         const safeDx = dx === 0 ? 0.1 : dx;
         const safeDy = dy === 0 ? 0.1 : dy;
-        const push   = max * 100 * curIntensity;
+        const push = max * 100 * curIntensity;
         res.x = useBase || lockX ? 0 : clampTravel(-(safeDx / dist) * push, "x");
         res.y = useBase || lockY ? 0 : clampTravel(-(safeDy / dist) * push, "y");
         break;
       }
       case "tilt":
-        res.rotationX        = useBase || lockY ? 0 : -dy * curIntensity * (max / 10);
-        res.rotationY        = useBase || lockX ? 0 :  dx * curIntensity * (max / 10);
+        res.rotationX = useBase || lockY ? 0 : -dy * curIntensity * (max / 10);
+        res.rotationY = useBase || lockX ? 0 : dx * curIntensity * (max / 10);
         res.transformPerspective = 1000;
         break;
       case "tiltCard":
-        res.rotationX        = useBase || lockY ? 0 : (dy / (h / 2)) * -max * curIntensity;
-        res.rotationY        = useBase || lockX ? 0 : (dx / (w / 2)) *  max * curIntensity;
+        res.rotationX = useBase || lockY ? 0 : (dy / (h / 2)) * -max * curIntensity;
+        res.rotationY = useBase || lockX ? 0 : (dx / (w / 2)) * max * curIntensity;
         res.transformPerspective = 1000;
         break;
       case "scale":
@@ -385,9 +373,9 @@ const calculatePresetValues = (
         res.scaleY = curValue;
         const ew = (w * (curValue - 1)) / 2;
         const eh = (h * (curValue - 1)) / 2;
-        res.marginLeft   = ml + ew;
-        res.marginRight  = mr + ew;
-        res.marginTop    = mt + eh;
+        res.marginLeft = ml + ew;
+        res.marginRight = mr + ew;
+        res.marginTop = mt + eh;
         res.marginBottom = mb + eh;
         break;
       }
@@ -421,14 +409,10 @@ const calculatePresetValues = (
   return CALC_RESULT;
 };
 
-// ─────────────────────────────────────────────
-// CIPHER UPDATER
-// ─────────────────────────────────────────────
-
 function cipherUpdate(this: gsap.core.Tween) {
   const item = this.targets()[0] as ProxHTMLElement;
   if (!item || item.children.length > 0) return;
-  const val  = item.proxCipher;
+  const val = item.proxCipher;
   if (val === undefined) return;
   const orig = item.dataset.proxOriginal;
   if (!orig || orig.trim() === "") return;
@@ -448,30 +432,26 @@ function cipherUpdate(this: gsap.core.Tween) {
   if (item.textContent !== scrambled) item.textContent = scrambled;
 }
 
-// ─────────────────────────────────────────────
-// COMPONENT
-// ─────────────────────────────────────────────
-
 export const Proximity: React.FC<ProximityProps> = ({
   children,
-  selector        = ".prox-item",
-  config          = {},
-  preset          = "",
-  nearestPreset   = "",
-  neighborPreset  = "",
-  reach           = 2,
-  falloff         = 2.4,
-  duration        = 0.2,
-  resetDuration   = 0.4,
-  global          = false,
-  explicit        = false,
-  mode            = "pointer",
+  selector = ".prox-item",
+  config = {},
+  preset = "",
+  nearestPreset = "",
+  neighborPreset = "",
+  reach = 2,
+  falloff = 2.4,
+  duration = 0.2,
+  resetDuration = 0.4,
+  global = false,
+  explicit = false,
+  mode = "pointer",
   scrollerRef,
-  scrollFocus     = "center",
-  scrollStart     = "top bottom",
-  scrollEnd       = "bottom top",
+  scrollFocus = "center",
+  scrollStart = "top bottom",
+  scrollEnd = "bottom top",
   lockAxis,
-  precision       = 0.002,
+  precision = 0.002,
   maxTravel,
   onCalculate,
   onReset,
@@ -482,107 +462,112 @@ export const Proximity: React.FC<ProximityProps> = ({
   waitForEnterAnimationEnd,
   waitForLeaveAnimationEnd,
   scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
-  magnetic, tilt, tiltCard, repel, cipher, reveal,
+  magnetic, tilt, tiltCard, repel, cipher, reveal, scroll,
   color, background, glow, brightness, contrast,
   borderRadius, letterSpacing, grayScale,
-  scroll, timeline, delay, resetDelay, scrub, resetScrub,
+  timeline, delay, resetDelay, scrub, resetScrub,
   start, end, stagger, resetStagger, targets,
   ignoreSelectors =[],
   excludeElements,
-  className       = "",
-  style           = {},
+  className = "",
+  style = {},
   ...restProps
 }) => {
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const pointer       = useRef({ x: -1, y: -1, target: null as EventTarget | null, active: false });
-  const lastPointer   = useRef({ x: -1, y: -1 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pointer = useRef({ x: -1, y: -1, target: null as EventTarget | null, active: false });
+  const lastPointer = useRef({ x: -1, y: -1 });
 
-  const itemsRef          = useRef<ProxHTMLElement[]>([]);
-  const centersRef        = useRef<ItemCenter[]>([]);
-  const statesRef         = useRef<ItemState[]>([]);
-  const settersRef        = useRef<ItemSetters[]>([]);
+  const itemsRef = useRef<ProxHTMLElement[]>([]);
+  const centersRef = useRef<ItemCenter[]>([]);
+  const statesRef = useRef<ItemState[]>([]);
+  const settersRef = useRef<ItemSetters[]>([]);
   const scrollTriggersRef = useRef<ScrollTrigger[]>([]);
-  const targetMapRef      = useRef<Map<ProxHTMLElement, ProximityTargetOverride>>(new Map());
-  const containerBoundsRef= useRef<ContainerBounds | null>(null);
-  const resetPropsRef     = useRef<Record<string, gsap.TweenVars>[]>([]);
-  const spatialGridRef    = useRef<Map<string, number[]>>(new Map());
+  const targetMapRef = useRef<Map<ProxHTMLElement, ProximityTargetOverride>>(new Map());
+  const containerBoundsRef = useRef<ContainerBounds | null>(null);
+  const resetPropsRef = useRef<Record<string, gsap.TweenVars>[]>([]);
+  const spatialGridRef = useRef<Map<string, number[]>>(new Map());
 
-  const activeMode             = config.mode              ?? mode;
-  const activeReach            = config.reach             ?? reach;
-  const activeFalloff          = config.falloff           ?? falloff;
-  const activeDuration         = config.duration          ?? duration;
-  const activeResetDuration    = config.resetDuration     ?? resetDuration;
-  const activeDelay            = config.delay             ?? delay            ?? 0;
-  const activeResetDelay       = config.resetDelay        ?? resetDelay       ?? 0;
-  const activeGlobal           = config.global            ?? global;
-  const activeExplicit         = config.explicit          ?? explicit;
-  const activePreset           = config.preset            ?? preset;
-  const activeNearestPreset    = config.nearestPreset     ?? nearestPreset;
-  const activeNeighborPreset   = config.neighborPreset    ?? neighborPreset;
-  const activeMaxTravel        = config.maxTravel         ?? maxTravel;
-  const activeLockAxis         = config.lockAxis          ?? lockAxis;
-  const activePrecision        = config.precision         ?? precision;
-  const activeOnCalculate      = config.onCalculate       ?? onCalculate;
-  const activeOnReset          = config.onReset           ?? onReset;
-  const activeTargets          = config.targets           ?? targets          ??[];
-  const activeScrollStart      = config.scrollStart       ?? scrollStart;
-  const activeScrollEnd        = config.scrollEnd         ?? scrollEnd;
-  const activeScrollFocus      = config.scrollFocus       ?? scrollFocus;
-  const activeStagger          = config.scroll?.stagger   ?? config.stagger   ?? stagger      ?? 0.1;
-  const activeResetStagger     = config.scroll?.resetStagger ?? config.resetStagger ?? resetStagger ?? 0;
-  const activeScrub            = config.scroll?.scrub     ?? config.scrub     ?? scrub         ?? activeDuration ?? true;
-  const activeDisableOnMobile  = config.disableOnMobile   ?? disableOnMobile;
-  const activeWaitForAnimationEnd      = config.waitForAnimationEnd      ?? waitForAnimationEnd;
+  const activeMode = config.mode ?? mode;
+  const activeReach = config.reach ?? reach;
+  const activeFalloff = config.falloff ?? falloff;
+  const activeDuration = config.duration ?? duration;
+  const activeResetDuration = config.resetDuration ?? resetDuration;
+  const activeDelay = config.delay ?? delay ?? 0;
+  const activeResetDelay = config.resetDelay ?? resetDelay ?? 0;
+  const activeGlobal = config.global ?? global;
+  const activeExplicit = config.explicit ?? explicit;
+  const activePreset = config.preset ?? preset;
+  const activeNearestPreset = config.nearestPreset ?? nearestPreset;
+  const activeNeighborPreset = config.neighborPreset ?? neighborPreset;
+  const activeMaxTravel = config.maxTravel ?? maxTravel;
+  const activeLockAxis = config.lockAxis ?? lockAxis;
+  const activePrecision = config.precision ?? precision;
+  const activeOnCalculate = config.onCalculate ?? onCalculate;
+  const activeOnReset = config.onReset ?? onReset;
+  const activeTargets = config.targets ?? targets ??[];
+  const activeScrollStart = config.scrollStart ?? scrollStart;
+  const activeScrollEnd = config.scrollEnd ?? scrollEnd;
+  const activeScrollFocus = config.scrollFocus ?? scrollFocus;
+  const activeDisableOnMobile = config.disableOnMobile ?? disableOnMobile;
+  const activeWaitForAnimationEnd = config.waitForAnimationEnd ?? waitForAnimationEnd;
   const activeWaitForEnterAnimationEnd = config.waitForEnterAnimationEnd ?? waitForEnterAnimationEnd;
   const activeWaitForLeaveAnimationEnd = config.waitForLeaveAnimationEnd ?? waitForLeaveAnimationEnd;
 
-  const targetEase      = EASE_MAP[config.ease      ?? (ease as string)]      ?? config.ease      ?? ease      ?? "power1.out";
+  const safeScrollConfig = (config.scroll && !Array.isArray(config.scroll)) ? (config.scroll as ProximityScrollConfig) : undefined;
+  const safeScrollProp = (scroll && !Array.isArray(scroll)) ? (scroll as ProximityScrollConfig) : undefined;
+
+  const activeStagger = safeScrollConfig?.stagger ?? config.stagger ?? stagger ?? 0.1;
+  const activeResetStagger = safeScrollConfig?.resetStagger ?? config.resetStagger ?? resetStagger ?? 0;
+  const activeScrub = safeScrollConfig?.scrub ?? config.scrub ?? scrub ?? activeDuration ?? true;
+
+  const targetEase = EASE_MAP[config.ease ?? (ease as string)] ?? config.ease ?? ease ?? "power1.out";
   const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] ?? config.resetEase ?? resetEase ?? "power2.out";
 
   const mergedBounds = useDeepMemo({
-    scale:        config.scale        ?? scale,
-    flexScale:    config.flexScale    ?? flexScale,
-    y:            config.y            ?? y,
-    x:            config.x            ?? x,
-    opacity:      config.opacity      ?? opacity,
-    blur:         config.blur         ?? blur,
-    rotate:       config.rotate       ?? rotate,
-    weight:       config.weight       ?? weight,
-    skew:         config.skew         ?? skew,
-    magnetic:     config.magnetic     ?? magnetic,
-    tilt:         config.tilt         ?? tilt,
-    tiltCard:     config.tiltCard     ?? tiltCard,
-    repel:        config.repel        ?? repel,
-    cipher:       config.cipher       ?? cipher,
-    reveal:       config.reveal       ?? reveal,
-    color:        config.color        ?? color,
-    background:   config.background   ?? background,
-    glow:         config.glow         ?? glow,
-    brightness:   config.brightness   ?? brightness,
-    contrast:     config.contrast     ?? contrast,
+    scale: config.scale ?? scale,
+    flexScale: config.flexScale ?? flexScale,
+    y: config.y ?? y,
+    x: config.x ?? x,
+    opacity: config.opacity ?? opacity,
+    blur: config.blur ?? blur,
+    rotate: config.rotate ?? rotate,
+    weight: config.weight ?? weight,
+    skew: config.skew ?? skew,
+    magnetic: config.magnetic ?? magnetic,
+    tilt: config.tilt ?? tilt,
+    tiltCard: config.tiltCard ?? tiltCard,
+    repel: config.repel ?? repel,
+    cipher: config.cipher ?? cipher,
+    reveal: config.reveal ?? reveal,
+    scroll: Array.isArray(config.scroll) ? config.scroll : (Array.isArray(scroll) ? scroll : undefined),
+    color: config.color ?? color,
+    background: config.background ?? background,
+    glow: config.glow ?? glow,
+    brightness: config.brightness ?? brightness,
+    contrast: config.contrast ?? contrast,
     borderRadius: config.borderRadius ?? borderRadius,
-    letterSpacing:config.letterSpacing ?? letterSpacing,
-    grayScale:    config.grayScale    ?? grayScale,
+    letterSpacing: config.letterSpacing ?? letterSpacing,
+    grayScale: config.grayScale ?? grayScale,
   });
 
-  const activeTimeline      = useDeepMemo(config.timeline    ?? timeline    ?? {});
-  const activeScrollConfig  = useDeepMemo(config.scroll      ?? scroll      ?? {});
-  const activeStartStyles   = useDeepMemo(config.start       ?? start       ?? {});
-  const activeEndStyles     = useDeepMemo(config.end         ?? end         ?? {});
-  const parsedMaxTravel     = useDeepMemo(activeMaxTravel);
-  const parsedTargets       = useDeepMemo(activeTargets);
-  const memoizedStagger     = useDeepMemo(activeStagger);
-  const memoizedResetStagger= useDeepMemo(activeResetStagger);
+  const activeTimeline = useDeepMemo(config.timeline ?? timeline ?? {});
+  const activeScrollConfig = useDeepMemo(safeScrollConfig ?? safeScrollProp ?? {});
+  const activeStartStyles = useDeepMemo(config.start ?? start ?? {});
+  const activeEndStyles = useDeepMemo(config.end ?? end ?? {});
+  const parsedMaxTravel = useDeepMemo(activeMaxTravel);
+  const parsedTargets = useDeepMemo(activeTargets);
+  const memoizedStagger = useDeepMemo(activeStagger);
+  const memoizedResetStagger = useDeepMemo(activeResetStagger);
   const memoizedDisableOnMobile = useDeepMemo(activeDisableOnMobile);
 
   const allPresetsStr = useMemo(() => {
-    const base   =[activePreset, activeNearestPreset, activeNeighborPreset]
+    const base = [activePreset, activeNearestPreset, activeNeighborPreset]
       .filter(Boolean).flatMap((p) => p.split("-"));
-    const tgt    = parsedTargets
-      .flatMap((t) =>[t.preset, t.nearestPreset, t.neighborPreset])
+    const tgt = parsedTargets
+      .flatMap((t) => [t.preset, t.nearestPreset, t.neighborPreset])
       .filter(Boolean).flatMap((p) => (p as string).split("-"));
     return Array.from(new Set([...base, ...tgt])).join("-");
-  },[activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
+  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
 
   const activePresetKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -595,10 +580,10 @@ export const Proximity: React.FC<ProximityProps> = ({
       keys.add("customStartEnd");
     if (activeOnCalculate) keys.add("custom");
     return Array.from(keys);
-  },[allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
+  }, [allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
 
   const parseScrollPosition = (pos: string, isStart: boolean): string => {
-    if (pos === "appear")    return "top bottom";
+    if (pos === "appear") return "top bottom";
     if (pos === "disappear") return "bottom top";
     const m: Record<string, string> = { top: "top top", center: "center center", middle: "center center", bottom: "bottom bottom" };
     return m[pos] ?? pos ?? (isStart ? "top bottom" : "bottom top");
@@ -607,13 +592,13 @@ export const Proximity: React.FC<ProximityProps> = ({
   const getScrollFocusValue = (focus: string | number): number => {
     if (typeof focus === "number") return focus / 100;
     switch (focus) {
-      case "appear":   return 0;
-      case "top":      return 0.25;
+      case "appear": return 0;
+      case "top": return 0.25;
       case "middle":
-      case "center":   return 0.5;
-      case "bottom":   return 0.75;
-      case "disappear":return 1;
-      default:         return 0.5;
+      case "center": return 0.5;
+      case "bottom": return 0.75;
+      case "disappear": return 1;
+      default: return 0.5;
     }
   };
 
@@ -633,9 +618,9 @@ export const Proximity: React.FC<ProximityProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const mediaQuery      = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let isReducedMotion   = mediaQuery.matches;
-    const isMobile        = window.matchMedia("(any-pointer: coarse)").matches || window.innerWidth < 768;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let isReducedMotion = mediaQuery.matches;
+    const isMobile = window.matchMedia("(any-pointer: coarse)").matches || window.innerWidth < 768;
     let skipAllAnimations = isReducedMotion;
     const disabledPresets = new Set<string>();
 
@@ -654,26 +639,23 @@ export const Proximity: React.FC<ProximityProps> = ({
 
     const updateCenters = (): void => {
       if (!container) return;
-      const cRect  = container.getBoundingClientRect();
+      const cRect = container.getBoundingClientRect();
       const scrollEl = scrollerRef?.current;
-      const sx     = scrollEl ? scrollEl.scrollLeft : window.scrollX;
-      const sy     = scrollEl ? scrollEl.scrollTop  : window.scrollY;
+      const sx = scrollEl ? scrollEl.scrollLeft : window.scrollX;
+      const sy = scrollEl ? scrollEl.scrollTop : window.scrollY;
 
       containerBoundsRef.current = {
-        left:  cRect.left  + sx,
+        left: cRect.left + sx,
         right: cRect.right + sx,
-        top:   cRect.top   + sy,
-        bottom:cRect.bottom + sy,
+        top: cRect.top + sy,
+        bottom: cRect.bottom + sy,
       };
 
-      // 1. MARGIN/BOUNDING BOX FIX: 
-      // Only clear margins if we actually need flexScale. 
-      // This stops ProximityText from stripping its own clipFix margins and calculating incorrect offset centers.
       const hasFlexScale = allPresetsStr.includes("flexScale");
       const saved = itemsRef.current.map((item) => {
         const s: any = { tf: item.style.transform };
         item.style.transform = "";
-        
+
         if (hasFlexScale) {
           s.ml = item.style.marginLeft;
           s.mr = item.style.marginRight;
@@ -687,12 +669,12 @@ export const Proximity: React.FC<ProximityProps> = ({
       const measurements = itemsRef.current.map((item) => {
         const rect = item.getBoundingClientRect();
         const comp = window.getComputedStyle(item);
-        return { 
+        return {
           rect,
-          ml: parseFloat(comp.marginLeft)  || 0,
+          ml: parseFloat(comp.marginLeft) || 0,
           mr: parseFloat(comp.marginRight) || 0,
-          mt: parseFloat(comp.marginTop)   || 0,
-          mb: parseFloat(comp.marginBottom)|| 0 
+          mt: parseFloat(comp.marginTop) || 0,
+          mb: parseFloat(comp.marginBottom) || 0
         };
       });
 
@@ -700,19 +682,19 @@ export const Proximity: React.FC<ProximityProps> = ({
         const s = saved[i];
         item.style.transform = s.tf;
         if (hasFlexScale) {
-          item.style.marginLeft  = s.ml; 
+          item.style.marginLeft = s.ml;
           item.style.marginRight = s.mr;
-          item.style.marginTop   = s.mt; 
-          item.style.marginBottom= s.mb;
+          item.style.marginTop = s.mt;
+          item.style.marginBottom = s.mb;
         }
 
         const { rect, ml, mr, mt, mb } = measurements[i];
         return {
-          left:  rect.left   + sx, right: rect.right  + sx,
-          top:   rect.top    + sy, bottom:rect.bottom + sy,
-          x:     rect.left   + sx + rect.width  / 2,
-          y:     rect.top    + sy + rect.height / 2,
-          w:     rect.width, h: rect.height, ml, mr, mt, mb,
+          left: rect.left + sx, right: rect.right + sx,
+          top: rect.top + sy, bottom: rect.bottom + sy,
+          x: rect.left + sx + rect.width / 2,
+          y: rect.top + sy + rect.height / 2,
+          w: rect.width, h: rect.height, ml, mr, mt, mb,
         };
       });
 
@@ -731,12 +713,14 @@ export const Proximity: React.FC<ProximityProps> = ({
         ? selector.split(",").map((s) => `${s.trim()}:not(${excludeElements})`).join(", ")
         : selector;
 
-      itemsRef.current = Array.from(container.querySelectorAll(sel)) as ProxHTMLElement[];
+      const allMatches = Array.from(container.querySelectorAll(sel)) as ProxHTMLElement[];
+      itemsRef.current = allMatches.filter(item => item.closest('.proximity-container') === container);
 
       targetMapRef.current.clear();
       parsedTargets.forEach((tc) => {
-        Array.from(container.querySelectorAll(tc.selector)).forEach((el) =>
-          targetMapRef.current.set(el as ProxHTMLElement, tc)
+        const tgtMatches = Array.from(container.querySelectorAll(tc.selector)) as ProxHTMLElement[];
+        tgtMatches.filter(item => item.closest('.proximity-container') === container).forEach((el) =>
+          targetMapRef.current.set(el, tc)
         );
       });
 
@@ -746,20 +730,21 @@ export const Proximity: React.FC<ProximityProps> = ({
         if (item.proxCipher === undefined) item.proxCipher = 0;
 
         item._quickTos = {};
-        const lc  = targetMapRef.current.get(item);
+        item._scrollState = "resting";
+        const lc = targetMapRef.current.get(item);
         const dur = lc?.duration ?? activeDuration;
-        const ez  = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
+        const ez = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
 
         QUICK_TO_PROPS.forEach((prop) => {
           item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
         });
       });
 
-      statesRef.current  = itemsRef.current.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
+      statesRef.current = itemsRef.current.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
       settersRef.current = itemsRef.current.map((item) => ({
         intensity: gsap.quickSetter(item, "--prox-intensity") as (v: number | string) => void,
-        dx:        gsap.quickSetter(item, "--prox-dx", "px")  as (v: number | string) => void,
-        dy:        gsap.quickSetter(item, "--prox-dy", "px")  as (v: number | string) => void,
+        dx: gsap.quickSetter(item, "--prox-dx", "px") as (v: number | string) => void,
+        dy: gsap.quickSetter(item, "--prox-dy", "px") as (v: number | string) => void,
       }));
 
       updateCenters();
@@ -776,9 +761,9 @@ export const Proximity: React.FC<ProximityProps> = ({
 
       resetPropsRef.current = itemsRef.current.map((_, i) => {
         if (skipAllAnimations) return {};
-        if (activeOnReset)     return { custom: activeOnReset() };
+        if (activeOnReset) return { custom: activeOnReset() };
         if (activeOnCalculate) return { custom: activeOnCalculate(0, Infinity, 0, 0, false) };
-        const res   = calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0,
+        const res = calculatePresetValues("", allPresetsStr, 0, mergedBounds, 0, 0,
           centersRef.current[i], true, parsedMaxTravel, activeLockAxis,
           activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets);
         const clone: Record<string, gsap.TweenVars> = {};
@@ -795,7 +780,7 @@ export const Proximity: React.FC<ProximityProps> = ({
     };
 
     const handleMotionChange = (e: MediaQueryListEvent): void => {
-      isReducedMotion   = e.matches;
+      isReducedMotion = e.matches;
       skipAllAnimations = isReducedMotion || (isMobile && memoizedDisableOnMobile === true);
       if (skipAllAnimations) {
         itemsRef.current.forEach((item) => {
@@ -827,10 +812,6 @@ export const Proximity: React.FC<ProximityProps> = ({
     resizeObserver.observe(container);
     resizeObserver.observe(document.body);
 
-    // 2. SCROLL LAG FIX:
-    // Completely removed the `updateCenters` loop from the standard window scroll. 
-    // Document-absolute coordinates do not change on window scroll.
-    // We ONLY listen to scroll if there's a specialized, internal scroll container passed via scrollerRef.
     let scrollTimeout: ReturnType<typeof setTimeout>;
     const onScroll = (): void => {
       clearTimeout(scrollTimeout);
@@ -859,10 +840,53 @@ export const Proximity: React.FC<ProximityProps> = ({
       ez: string,
     ): void => {
       const needsGsapTo =
-        key === "cipher" || key === "reveal" || key === "custom" ||
+        key === "cipher" || key === "reveal" || key === "scroll" || key === "custom" ||
         key === "customStartEnd" || del > 0 || !!activeTimeline?.[key];
 
       if (needsGsapTo) {
+        if (key === "scroll") {
+          const shouldScroll = vars.proxScroll === 1;
+          const travel = vars.proxScrollTravel || 100;
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldScroll && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
+            gsap.to(item, {
+              yPercent: -travel,
+              clipPath: `inset(0% 0% 100% 0%)`,
+              duration: dur * 0.8,
+              ease: "power2.in",
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: travel, clipPath: `inset(100% 0% 0% 0%)` },
+                  { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.8, ease: "power2.out" }
+                );
+              }
+            });
+          } else if (!shouldScroll && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
+            gsap.to(item, {
+              yPercent: travel,
+              clipPath: `inset(100% 0% 0% 0%)`,
+              duration: dur * 0.8,
+              ease: "power2.in",
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: -travel, clipPath: `inset(0% 0% 100% 0%)` },
+                  { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.8, ease: "power2.out" }
+                );
+              }
+            });
+          }
+          return;
+        }
+
         gsap.to(item, {
           ...vars, duration: dur, delay: del, ease: ez,
           overwrite: "auto",
@@ -884,25 +908,25 @@ export const Proximity: React.FC<ProximityProps> = ({
         scrollTriggersRef.current.forEach((t) => t.kill());
         scrollTriggersRef.current =[];
 
-        const isTriggerMode  = activeScrollConfig.scrub === false;
+        const isTriggerMode = activeScrollConfig.scrub === false;
         const scrollerTarget = scrollerRef?.current ?? activeScrollConfig.scroller ?? window;
-        const parsedStart    = parseScrollPosition(activeScrollConfig.start ?? activeScrollStart, true);
-        const parsedEnd      = parseScrollPosition(activeScrollConfig.end   ?? activeScrollEnd,   false);
-        const focusPoint     = getScrollFocusValue(activeScrollConfig.focus ?? activeScrollFocus);
-        const isOnce         = activeScrollConfig.once ?? true;
+        const parsedStart = parseScrollPosition(activeScrollConfig.start ?? activeScrollStart, true);
+        const parsedEnd = parseScrollPosition(activeScrollConfig.end ?? activeScrollEnd, false);
+        const focusPoint = getScrollFocusValue(activeScrollConfig.focus ?? activeScrollFocus);
+        const isOnce = activeScrollConfig.once ?? true;
 
         const animStates = itemsRef.current.map(() => ({
           isEntering: false, isLeaving: false,
-          enterEndTime: 0,   leaveEndTime: 0,
+          enterEndTime: 0, leaveEndTime: 0,
           queuedCall: null as gsap.core.Tween | null,
         }));
 
         itemsRef.current.forEach((item, i) => {
-          const lc         = targetMapRef.current.get(item);
-          const localPreset       = lc?.preset        ?? activePreset;
-          const localDuration     = lc?.duration      ?? activeDuration;
-          const localResetDuration= lc?.resetDuration ?? activeResetDuration;
-          const localEase         = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
+          const lc = targetMapRef.current.get(item);
+          const localPreset = lc?.preset ?? activePreset;
+          const localDuration = lc?.duration ?? activeDuration;
+          const localResetDuration = lc?.resetDuration ?? activeResetDuration;
+          const localEase = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
 
           const runEnter = (): void => {
             item.dataset.proxScrollActive = "true";
@@ -912,21 +936,21 @@ export const Proximity: React.FC<ProximityProps> = ({
             const gp = skipAllAnimations ? {} : activeOnCalculate
               ? { custom: activeOnCalculate(1, 0, 0, 0, true) }
               : calculatePresetValues(localPreset, allPresetsStr, 1, mergedBounds, 0, 0,
-                  centersRef.current[i], false, parsedMaxTravel, activeLockAxis,
-                  activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets);
+                centersRef.current[i], false, parsedMaxTravel, activeLockAxis,
+                activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets);
 
             let maxDur = 0;
             const keys = activeOnCalculate ? ["custom"] : activePresetKeys;
             for (const key of keys) {
               const vars = gp[key]; if (!vars) continue;
-              const tl   = activeTimeline?.[key] ?? {};
-              const stV  = activeWaitForAnimationEnd ? (localDuration + (tl.delay ?? activeDelay)) : memoizedStagger;
-              const del  = (tl.delay ?? activeDelay) + getStaggerValue(i, item, itemsRef.current, stV);
-              maxDur     = Math.max(maxDur, localDuration + del);
+              const tl = activeTimeline?.[key] ?? {};
+              const stV = activeWaitForAnimationEnd ? (localDuration + (tl.delay ?? activeDelay)) : memoizedStagger;
+              const del = (tl.delay ?? activeDelay) + getStaggerValue(i, item, itemsRef.current, stV);
+              maxDur = Math.max(maxDur, localDuration + del);
               applyVars(item, key, vars, localDuration, del, localEase);
             }
             if (activeWaitForEnterAnimationEnd) {
-              animStates[i].isEntering  = true;
+              animStates[i].isEntering = true;
               animStates[i].enterEndTime = Date.now() + maxDur * 1000;
               gsap.delayedCall(maxDur, () => { animStates[i].isEntering = false; });
             }
@@ -938,18 +962,18 @@ export const Proximity: React.FC<ProximityProps> = ({
 
             const gr = resetPropsRef.current[i] ?? {};
             let maxWait = localResetDuration + activeResetDelay;
-            const keys  = activeOnCalculate ? ["custom"] : activePresetKeys;
+            const keys = activeOnCalculate ? ["custom"] : activePresetKeys;
             for (const key of keys) {
               const vars = gr[key]; if (!vars) continue;
-              const tl   = activeTimeline?.[key] ?? {};
-              const rsV  = activeWaitForAnimationEnd ? (localResetDuration + (tl.resetDelay ?? activeResetDelay)) : memoizedResetStagger;
-              const del  = (tl.resetDelay ?? activeResetDelay) + getStaggerValue(i, item, itemsRef.current, rsV);
-              maxWait    = Math.max(maxWait, localResetDuration + del);
+              const tl = activeTimeline?.[key] ?? {};
+              const rsV = activeWaitForAnimationEnd ? (localResetDuration + (tl.resetDelay ?? activeResetDelay)) : memoizedResetStagger;
+              const del = (tl.resetDelay ?? activeResetDelay) + getStaggerValue(i, item, itemsRef.current, rsV);
+              maxWait = Math.max(maxWait, localResetDuration + del);
               applyVars(item, key, vars, localResetDuration, del, targetResetEase);
             }
             if (activeWaitForLeaveAnimationEnd) {
-              animStates[i].isLeaving   = true;
-              animStates[i].leaveEndTime= Date.now() + maxWait * 1000;
+              animStates[i].isLeaving = true;
+              animStates[i].leaveEndTime = Date.now() + maxWait * 1000;
               gsap.delayedCall(maxWait, () => { animStates[i].isLeaving = false; });
             }
             if (!skipAllAnimations)
@@ -977,44 +1001,44 @@ export const Proximity: React.FC<ProximityProps> = ({
             scrub: isTriggerMode ? false : activeScrub,
             once: isOnce, markers: activeScrollConfig.markers ?? false,
 
-            onEnter:     () => guarded(runEnter, activeWaitForLeaveAnimationEnd ?? false, false, i),
-            onLeave:     () => guarded(runLeave, false, activeWaitForEnterAnimationEnd ?? false, i),
+            onEnter: () => guarded(runEnter, activeWaitForLeaveAnimationEnd ?? false, false, i),
+            onLeave: () => guarded(runLeave, false, activeWaitForEnterAnimationEnd ?? false, i),
             onEnterBack: () => guarded(runEnter, activeWaitForLeaveAnimationEnd ?? false, false, i),
             onLeaveBack: () => guarded(runLeave, false, activeWaitForEnterAnimationEnd ?? false, i),
 
             onUpdate: isTriggerMode ? undefined : (self) => {
               let nd = 0;
-              if (focusPoint === 0)       nd = 1 - self.progress;
-              else if (focusPoint === 1)  nd = self.progress;
+              if (focusPoint === 0) nd = 1 - self.progress;
+              else if (focusPoint === 1) nd = self.progress;
               else nd = self.progress < focusPoint
                 ? self.progress / focusPoint
                 : (1 - self.progress) / (1 - focusPoint);
 
-              const intens  = Math.pow(nd, activeFalloff);
-              const vel     = self.getVelocity();
-              const simDy   = Math.min(Math.max(vel * 0.05, -100), 100);
+              const intens = Math.pow(nd, activeFalloff);
+              const vel = self.getVelocity();
+              const simDy = Math.min(Math.max(vel * 0.05, -100), 100);
 
               if (
                 Math.abs(intens - statesRef.current[i].lastIntensity) < activePrecision &&
-                Math.abs(simDy  - statesRef.current[i].lastDy)         < 1.0
+                Math.abs(simDy - statesRef.current[i].lastDy) < 1.0
               ) return;
 
               statesRef.current[i].lastIntensity = intens;
-              statesRef.current[i].lastDy        = simDy;
+              statesRef.current[i].lastDy = simDy;
 
               const gp = skipAllAnimations ? {} : activeOnCalculate
                 ? { custom: activeOnCalculate(intens, 0, 0, simDy, true) }
                 : calculatePresetValues(localPreset, allPresetsStr, intens, mergedBounds, 0, simDy,
-                    centersRef.current[i], false, parsedMaxTravel, activeLockAxis,
-                    activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets);
+                  centersRef.current[i], false, parsedMaxTravel, activeLockAxis,
+                  activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets);
 
               const keys = activeOnCalculate ? ["custom"] : activePresetKeys;
               for (const key of keys) {
                 const vars = gp[key]; if (!vars) continue;
-                const tl   = activeTimeline?.[key] ?? {};
-                const dur  = tl.duration ?? 0.1;
-                const del  = tl.delay    ?? 0;
-                const ez   = EASE_MAP[tl.ease as string] ?? tl.ease ?? "none";
+                const tl = activeTimeline?.[key] ?? {};
+                const dur = tl.duration ?? 0.1;
+                const del = tl.delay ?? 0;
+                const ez = EASE_MAP[tl.ease as string] ?? tl.ease ?? "none";
                 applyVars(item, key, vars, dur, del, ez);
               }
               settersRef.current[i].intensity(intens.toFixed(3));
@@ -1028,14 +1052,11 @@ export const Proximity: React.FC<ProximityProps> = ({
     } else {
       if (document.fonts) document.fonts.ready.then(initItems); else initItems();
 
-      const maxDistance  = activeReach * 200;
+      const maxDistance = activeReach * 200;
 
       const onTick = (): void => {
         const hasCipher = allPresetsStr.includes("cipher");
 
-        // CIPHER BUG FIX:
-        // By ticking ciphers at the top of the function, they continuously decode [1, 0] properly
-        // without getting blocked by the idle-mouse return statement below.
         if (hasCipher && !skipAllAnimations) {
           for (let i = 0; i < itemsRef.current.length; i++) {
             const item = itemsRef.current[i];
@@ -1051,7 +1072,7 @@ export const Proximity: React.FC<ProximityProps> = ({
         ) {
           return;
         }
-        
+
         lastPointer.current.x = pointer.current.x;
         lastPointer.current.y = pointer.current.y;
 
@@ -1059,7 +1080,7 @@ export const Proximity: React.FC<ProximityProps> = ({
 
         const scrollEl = scrollerRef?.current;
         const sx = scrollEl ? scrollEl.scrollLeft : window.scrollX;
-        const sy = scrollEl ? scrollEl.scrollTop  : window.scrollY;
+        const sy = scrollEl ? scrollEl.scrollTop : window.scrollY;
         const pageX = pointer.current.x + sx;
         const pageY = pointer.current.y + sy;
 
@@ -1070,8 +1091,8 @@ export const Proximity: React.FC<ProximityProps> = ({
         if (containerBoundsRef.current && !activeGlobal) {
           const cb = containerBoundsRef.current;
           if (
-            (pageX < cb.left - maxDistance || pageX > cb.right  + maxDistance ||
-             pageY < cb.top  - maxDistance || pageY > cb.bottom + maxDistance || isBlocked) &&
+            (pageX < cb.left - maxDistance || pageX > cb.right + maxDistance ||
+              pageY < cb.top - maxDistance || pageY > cb.bottom + maxDistance || isBlocked) &&
             statesRef.current.every((s) => s.isOutside)
           ) return;
         }
@@ -1082,8 +1103,8 @@ export const Proximity: React.FC<ProximityProps> = ({
         } else {
           const CELL = 150;
           const cellRadius = Math.ceil(maxDistance / CELL);
-          const cx   = Math.floor(pageX / CELL);
-          const cy   = Math.floor(pageY / CELL);
+          const cx = Math.floor(pageX / CELL);
+          const cy = Math.floor(pageY / CELL);
           for (let ox = -cellRadius; ox <= cellRadius; ox++) {
             for (let oy = -cellRadius; oy <= cellRadius; oy++) {
               const cells = spatialGridRef.current.get(`${cx + ox},${cy + oy}`);
@@ -1091,7 +1112,7 @@ export const Proximity: React.FC<ProximityProps> = ({
             }
           }
         }
-        
+
         statesRef.current.forEach((s, i) => { if (!s.isOutside) toCheck.add(i); });
 
         const dData: { d: number; dx: number; dy: number }[] =
@@ -1105,14 +1126,14 @@ export const Proximity: React.FC<ProximityProps> = ({
           if (!b) continue;
           const dx = pageX - b.x;
           const dy = pageY - b.y;
-          const inside   = pageX >= b.left && pageX <= b.right && pageY >= b.top && pageY <= b.bottom;
-          const offScreen= (itemsRef.current[i] as ProxHTMLElement)._isProxVisible === false;
+          const inside = pageX >= b.left && pageX <= b.right && pageY >= b.top && pageY <= b.bottom;
+          const offScreen = (itemsRef.current[i] as ProxHTMLElement)._isProxVisible === false;
           const d = isBlocked || (activeExplicit && !inside) || offScreen
             ? Infinity
             : Math.sqrt(
-                Math.pow(Math.max(b.left - pageX, 0, pageX - b.right), 2) +
-                Math.pow(Math.max(b.top  - pageY, 0, pageY - b.bottom), 2)
-              );
+              Math.pow(Math.max(b.left - pageX, 0, pageX - b.right), 2) +
+              Math.pow(Math.max(b.top - pageY, 0, pageY - b.bottom), 2)
+            );
           if (d < minDist) { minDist = d; nearestIndex = i; }
           dData[i] = { d, dx, dy };
         }
@@ -1125,7 +1146,7 @@ export const Proximity: React.FC<ProximityProps> = ({
 
           if (d > maxDistance) {
             if (!statesRef.current[i].isOutside) {
-              const gr   = resetPropsRef.current[i] ?? {};
+              const gr = resetPropsRef.current[i] ?? {};
               gsap.to(item, {
                 "--prox-intensity": 0,
                 duration: activeResetDuration, delay: activeResetDelay,
@@ -1138,23 +1159,21 @@ export const Proximity: React.FC<ProximityProps> = ({
                 const tl = activeTimeline?.[k] ?? {};
                 applyVars(item, k, gr[k],
                   tl.resetDuration ?? activeResetDuration,
-                  tl.resetDelay    ?? activeResetDelay,
+                  tl.resetDelay ?? activeResetDelay,
                   EASE_MAP[tl.resetEase as string] ?? tl.resetEase ?? targetResetEase,
                 );
               }
-              statesRef.current[i].isOutside      = true;
-              statesRef.current[i].lastIntensity   = 0;
+              statesRef.current[i].isOutside = true;
+              statesRef.current[i].lastIntensity = 0;
             }
             continue;
           }
 
-          // 3. REACH/FALLOFF FIX:
-          // Traded out the impossible-to-tune exponential mapping for the exact mathematically bounded curve.
           const intensity = Math.pow(Math.max(0, 1 - (d / maxDistance)), activeFalloff);
 
           const hasMoved =
             Math.abs(intensity - statesRef.current[i].lastIntensity) >= activePrecision ||
-            Math.abs(dx        - statesRef.current[i].lastDx)         >= 1.0;
+            Math.abs(dx - statesRef.current[i].lastDx) >= 1.0;
 
           if (!hasMoved) {
             continue;
@@ -1166,32 +1185,32 @@ export const Proximity: React.FC<ProximityProps> = ({
           settersRef.current[i].dx(dx);
           settersRef.current[i].dy(dy);
 
-          let cp         = lc?.preset ?? activePreset ?? "";
-          const nearestP = lc?.nearestPreset  ?? activeNearestPreset;
-          const neighborP= lc?.neighborPreset ?? activeNeighborPreset;
-          if (isNearest  && nearestP)  cp = cp ? `${cp}-${nearestP}`  : nearestP;
+          let cp = lc?.preset ?? activePreset ?? "";
+          const nearestP = lc?.nearestPreset ?? activeNearestPreset;
+          const neighborP = lc?.neighborPreset ?? activeNeighborPreset;
+          if (isNearest && nearestP) cp = cp ? `${cp}-${nearestP}` : nearestP;
           else if (!isNearest && neighborP) cp = cp ? `${cp}-${neighborP}` : neighborP;
 
           const gp = skipAllAnimations ? {} : activeOnCalculate
             ? { custom: activeOnCalculate(intensity, d, dx, dy, isNearest) }
             : calculatePresetValues(cp, allPresetsStr, intensity, mergedBounds, dx, dy,
-                centersRef.current[i], false, parsedMaxTravel, activeLockAxis,
-                activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets);
+              centersRef.current[i], false, parsedMaxTravel, activeLockAxis,
+              activeStartStyles, activeEndStyles, skipAllAnimations, disabledPresets);
 
           const keys = activeOnCalculate ? ["custom"] : activePresetKeys;
           for (const k of keys) {
             const vars = gp[k]; if (!vars) continue;
-            const tl   = activeTimeline?.[k] ?? {};
-            const dur  = tl.duration ?? (lc?.duration ?? activeDuration);
-            const del  = tl.delay    ?? activeDelay;
-            const ez   = EASE_MAP[tl.ease as string] ?? tl.ease ?? (lc?.ease ?? targetEase);
+            const tl = activeTimeline?.[k] ?? {};
+            const dur = tl.duration ?? (lc?.duration ?? activeDuration);
+            const del = tl.delay ?? activeDelay;
+            const ez = EASE_MAP[tl.ease as string] ?? tl.ease ?? (lc?.ease ?? targetEase);
             applyVars(item, k, vars, dur, del, ez);
           }
 
           statesRef.current[i].lastIntensity = intensity;
-          statesRef.current[i].lastDx        = dx;
-          statesRef.current[i].lastDy        = dy;
-          statesRef.current[i].isOutside     = false;
+          statesRef.current[i].lastDx = dx;
+          statesRef.current[i].lastDy = dy;
+          statesRef.current[i].isOutside = false;
         }
       };
 
@@ -1199,10 +1218,9 @@ export const Proximity: React.FC<ProximityProps> = ({
         gsap.ticker.add(onTick);
 
         const target = activeGlobal ? window : container;
-        const upd    = (px: number, py: number, tgt: EventTarget | null) =>
-          { pointer.current = { x: px, y: py, target: tgt, active: true }; };
-        const onMove  = (e: PointerEvent) => upd(e.clientX, e.clientY, e.target);
-        const onTMove = (e: TouchEvent)   => { if (e.touches[0]) upd(e.touches[0].clientX, e.touches[0].clientY, e.target); };
+        const upd = (px: number, py: number, tgt: EventTarget | null) => { pointer.current = { x: px, y: py, target: tgt, active: true }; };
+        const onMove = (e: PointerEvent) => upd(e.clientX, e.clientY, e.target);
+        const onTMove = (e: TouchEvent) => { if (e.touches[0]) upd(e.touches[0].clientX, e.touches[0].clientY, e.target); };
 
         const handleReset = (): void => {
           pointer.current.active = false;
@@ -1225,19 +1243,19 @@ export const Proximity: React.FC<ProximityProps> = ({
 
         target.addEventListener("pointermove", onMove as EventListener);
         target.addEventListener("pointerleave", handleReset as EventListener);
-        target.addEventListener("touchmove",    onTMove as EventListener, { passive: true });
-        target.addEventListener("touchend",     handleReset as EventListener);
+        target.addEventListener("touchmove", onTMove as EventListener, { passive: true });
+        target.addEventListener("touchend", handleReset as EventListener);
 
         return () => {
           gsap.ticker.remove(onTick);
-          target.removeEventListener("pointermove",  onMove as EventListener);
+          target.removeEventListener("pointermove", onMove as EventListener);
           target.removeEventListener("pointerleave", handleReset as EventListener);
-          target.removeEventListener("touchmove",    onTMove as EventListener);
-          target.removeEventListener("touchend",     handleReset as EventListener);
+          target.removeEventListener("touchmove", onTMove as EventListener);
+          target.removeEventListener("touchend", handleReset as EventListener);
         };
       }
 
-      return () => {};
+      return () => { };
     }
 
     return () => {
@@ -1245,17 +1263,18 @@ export const Proximity: React.FC<ProximityProps> = ({
       mediaQuery.removeEventListener("change", handleMotionChange);
       mutationObserver.disconnect();
       resizeObserver.disconnect();
-      
+
       const scrollListenTarget = scrollerRef?.current;
       if (scrollListenTarget && scrollListenTarget !== (window as unknown) && scrollListenTarget !== document.documentElement && scrollListenTarget !== document.body) {
         scrollListenTarget.removeEventListener("scroll", onScroll as EventListener);
       }
-      
+
       clearTimeout(resizeTimeout!);
       clearTimeout(scrollTimeout!);
       if (io) io.disconnect();
       scrollTriggersRef.current.forEach((t) => t.kill());
       gsap.killTweensOf(itemsRef.current);
+      gsap.set(itemsRef.current, { clearProps: "transform,filter,opacity,fontVariationSettings,clipPath" });
     };
   }, {
     dependencies:[
@@ -1279,7 +1298,7 @@ export const Proximity: React.FC<ProximityProps> = ({
   return (
     <div
       ref={containerRef}
-      className={className}
+      className={`proximity-container ${className}`.trim()}
       style={{ position: "relative", touchAction: activeMode === "scroll" ? "auto" : "pan-y", ...style }}
       {...restProps}
     >
