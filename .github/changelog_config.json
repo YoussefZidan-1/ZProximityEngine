@@ -1,0 +1,33 @@
+{
+  "categories": [
+    {
+      "title": "## 🚀 New Features",
+      "labels": ["feat", "feature"]
+    },
+    {
+      "title": "## 🐛 Bug Fixes",
+      "labels": ["fix", "bug"]
+    },
+    {
+      "title": "## ⚡ Performance Improvements",
+      "labels": ["perf", "optimization"]
+    },
+    {
+      "title": "## 🔧 Maintenance",
+      "labels": ["chore", "refactor", "style", "build", "update"]
+    },
+    {
+      "title": "## 📝 Documentations",
+      "labels": ["readme", "docs"]
+    },
+    {
+      "title": "## 🧪 Testing",
+      "labels": ["test"]
+    }
+  ],
+  "template": "${{CHANGELOG}}",
+  "pr_template": "- ${{TITLE}}",
+  "empty_template": "No major changes in this release.",
+  "ignore_labels": ["ignore"],
+  "extract_authors": true
+}
