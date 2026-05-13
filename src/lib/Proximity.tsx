@@ -17,7 +17,7 @@ export type ProximityPreset =
   | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
   | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
   | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "scroll"
-  | (string & {});
+  | "fill" | (string & {});
 
 export type ProximityMode = "pointer" | "scroll";
 export type AxisLock = "x" | "y" | "both" | "none";
@@ -177,6 +177,7 @@ const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
   grayScale: [1, 0],
   color: ["#888888", "#ffffff"],
   background: ["transparent", "rgba(255,255,255,0.1)"],
+  fill: [0, 1],
 };
 
 const EASE_MAP: Record<string, string> = {
@@ -379,6 +380,18 @@ const calculatePresetValues = (
         res.marginBottom = mb + eh;
         break;
       }
+      case "fill":
+            case "fillText": {
+              const mx = w === 0 ? 50 : ((dx + w / 2) / w) * 100;
+              const my = h === 0 ? 50 : ((dy + h / 2) / h) * 100;
+              const clampMx = Math.max(-50, Math.min(150, mx));
+              const clampMy = Math.max(-50, Math.min(150, my));
+              const radius = curIntensity * 150;
+              res["--prox-x"] = `${clampMx}%`;
+              res["--prox-y"] = `${clampMy}%`;
+              res["--prox-radius"] = `${radius}%`;
+              break;
+            }
       default:
         res[prop] = curValue;
     }
@@ -720,10 +733,22 @@ export const Proximity: React.FC<ProximityProps> = ({
         if (item.dataset.proxOriginal === undefined)
           item.dataset.proxOriginal = item.textContent ?? "";
         if (item.proxCipher === undefined) item.proxCipher = 0;
+        const lc = targetMapRef.current.get(item);
+        const itemPresetStr = `${lc?.preset ?? activePreset}-${lc?.nearestPreset ?? activeNearestPreset}-${lc?.neighborPreset ?? activeNeighborPreset}`;
 
+        if (itemPresetStr.includes("fillText")) {
+          item.style.color = "transparent";
+          item.style.webkitTextStroke = "var(--prox-stroke-width, 1px) var(--prox-stroke-color, currentColor)";
+          item.style.backgroundImage = "radial-gradient(circle at var(--prox-x, 50%) var(--prox-y, 50%), var(--prox-fill-color, currentColor) var(--prox-radius, 0%), transparent var(--prox-radius, 0%))";
+          item.style.webkitBackgroundClip = "text";
+          item.style.backgroundClip = "text";
+          item.style.backgroundRepeat = "no-repeat";
+        } else if (itemPresetStr.includes("fill")) {
+            item.style.backgroundImage = "radial-gradient(circle at var(--prox-x, 50%) var(--prox-y, 50%), var(--prox-fill-color, currentColor) var(--prox-radius, 0%), transparent var(--prox-radius, 0%))";
+            item.style.backgroundRepeat = "no-repeat";
+                }
         item._quickTos = {};
         item._scrollState = "resting";
-        const lc = targetMapRef.current.get(item);
         const dur = lc?.duration ?? activeDuration;
         const ez = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
 
