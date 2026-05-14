@@ -1,64 +1,10 @@
 import React, { Fragment, useMemo, CSSProperties } from "react";
-import { Proximity, ProximityProps, useDeepMemo } from "./Proximity";
+import { Proximity } from "./Proximity";
+import { useDeepMemo } from "./hooks";
 import { useProximityConfig } from "./ProximityContext";
-
-export interface ProximityTextProps extends ProximityProps {
-  text: string;
-  splitBy?: "letter" | "word" | "line";
-  textClassName?: string;
-  fontFamily?: string;
-  lineHeight?: number;
-  textLetterSpacing?: number;
-  wordSpacing?: number;
-  clipFix?: string;
-  ignoreText?: (string | RegExp)[];
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
-  dir?: 'ltr' | 'rtl' | 'auto';
-}
-
-const ARABIC_NON_CONNECTING_LEFT = /[اأإآدذرزوؤءة\s]/;
-const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670]/;
-const LAM = "\u0644";
-const ALEFS = /[\u0622\u0623\u0625\u0627]/;
-const ZWJ = "\u200D";
-
-const getArabicSegments = (word: string) => {
-  const segments: string[] =[];
-  const characters = Array.from(word);
-  let i = 0;
-  
-  while (i < characters.length) {
-    let char = characters[i];
-    
-    if (char === LAM && i + 1 < characters.length) {
-      let nextIdx = i + 1;
-      let tempDiacritics = "";
-      while (nextIdx < characters.length && ARABIC_DIACRITICS.test(characters[nextIdx])) {
-        tempDiacritics += characters[nextIdx];
-        nextIdx++;
-      }
-      if (nextIdx < characters.length && ALEFS.test(characters[nextIdx])) {
-        char += tempDiacritics + characters[nextIdx];
-        i = nextIdx;
-      }
-    }
-    
-    if (ARABIC_DIACRITICS.test(char) && segments.length > 0) {
-      segments[segments.length - 1] += char;
-    } else {
-      segments.push(char);
-    }
-    i++;
-  }
-  return segments;
-};
-
-const doesSegmentConnectLeft = (seg: string) => {
-  const baseStr = seg.replace(ARABIC_DIACRITICS, '');
-  if (!baseStr) return false;
-  return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
-};
+import { ProximityTextProps } from "./types";
+import { getArabicSegments, doesSegmentConnectLeft } from "./utils";
+import { ZWJ } from "./constants";
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
   text,
