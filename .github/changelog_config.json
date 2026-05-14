@@ -2,64 +2,31 @@
   "categories": [
     {
       "title": "## 🚀 New Features",
-      "labels": ["feat", "feature"]
+      "labels": ["feat", "feature"],
+      "patterns": ["feat:.*", "feat\\(.*", "feature:.*"]
     },
     {
       "title": "## 🐛 Bug Fixes",
-      "labels": ["fix", "bug"]
+      "labels": ["fix", "bug"],
+      "patterns": ["fix:.*", "fix\\(.*", "bug:.*"]
     },
     {
-      "title": "## ⚡ Performance Improvements",
-      "labels": ["perf", "optimization"]
+      "title": "## ⚡ Performance",
+      "labels": ["perf", "optimization"],
+      "patterns": ["perf:.*", "optimization:.*"]
     },
     {
       "title": "## 🔧 Maintenance",
-      "labels": ["chore", "refactor", "style", "build", "update"]
-    },
-    {
-      "title": "## 📝 Documentations",
-      "labels": ["readme", "docs"]
-    },
-    {
-      "title": "## 🧪 Testing",
-      "labels": ["test"]
+      "labels": ["chore", "refactor"],
+      "patterns": ["chore:.*", "refactor:.*", "style:.*"]
     }
   ],
-  "ignore_labels": ["ignore"],
+  "ignore_labels": ["ignore", "skip-chane-log"],
   "template": "${{CHANGELOG}}",
   "pr_template": "- ${{TITLE}}",
-  "empty_template": "No recognized changes (ensure your commits start with feat: or fix:)",
+  "empty_template": "## 🚀 What's Changed\n- Minor updates and performance improvements.",
   "tag_resolver": {
     "method": "semver"
   },
-  "base_branches": ["main", "master"],
-  "sort": "DESC",
-  "search": {
-    "rules": [
-      {
-        "category": "## 🚀 New Features",
-        "regex": "^(feat|feature)(:|\\().*"
-      },
-      {
-        "category": "## 🐛 Bug Fixes",
-        "regex": "^(fix|bug)(:|\\().*"
-      },
-      {
-        "category": "## ⚡ Performance Improvements",
-        "regex": "^(perf|optimization)(:|\\().*"
-      },
-      {
-        "category": "## 🔧 Maintenance",
-        "regex": "^(chore|refactor|style|build|update)(:|\\().*"
-      },
-      {
-        "category": "## 📝 Documentations",
-        "regex": "^(readme|docs)(:|\\().*"
-      },
-      {
-        "category": "## 🧪 Testing",
-        "regex": "^test(:|\\().*"
-      }
-    ]
-  }
+  "base_branches": ["main", "master"]
 }
