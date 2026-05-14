@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Proximity, ProximityText } from './lib';
 import {
-  X, RotateCcw, Check, Terminal, Play, BookOpen, Copy, Info,
-  ChevronRight, Zap, MousePointer, Layers, Cpu, Eye, ArrowRight,
-  Code, Sparkles, AlertTriangle, Heart
+  X, RotateCcw, Check, Terminal, Play, BookOpen, Copy, Eye,
+  Zap, MousePointer, Layers, Cpu, Sparkles, AlertTriangle, Heart
 } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -11,16 +10,13 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTIONS NAV
-// ─────────────────────────────────────────────────────────────────────────────
-
 const SECTIONS = [
   { id: 'mental-model',     icon: '🧠', title: 'The Mental Model' },
   { id: 'installation',     icon: '📦', title: 'Installation' },
   { id: 'your-first-effect',icon: '⚡', title: 'Your First Effect' },
   { id: 'reach-falloff',    icon: '📡', title: 'Reach & Falloff' },
   { id: 'preset-chaining',  icon: '🔗', title: 'Preset Chaining' },
+  { id: 'styling-aesthetics',icon: '✨', title: 'Styling & Aesthetics' },
   { id: 'common-mistakes',  icon: '⚠️',  title: 'Common Mistakes' },
   { id: 'text-magic',       icon: '✍️',  title: 'Text Magic' },
   { id: 'neighbor-nearest', icon: '🎯', title: 'Neighbor vs Nearest' },
@@ -30,12 +26,8 @@ const SECTIONS = [
   { id: 'api-reference',    icon: '📖', title: 'API Reference' },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SHARED ATOMS
-// ─────────────────────────────────────────────────────────────────────────────
-
 const Tag = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] opacity-60">
+  <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] opacity-80">
     {children}
   </span>
 );
@@ -50,10 +42,10 @@ const Callout = ({
   children: React.ReactNode;
 }) => {
   const colors: Record<string, string> = {
-    info:   'border-blue-600! bg-blue-50! text-blue-950!',
-    warn:   'border-yellow-600! bg-yellow-50! text-yellow-950!',
-    tip:    'border-emerald-600! bg-emerald-50! text-emerald-950!',
-    danger: 'border-red-600! bg-red-50! text-red-950!',
+    info:   'border-blue-600! bg-blue-50! text-blue-950! dark:bg-blue-950/30! dark:text-blue-100!',
+    warn:   'border-yellow-600! bg-yellow-50! text-yellow-950! dark:bg-yellow-950/30! dark:text-yellow-100!',
+    tip:    'border-emerald-600! bg-emerald-50! text-emerald-950! dark:bg-emerald-950/30! dark:text-emerald-100!',
+    danger: 'border-red-600! bg-red-50! text-red-950! dark:bg-red-950/30! dark:text-red-100!',
   };
   return (
     <div className={`my-6 border-l-4 p-4 text-sm leading-relaxed ${colors[type]} opacity-100`}>
@@ -75,13 +67,13 @@ const DocH2 = ({ children, id }: { children: React.ReactNode; id?: string }) => 
 );
 
 const DocH3 = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-lg font-black tracking-tight uppercase mt-10 mb-4 opacity-80">
+  <h3 className="text-lg font-black tracking-tight uppercase mt-10 mb-4 opacity-90">
     {children}
   </h3>
 );
 
 const DocP = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-sm leading-relaxed mb-4 opacity-80">{children}</p>
+  <p className="text-sm leading-relaxed mb-4 opacity-90">{children}</p>
 );
 
 const Mono = ({ children }: { children: React.ReactNode }) => (
@@ -89,10 +81,6 @@ const Mono = ({ children }: { children: React.ReactNode }) => (
     {children}
   </code>
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CODE BLOCK with copy
-// ─────────────────────────────────────────────────────────────────────────────
 
 const CodeBlock = ({ code, label }: { code: string; label?: string }) => {
   const [copied, setCopied] = useState(false);
@@ -104,7 +92,7 @@ const CodeBlock = ({ code, label }: { code: string; label?: string }) => {
   return (
     <div className="relative group my-6 w-full">
       {label && (
-        <div className="flex items-center gap-2 bg-zinc-800 text-zinc-400 text-[10px] font-mono px-4 py-2 border-b border-white/10 uppercase tracking-widest">
+        <div className="flex items-center gap-2 bg-zinc-800 text-zinc-300 text-[10px] font-mono px-4 py-2 border-b border-black/20 dark:border-white/10 uppercase tracking-widest">
           <Terminal size={10} />
           {label}
         </div>
@@ -122,10 +110,6 @@ const CodeBlock = ({ code, label }: { code: string; label?: string }) => {
     </div>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LIVE CONFIG EDITOR — the core interactive sandbox
-// ─────────────────────────────────────────────────────────────────────────────
 
 const LiveEditor = ({
   initialConfig,
@@ -169,7 +153,7 @@ const LiveEditor = ({
 
   return (
     <div className="border border-[var(--border-color)] my-8 shadow-2xl">
-      <div className="flex items-center justify-between bg-zinc-900 px-4 py-2.5 text-zinc-400 text-[10px] font-mono uppercase tracking-widest border-b border-white/10">
+      <div className="flex items-center justify-between bg-zinc-900 px-4 py-2.5 text-zinc-300 text-[10px] font-mono uppercase tracking-widest border-b border-black/20 dark:border-white/10">
         <span className="flex items-center gap-2"><Terminal size={11} /> {label}</span>
         <div className="flex gap-4">
           <button onClick={handleCopy} className="hover:text-white transition-colors flex items-center gap-1">
@@ -183,7 +167,6 @@ const LiveEditor = ({
       </div>
 
       <div className="flex flex-col lg:flex-row">
-        {/* Editor pane */}
         <div className="lg:w-1/2 relative border-b lg:border-b-0 lg:border-r border-[var(--border-color)]">
           <textarea
             value={code}
@@ -193,18 +176,17 @@ const LiveEditor = ({
             style={{ minHeight: height }}
           />
           {error && (
-            <div className="absolute bottom-0 left-0 right-0 bg-red-600 text-white text-[10px] p-2 font-mono">
+            <div className="absolute bottom-0 left-0 right-0 bg-red-600 text-white text-[10px] p-2 font-mono font-bold">
               ⚠ {error}
             </div>
           )}
         </div>
 
-        {/* Preview pane */}
         <div
-          className="lg:w-1/2 mono-grid flex items-center justify-center relative overflow-hidden"
+          className="lg:w-1/2 mono-grid flex items-center justify-center relative overflow-hidden bg-[var(--bg-color)]"
           style={{ minHeight: height }}
         >
-          <div className="absolute top-2 right-3 text-[9px] uppercase font-bold tracking-widest opacity-30 flex items-center gap-1">
+          <div className="absolute top-2 right-3 text-[9px] uppercase font-bold tracking-widest opacity-60 flex items-center gap-1">
             <Play size={9} /> Live
           </div>
           {!error && (
@@ -243,14 +225,11 @@ const LiveEditor = ({
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MENTAL MODEL VISUALIZER
-// ─────────────────────────────────────────────────────────────────────────────
-
 const MentalModelVisualizer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: 250, y: 150 });
   const rafRef = useRef<number>(0);
+  const isInteractingRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -277,7 +256,7 @@ const MentalModelVisualizer = () => {
       // reach circle
       ctx.beginPath();
       ctx.arc(mx, my, reach, 0, Math.PI * 2);
-      ctx.strokeStyle = isDark ? 'rgba(107,107,255,0.2)' : 'rgba(26,26,255,0.15)';
+      ctx.strokeStyle = isDark ? 'rgba(107,107,255,0.4)' : 'rgba(26,26,255,0.3)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.stroke();
@@ -287,7 +266,7 @@ const MentalModelVisualizer = () => {
       [0.75, 0.5, 0.25].forEach(r => {
         ctx.beginPath();
         ctx.arc(mx, my, reach * r, 0, Math.PI * 2);
-        ctx.strokeStyle = isDark ? `rgba(107,107,255,${0.05 + r * 0.07})` : `rgba(26,26,255,${0.04 + r * 0.06})`;
+        ctx.strokeStyle = isDark ? `rgba(107,107,255,${0.1 + r * 0.1})` : `rgba(26,26,255,${0.15 + r * 0.15})`;
         ctx.lineWidth = 0.5;
         ctx.stroke();
       });
@@ -310,51 +289,73 @@ const MentalModelVisualizer = () => {
         const px = item.x + (dx / Math.max(dist, 1)) * pull;
         const py = item.y + (dy / Math.max(dist, 1)) * pull;
 
-        // line to cursor
         if (intensity > 0.01) {
           ctx.beginPath();
           ctx.moveTo(item.x, item.y);
           ctx.lineTo(mx, my);
           ctx.strokeStyle = isDark
-            ? `rgba(107,107,255,${intensity * 0.4})`
-            : `rgba(26,26,255,${intensity * 0.3})`;
+            ? `rgba(107,107,255,${intensity * 0.6})`
+            : `rgba(26,26,255,${intensity * 0.6})`;
           ctx.lineWidth = intensity * 1.5;
           ctx.stroke();
         }
 
         const size = 18 * s;
         ctx.fillStyle = i % 2 === 0
-          ? isDark ? `rgba(240,240,240,${0.4 + intensity * 0.6})` : `rgba(12,12,12,${0.3 + intensity * 0.7})`
-          : isDark ? `rgba(107,107,255,${0.3 + intensity * 0.7})` : `rgba(26,26,255,${0.2 + intensity * 0.8})`;
+          ? isDark ? `rgba(240,240,240,${0.5 + intensity * 0.5})` : `rgba(12,12,12,${0.5 + intensity * 0.5})`
+          : isDark ? `rgba(107,107,255,${0.5 + intensity * 0.5})` : `rgba(26,26,255,${0.5 + intensity * 0.5})`;
         ctx.fillRect(px - size / 2, py - size / 2, size, size);
 
-        // intensity label
         if (intensity > 0.05) {
-          ctx.fillStyle = isDark ? 'rgba(107,107,255,0.8)' : 'rgba(26,26,255,0.7)';
-          ctx.font = '9px JetBrains Mono, monospace';
-          ctx.fillText(`${(intensity * 100).toFixed(0)}%`, px + size / 2 + 3, py - size / 2);
+          ctx.fillStyle = isDark ? 'rgba(107,107,255,1)' : 'rgba(26,26,255,1)';
+          ctx.font = 'bold 10px JetBrains Mono, monospace';
+          ctx.fillText(`${(intensity * 100).toFixed(0)}%`, px + size / 2 + 5, py - size / 2);
         }
       });
 
-      // label
-      ctx.fillStyle = isDark ? 'rgba(240,240,240,0.4)' : 'rgba(12,12,12,0.4)';
-      ctx.font = '9px JetBrains Mono, monospace';
-      ctx.fillText('← reach radius →', mx - 40, my + reach + 14);
-      ctx.fillText('cursor', mx + 8, my - 8);
+      ctx.fillStyle = isDark ? 'rgba(240,240,240,0.7)' : 'rgba(12,12,12,0.7)';
+      ctx.font = 'bold 10px JetBrains Mono, monospace';
+      ctx.fillText('← reach radius →', mx - 45, my + reach + 16);
+      ctx.fillText('cursor', mx + 10, my - 10);
 
       rafRef.current = requestAnimationFrame(draw);
     };
 
     rafRef.current = requestAnimationFrame(draw);
 
-    const onMove = (e: MouseEvent) => {
+    const updateMouse = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      mouseRef.current = {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
     };
-    // auto-animate when no mouse
+
+    const onMouseMove = (e: MouseEvent) => {
+      isInteractingRef.current = true;
+      updateMouse(e.clientX, e.clientY);
+    };
+
+    const onMouseLeave = () => {
+      isInteractingRef.current = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        isInteractingRef.current = true;
+        updateMouse(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    const onTouchEnd = () => {
+      isInteractingRef.current = false;
+    };
+
     let t = 0;
     const autoAnimate = () => {
-      if (mouseRef.current.x === 250 && mouseRef.current.y === 150) {
+      if (!isInteractingRef.current) {
         t += 0.015;
         mouseRef.current = {
           x: 250 + Math.cos(t) * 100,
@@ -364,43 +365,48 @@ const MentalModelVisualizer = () => {
     };
     const autoId = setInterval(autoAnimate, 16);
 
-    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseleave', onMouseLeave);
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchstart', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd);
+
     return () => {
       cancelAnimationFrame(rafRef.current);
       clearInterval(autoId);
-      canvas.removeEventListener('mousemove', onMove);
+      canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('mouseleave', onMouseLeave);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchstart', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
     };
   }, []);
 
   return (
-    <div className="border border-[var(--border-color)] overflow-hidden my-8">
-      <div className="bg-black/5 dark:bg-white/5 px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest opacity-60 border-b border-[var(--border-color)] flex items-center gap-2">
-        <Eye size={11} /> Move your cursor inside the box
+    <div className="border border-[var(--border-color)] overflow-hidden my-8 shadow-xl">
+      <div className="bg-black/5 dark:bg-white/5 px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest opacity-80 border-b border-[var(--border-color)] flex items-center gap-2">
+        <Eye size={11} /> Touch or Move your cursor inside the box
       </div>
       <canvas
         ref={canvasRef}
         width={500}
         height={300}
-        className="w-full block bg-[var(--bg-color)]"
-        style={{ maxHeight: 300 }}
+        className="w-full block bg-[var(--bg-color)] touch-none"
+        style={{ maxHeight: 300, objectFit: 'contain' }}
       />
     </div>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// REACH & FALLOFF INTERACTIVE SLIDER
-// ─────────────────────────────────────────────────────────────────────────────
 
 const ReachFalloffExplorer = () => {
   const [reach, setReach] = useState(2);
   const [falloff, setFalloff] = useState(2.4);
 
   return (
-    <div className="border border-[var(--border-color)] my-8">
+    <div className="border border-[var(--border-color)] my-8 shadow-xl">
       <div className="p-6 border-b border-[var(--border-color)] grid grid-cols-2 gap-8">
         <div>
-          <label className="text-[10px] uppercase font-bold tracking-widest opacity-60 block mb-3">
+          <label className="text-[10px] uppercase font-bold tracking-widest opacity-80 block mb-3">
             reach — {reach.toFixed(1)}
           </label>
           <input
@@ -408,12 +414,12 @@ const ReachFalloffExplorer = () => {
             onChange={e => setReach(parseFloat(e.target.value))}
             className="w-full"
           />
-          <p className="text-[10px] opacity-50 mt-2">
+          <p className="text-[10px] opacity-70 mt-2">
             How far away the cursor is "felt". Higher = items react from further away.
           </p>
         </div>
         <div>
-          <label className="text-[10px] uppercase font-bold tracking-widest opacity-60 block mb-3">
+          <label className="text-[10px] uppercase font-bold tracking-widest opacity-80 block mb-3">
             falloff — {falloff.toFixed(1)}
           </label>
           <input
@@ -421,7 +427,7 @@ const ReachFalloffExplorer = () => {
             onChange={e => setFalloff(parseFloat(e.target.value))}
             className="w-full"
           />
-          <p className="text-[10px] opacity-50 mt-2">
+          <p className="text-[10px] opacity-70 mt-2">
             How quickly intensity drops off. Low = gradual. High = sharp snap.
           </p>
         </div>
@@ -441,19 +447,16 @@ const ReachFalloffExplorer = () => {
           ))}
         </Proximity>
       </div>
-      <div className="px-6 py-3 bg-black/5 dark:bg-white/5 border-t border-[var(--border-color)] text-[10px] font-mono opacity-60">
+      <div className="px-6 py-3 bg-black/5 dark:bg-white/5 border-t border-[var(--border-color)] text-[10px] font-mono opacity-80">
         {`<Proximity preset="scale-opacity" reach={${reach}} falloff={${falloff}} />`}
       </div>
     </div>
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PRESET CHAINING BUILDER
-// ─────────────────────────────────────────────────────────────────────────────
-
 const PRESET_CATALOG = [
   { name: 'scale',    cat: 'transform', desc: 'Grows/shrinks' },
+  { name: 'flexScale',cat: 'transform', desc: 'Scale with margin compensation' },
   { name: 'x',        cat: 'transform', desc: 'Moves horizontally' },
   { name: 'y',        cat: 'transform', desc: 'Moves vertically' },
   { name: 'rotate',   cat: 'transform', desc: 'Spins' },
@@ -461,13 +464,19 @@ const PRESET_CATALOG = [
   { name: 'opacity',  cat: 'appear',    desc: 'Fades in/out' },
   { name: 'blur',     cat: 'appear',    desc: 'Blurs into focus' },
   { name: 'reveal',   cat: 'appear',    desc: 'Clips in from bottom' },
+  { name: 'scroll',   cat: 'appear',    desc: 'Scroll-driven travel' },
   { name: 'magnetic', cat: 'physics',   desc: 'Attracts toward cursor' },
   { name: 'repel',    cat: 'physics',   desc: 'Pushes away' },
   { name: 'tilt',     cat: '3d',        desc: '3D tilt rotation' },
   { name: 'tiltCard', cat: '3d',        desc: 'Perspective card tilt' },
   { name: 'glow',     cat: 'style',     desc: 'Drop shadow glow' },
-  { name: 'borderRadius', cat: 'style', desc: 'Morphs corners' },
+  { name: 'brightness',cat: 'style',    desc: 'CSS brightness filter' },
+  { name: 'contrast', cat: 'style',     desc: 'CSS contrast filter' },
+  { name: 'grayScale',cat: 'style',     desc: 'Black & white conversion' },
+  { name: 'background',cat:'style',     desc: 'Background color shift' },
   { name: 'color',    cat: 'style',     desc: 'Text color shift' },
+  { name: 'letterSpacing', cat: 'style', desc: 'Adjusts text tracking' },
+  { name: 'borderRadius', cat: 'style', desc: 'Morphs corners' },
 ];
 
 const CAT_COLORS: Record<string,string> = {
@@ -488,15 +497,14 @@ const PresetChainBuilder = () => {
 
   return (
     <div className="border border-[var(--border-color)] my-8 shadow-xl">
-      <div className="flex flex-col md:flex-row">
-        {/* Picker */}
-        <div className="md:w-2/5 border-b md:border-b-0 md:border-r border-[var(--border-color)] p-5">
-          <div className="text-[10px] uppercase font-bold tracking-widest opacity-50 mb-4 flex items-center gap-2">
+      <div className="flex flex-col lg:flex-row">
+        <div className="lg:w-2/5 border-b lg:border-b-0 lg:border-r border-[var(--border-color)] p-5">
+          <div className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-4 flex items-center gap-2">
             <Layers size={11} /> Click to chain presets
           </div>
           {(['transform','appear','physics','3d','style'] as const).map(cat => (
             <div key={cat} className="mb-4">
-              <div className="text-[9px] uppercase font-bold tracking-widest opacity-40 mb-2">{cat}</div>
+              <div className="text-[9px] uppercase font-bold tracking-widest opacity-70 mb-2">{cat}</div>
               <div className="flex flex-wrap gap-1.5">
                 {PRESET_CATALOG.filter(p => p.cat === cat).map(p => (
                   <button
@@ -505,7 +513,7 @@ const PresetChainBuilder = () => {
                     title={p.desc}
                     className={`px-2 py-1 text-[10px] font-mono border transition-all ${
                       selected.includes(p.name)
-                        ? 'bg-[var(--text-color)] text-[var(--bg-color)] border-[var(--text-color)]'
+                        ? 'bg-[var(--text-color)] text-[var(--bg-color)] border-[var(--text-color)] font-bold'
                         : `border-[var(--border-color)] hover:bg-black/5 dark:hover:bg-white/5 ${CAT_COLORS[cat]}`
                     }`}
                   >
@@ -517,33 +525,28 @@ const PresetChainBuilder = () => {
           ))}
         </div>
 
-        {/* Preview */}
-        <div className="md:w-3/5 flex flex-col">
+        <div className="lg:w-3/5 flex flex-col">
           <div className="flex-1 mono-grid flex items-center justify-center min-h-[250px]">
             <Proximity key={combined} preset={combined as string} reach={1.8}>
-              <div className="flex gap-4 flex-wrap justify-center">
+              <div className="flex gap-4 flex-wrap justify-center p-4">
                 {[0,1,2,3].map(i => (
-                  <div key={i} className="prox-item w-14 h-14 bg-[var(--text-color)] flex items-center justify-center text-[var(--bg-color)] font-black text-lg">
+                  <div key={i} className="prox-item w-16 h-16 border-2 border-[var(--border-color)] bg-[var(--text-color)] flex items-center justify-center text-[var(--bg-color)] font-black text-lg shadow-lg">
                     {i+1}
                   </div>
                 ))}
               </div>
             </Proximity>
           </div>
-          <div className="border-t border-[var(--border-color)] p-4 font-mono text-[11px] bg-black/5 dark:bg-white/5">
-            <span className="opacity-40">preset=</span>
+          <div className="border-t border-[var(--border-color)] p-4 font-mono text-[11px] bg-black/5 dark:bg-white/5 break-all">
+            <span className="opacity-70">preset=</span>
             <span className="font-bold">"{combined}"</span>
-            {selected.length === 0 && <span className="ml-3 text-red-500 text-[10px]">← select at least one preset</span>}
+            {selected.length === 0 && <span className="ml-3 text-red-500 font-bold text-[10px]">← select at least one preset</span>}
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// COMMON MISTAKES — before/after comparisons
-// ─────────────────────────────────────────────────────────────────────────────
 
 const MistakeCard = ({
   title,
@@ -558,37 +561,33 @@ const MistakeCard = ({
 }) => {
   const [showing, setShowing] = useState<'wrong' | 'right'>('wrong');
   return (
-    <div className="border border-[var(--border-color)] my-6 overflow-hidden">
+    <div className="border border-[var(--border-color)] my-6 overflow-hidden shadow-xl">
       <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)] bg-black/5 dark:bg-white/5">
         <span className="font-bold text-sm">{title}</span>
         <div className="flex border border-[var(--border-color)] overflow-hidden text-[10px] font-bold uppercase tracking-widest">
           <button
             onClick={() => setShowing('wrong')}
-            className={`px-3 py-1.5 transition-all ${showing === 'wrong' ? 'bg-red-500 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+            className={`px-3 py-1.5 transition-all ${showing === 'wrong' ? 'bg-red-600 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70'}`}
           >
             ✗ Wrong
           </button>
           <button
             onClick={() => setShowing('right')}
-            className={`px-3 py-1.5 border-l border-[var(--border-color)] transition-all ${showing === 'right' ? 'bg-green-600 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+            className={`px-3 py-1.5 border-l border-[var(--border-color)] transition-all ${showing === 'right' ? 'bg-green-600 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70'}`}
           >
             ✓ Right
           </button>
         </div>
       </div>
-      <pre className="bg-black dark:bg-zinc-950 text-gray-300 p-5 text-[11px] font-mono overflow-x-auto leading-relaxed">
+      <pre className="bg-black dark:bg-zinc-950 text-gray-300 p-5 text-[11px] font-mono overflow-x-auto leading-relaxed border-b border-black/20 dark:border-white/10">
         <code>{showing === 'wrong' ? wrong : right}</code>
       </pre>
-      <div className="p-4 text-xs opacity-70 leading-relaxed border-t border-[var(--border-color)]">
+      <div className="p-4 text-xs opacity-90 leading-relaxed bg-[var(--bg-color)]">
         {explanation}
       </div>
     </div>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NEIGHBOR VS NEAREST DEMO
-// ─────────────────────────────────────────────────────────────────────────────
 
 const NeighborNearestDemo = () => {
   const [mode, setMode] = useState<'nearest'|'neighbor'|'both'>('both');
@@ -597,9 +596,9 @@ const NeighborNearestDemo = () => {
   const neighborP = mode === 'neighbor' || mode === 'both' ? 'repel' : '';
 
   return (
-    <div className="border border-[var(--border-color)] my-8">
+    <div className="border border-[var(--border-color)] my-8 shadow-xl">
       <div className="flex items-center gap-3 p-4 border-b border-[var(--border-color)] bg-black/5 dark:bg-white/5 flex-wrap">
-        <span className="text-[10px] uppercase font-bold tracking-widest opacity-50">Mode:</span>
+        <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">Mode:</span>
         {(['nearest','neighbor','both'] as const).map(m => (
           <button
             key={m}
@@ -627,13 +626,13 @@ const NeighborNearestDemo = () => {
           lockAxis='x'
         >
           {[0,1,2,3,4,5,6].map(i => (
-            <div key={i} className="prox-item w-10 h-10 bg-[var(--text-color)] inline-flex items-center justify-center text-[var(--bg-color)] text-xs font-black m-2">
+            <div key={i} className="prox-item w-10 h-10 bg-[var(--text-color)] inline-flex items-center justify-center text-[var(--bg-color)] text-xs font-black m-2 shadow-lg">
               {i+1}
             </div>
           ))}
         </Proximity>
       </div>
-      <div className="p-4 border-t border-[var(--border-color)] text-[10px] font-mono bg-black/5 dark:bg-white/5 opacity-70">
+      <div className="p-4 border-t border-[var(--border-color)] text-[11px] font-mono font-bold bg-black/5 dark:bg-white/5 opacity-90 overflow-x-auto whitespace-nowrap">
         {mode === 'nearest'  && `nearestPreset="scale-magnetic" // only the closest item snaps`}
         {mode === 'neighbor' && `neighborPreset="repel"    // all others scatter`}
         {mode === 'both'     && `nearestPreset="scale-magnetic" neighborPreset="repel" // dock effect`}
@@ -642,22 +641,12 @@ const NeighborNearestDemo = () => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EASE TESTER
-// ─────────────────────────────────────────────────────────────────────────────
-
-const EASES = [
-  'smooth','heavy','sharp','fluid','bouncy','elastic',
-  'jello','bounce','swing','spring','heavySpring',
-  'anticipate','launch','drift','whiplash','expo',
-];
-
 const EaseTester = () => {
   const [ease, setEase] = useState('bouncy');
   return (
-    <div className="border border-[var(--border-color)] my-8">
+    <div className="border border-[var(--border-color)] my-8 shadow-xl">
       <div className="p-4 border-b border-[var(--border-color)] bg-black/5 dark:bg-white/5">
-        <div className="text-[10px] uppercase font-bold tracking-widest opacity-50 mb-3">
+        <div className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-3">
           Click an ease — hover the boxes to feel the difference
         </div>
         <div className="flex flex-wrap gap-2">
@@ -667,7 +656,7 @@ const EaseTester = () => {
               onClick={() => setEase(e)}
               className={`px-2 py-1 text-[10px] font-mono border transition-all ${
                 ease === e
-                  ? 'bg-[var(--text-color)] text-[var(--bg-color)] border-[var(--text-color)]'
+                  ? 'bg-[var(--text-color)] text-[var(--bg-color)] border-[var(--text-color)] font-bold'
                   : 'border-[var(--border-color)] hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
@@ -679,20 +668,16 @@ const EaseTester = () => {
       <div className="mono-grid p-10 flex items-center justify-center min-h-[160px]">
         <Proximity key={ease} preset="scale-y" ease={ease} scale={[1,1.6]} y={[0,-20]} reach={2} duration={0.5}>
           {[0,1,2,3].map(i => (
-            <div key={i} className="prox-item w-12 h-12 bg-[var(--text-color)] inline-block m-3" />
+            <div key={i} className="prox-item w-12 h-12 bg-[var(--text-color)] inline-block m-3 shadow-lg" />
           ))}
         </Proximity>
       </div>
-      <div className="px-4 py-3 border-t border-[var(--border-color)] text-[10px] font-mono opacity-60">
+      <div className="px-4 py-3 border-t border-[var(--border-color)] text-[11px] font-mono font-bold opacity-80">
         ease="{ease}"
       </div>
     </div>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// API TABLE
-// ─────────────────────────────────────────────────────────────────────────────
 
 const API_ROWS = [
   ['preset',         'string',              '"scale"',     'Chain multiple physics presets with dash syntax.'],
@@ -703,55 +688,56 @@ const API_ROWS = [
   ['ease',           'EasePreset|string',   '"power1.out"','Built-in ease or any GSAP ease string.'],
   ['resetEase',      'EasePreset|string',   '"power2.out"','Ease used when cursor leaves.'],
   ['mode',           '"pointer"|"scroll"',  '"pointer"',   'Switch from cursor to scroll-driven mode.'],
-  ['nearestPreset',  'string',              '—',           'Preset applied only to the element closest to cursor.'],
-  ['neighborPreset', 'string',              '—',           'Preset applied to all non-nearest elements in range.'],
-  ['global',         'boolean',             'false',       'Track cursor across the whole window, not just the container.'],
-  ['explicit',       'boolean',             'false',       'Physics only activate when cursor is inside the container box.'],
+  ['nearestPreset',  'string',              '—',           'Preset applied only to the closest element.'],
+  ['neighborPreset', 'string',              '—',           'Preset applied to all non-nearest elements.'],
+  ['global',         'boolean',             'false',       'Track cursor across the whole window.'],
+  ['explicit',       'boolean',             'false',       'Physics only activate when cursor is strictly inside bounds.'],
   ['lockAxis',       '"x"|"y"|"both"',      '—',           'Constrain magnetic/repel movement to one axis.'],
-  ['maxTravel',      'number|[x,y]',        'Infinity',    'Cap the max pixel offset for physics-based presets.'],
+  ['maxTravel',      'number|[x,y]',        'Infinity',    'Cap the max pixel offset.'],
   ['stagger',        'number',              '0.1',         'Delay between each element animating in scroll mode.'],
   ['disableOnMobile','boolean|string[]',    'false',       'Kill specific or all presets on touch devices.'],
-  ['onCalculate',    'function',            '—',           'Custom physics hook: (intensity, dist, dx, dy, isNearest) => TweenVars'],
+  ['onCalculate',    'function',            '—',           'Custom physics hook: (intensity, dist, dx, dy, isNearest)'],
   ['onReset',        'function',            '—',           'Custom reset state hook: () => TweenVars'],
   ['selector',       'string',              '".prox-item"','CSS selector that targets animatable children.'],
-  ['config',         'ProximityConfig',     '—',           'Pass all options as a single config object instead of props.'],
+  ['config',         'ProximityConfig',     '—',           'Pass all options as a single config object.'],
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SCROLL DEMO
-// ─────────────────────────────────────────────────────────────────────────────
+const EASES = [
+  'smooth','heavy','sharp','fluid','bouncy','elastic',
+  'jello','bounce','swing','spring','heavySpring',
+  'anticipate','launch','drift','whiplash','expo',
+];
 
 const ScrollDemo = () => (
-  <div className="my-8 py-20 px-4 bg-zinc-900 dark:bg-zinc-900 border border-[var(--border-color)] overflow-hidden" style={{ perspective: 1200 }}>
-    <p className="text-center text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-12">
-      ↓ Scroll this section to see the animation trigger
+  <div className="my-8 py-20 px-4 bg-zinc-900 dark:bg-zinc-900 border border-[var(--border-color)] overflow-hidden shadow-2xl" style={{ perspective: 1200 }}>
+    <p className="text-center text-[11px] uppercase font-bold tracking-widest text-zinc-400 mb-12">
+      ↓ Scroll up and down fast to feel velocity effects
     </p>
     <Proximity
       mode="scroll"
-      preset="tiltCard-y-opacity-scale"
+      preset="tiltCard-y-opacity-scale-velocitySkew-velocityScale-parallax"
       config={{
-        scroll: { start: 'top 95%', end: 'center 30%', scrub: 0.5, once: false },
-        y: [80, 0],
+        scroll: { start: 'top 95%', end: 'center 30%', scrub: true, once: false },
+        y: [120, 0],
         opacity: [0, 1],
         scale: [0.8, 1],
-        tiltCard: [0, 45],
-        stagger: 0.15,
+        tiltCard: [0, 25],
+        velocitySkew: [-20, 20],
+        velocityScale: [0.8, 1.2],
+        parallax: [0, 150],
+        stagger: 0.1,
       }}
       className="flex flex-col md:flex-row gap-6 justify-center items-center"
     >
-      {['ENTER', 'THE', 'ZONE'].map(word => (
-        <div key={word} className="prox-item w-full md:w-44 h-52 bg-white/5 border border-white/10 text-white p-6 flex flex-col justify-between">
-          <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">scroll_trigger</span>
-          <span className="text-4xl font-black italic tracking-tighter">{word}</span>
+      {['SPEED', 'VELOCITY', 'PARALLAX'].map((word, i) => (
+        <div key={word} data-speed={1 + i * 0.5} className="prox-item w-full md:w-44 h-52 bg-white/5 border border-white/10 text-white p-6 flex flex-col justify-between shadow-2xl">
+          <span className="text-[10px] font-mono text-white/60 uppercase tracking-widest">Speed {1 + i * 0.5}x</span>
+          <span className="text-3xl font-black italic tracking-tighter">{word}</span>
         </div>
       ))}
     </Proximity>
   </div>
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN DOCUMENTATION COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Documentation() {
   const [activeSection, setActiveSection] = useState('mental-model');
@@ -824,7 +810,6 @@ export default function Documentation() {
       ref={containerRef}
       className="flex relative items-start w-full bg-[var(--bg-color)] text-[var(--text-color)] border-t border-[var(--border-color)]"
     >
-      {/* Floating mobile btn */}
       <button
         onClick={() => setIsSidebarOpen(true)}
         className={`fixed bottom-6 right-6 z-50 p-4 bg-[var(--text-color)] text-[var(--bg-color)] rounded-full shadow-2xl transition-all duration-500 lg:hidden ${showFloatingBtn && !isSidebarOpen ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}
@@ -839,7 +824,6 @@ export default function Documentation() {
         />
       )}
 
-      {/* SIDEBAR */}
       <aside
         ref={sidebarRef}
         className={`
@@ -863,7 +847,7 @@ export default function Documentation() {
               className={`w-full text-left px-3 py-2.5 text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2 ${
                 activeSection === sec.id
                   ? 'bg-[var(--text-color)] text-[var(--bg-color)]'
-                  : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-60 hover:opacity-100'
+                  : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
               }`}
             >
               <span>{sec.icon}</span>
@@ -872,17 +856,16 @@ export default function Documentation() {
           ))}
         </nav>
 
-        {/* Quick-copy snippets in sidebar */}
         <div className="p-4 mt-4 border-t border-[var(--border-color)]">
-          <div className="text-[9px] uppercase font-bold tracking-widest opacity-40 mb-3">Quick Copy</div>
+          <div className="text-[9px] uppercase font-bold tracking-widest opacity-60 mb-3">Quick Copy</div>
           {[
             { label: 'Install', code: 'npm i z-proximity-engine gsap @gsap/react' },
             { label: 'Basic use', code: `<Proximity preset="scale" reach={2}>\n  <div className="prox-item">Hi</div>\n</Proximity>` },
           ].map(s => (
             <div key={s.label} className="mb-3">
-              <div className="text-[9px] uppercase font-bold tracking-widest opacity-40 mb-1">{s.label}</div>
+              <div className="text-[9px] uppercase font-bold tracking-widest opacity-60 mb-1">{s.label}</div>
               <pre
-                className="bg-black dark:bg-white text-gray-300 dark:text-black p-2 text-[9px] font-mono cursor-pointer hover:bg-zinc-900 transition-colors overflow-x-auto"
+                className="bg-black dark:bg-white text-gray-300 dark:text-black p-2 text-[9px] font-mono cursor-pointer hover:bg-zinc-900 transition-colors overflow-x-auto border border-black/20 dark:border-white/10"
                 onClick={() => navigator.clipboard.writeText(s.code)}
                 title="Click to copy"
               >
@@ -893,18 +876,13 @@ export default function Documentation() {
         </div>
       </aside>
 
-      {/* Sidebar spacer */}
       <div className="hidden lg:block w-72 shrink-0 border-r border-[var(--border-color)]" />
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 min-w-0 w-full px-6 py-10 md:px-10 lg:px-14 pb-40 max-w-4xl mx-auto overflow-hidden">
 
-        {/* ═══════════════════════════════════════════════════════
-            1. THE MENTAL MODEL
-        ═══════════════════════════════════════════════════════ */}
         <section id="mental-model">
           <DocH2 id="mental-model">🧠 The Mental Model</DocH2>
-          <p className="text-[10px] uppercase tracking-widest opacity-40 mb-6">Before writing a single line of code — understand this</p>
+          <p className="text-[10px] uppercase tracking-widest opacity-70 mb-6 font-bold">Before writing a single line of code — understand this</p>
 
           <DocP>
             ZProximity Engine does one thing: it <strong>measures the distance between your cursor and every element you care about</strong>,
@@ -918,10 +896,10 @@ export default function Documentation() {
               { icon: <Cpu size={20} />, label: 'Distance → Intensity', desc: 'Distance is converted to 0.0–1.0 intensity using your reach and falloff settings.' },
               { icon: <Zap size={20} />, label: 'Intensity → Preset', desc: 'The intensity drives every visual property — scale, blur, color, position, rotation.' },
             ].map(s => (
-              <div key={s.label} className="border border-[var(--border-color)] p-5">
-                <div className="mb-3 opacity-60">{s.icon}</div>
+              <div key={s.label} className="border border-[var(--border-color)] p-5 shadow-sm">
+                <div className="mb-3 opacity-80">{s.icon}</div>
                 <div className="text-[11px] font-black uppercase tracking-wider mb-2">{s.label}</div>
-                <div className="text-[11px] opacity-60 leading-relaxed">{s.desc}</div>
+                <div className="text-[11px] opacity-80 leading-relaxed">{s.desc}</div>
               </div>
             ))}
           </div>
@@ -940,9 +918,6 @@ export default function Documentation() {
           </Callout>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            2. INSTALLATION
-        ═══════════════════════════════════════════════════════ */}
         <section id="installation">
           <DocH2>📦 Installation</DocH2>
 
@@ -956,12 +931,12 @@ export default function Documentation() {
           <DocH3>Two components, one purpose</DocH3>
 
           <div className="grid md:grid-cols-2 gap-4 my-6">
-            <div className="border border-[var(--border-color)] p-5">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm">
               <div className="text-[10px] uppercase font-bold tracking-widest mb-2 flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--text-color)] rounded-full" />
                 Proximity
               </div>
-              <p className="text-[11px] opacity-60 leading-relaxed mb-4">
+              <p className="text-[11px] opacity-80 leading-relaxed mb-4">
                 The core wrapper. Put it around any elements — divs, images, cards, icons.
                 Children with <Mono>.prox-item</Mono> class become reactive.
               </p>
@@ -973,12 +948,12 @@ export default function Documentation() {
   <div className="prox-item">I react too</div>
 </Proximity>`} />
             </div>
-            <div className="border border-[var(--border-color)] p-5">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm">
               <div className="text-[10px] uppercase font-bold tracking-widest mb-2 flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--text-color)] rounded-full" />
                 ProximityText
               </div>
-              <p className="text-[11px] opacity-60 leading-relaxed mb-4">
+              <p className="text-[11px] opacity-80 leading-relaxed mb-4">
                 Automatically splits text into individual letters or words and makes each one reactive. No manual span-wrapping needed.
               </p>
               <CodeBlock code={`import { ProximityText } from 'z-proximity-engine';
@@ -992,9 +967,6 @@ export default function Documentation() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            3. YOUR FIRST EFFECT
-        ═══════════════════════════════════════════════════════ */}
         <section id="your-first-effect">
           <DocH2>⚡ Your First Effect</DocH2>
           <DocP>
@@ -1037,9 +1009,6 @@ export default function Documentation() {
           />
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            4. REACH & FALLOFF
-        ═══════════════════════════════════════════════════════ */}
         <section id="reach-falloff">
           <DocH2>📡 Reach & Falloff</DocH2>
           <DocP>
@@ -1048,9 +1017,9 @@ export default function Documentation() {
           </DocP>
 
           <div className="grid md:grid-cols-2 gap-6 my-6">
-            <div className="border border-[var(--border-color)] p-5">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm">
               <div className="text-[11px] font-black uppercase tracking-wider mb-2">reach</div>
-              <div className="text-[11px] opacity-60 leading-relaxed">
+              <div className="text-[11px] opacity-80 leading-relaxed">
                 Think of it as the <strong>radius</strong> of an invisible bubble around each element.
                 The cursor must enter this bubble to trigger the effect. Measured in multiples of element size.
               </div>
@@ -1058,14 +1027,14 @@ export default function Documentation() {
                 {[['0.8', 'Touch me'], ['2', 'Normal'], ['5', 'Feels me from far']].map(([v, l]) => (
                   <div key={v} className="border border-[var(--border-color)] p-2">
                     <div className="font-bold">{v}</div>
-                    <div className="opacity-50 mt-1">{l}</div>
+                    <div className="opacity-70 mt-1">{l}</div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="border border-[var(--border-color)] p-5">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm">
               <div className="text-[11px] font-black uppercase tracking-wider mb-2">falloff</div>
-              <div className="text-[11px] opacity-60 leading-relaxed">
+              <div className="text-[11px] opacity-80 leading-relaxed">
                 Controls how quickly the intensity drops off with distance. Low values feel <strong>gradual and dreamy</strong>.
                 High values feel <strong>snappy and magnetic</strong>.
               </div>
@@ -1073,7 +1042,7 @@ export default function Documentation() {
                 {[['0.8', 'Gradual'], ['2.4', 'Default'], ['5', 'Snappy']].map(([v, l]) => (
                   <div key={v} className="border border-[var(--border-color)] p-2">
                     <div className="font-bold">{v}</div>
-                    <div className="opacity-50 mt-1">{l}</div>
+                    <div className="opacity-70 mt-1">{l}</div>
                   </div>
                 ))}
               </div>
@@ -1083,9 +1052,6 @@ export default function Documentation() {
           <ReachFalloffExplorer />
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            5. PRESET CHAINING
-        ═══════════════════════════════════════════════════════ */}
         <section id="preset-chaining">
           <DocH2>🔗 Preset Chaining</DocH2>
           <DocP>
@@ -1122,9 +1088,47 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
           <EaseTester />
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            6. COMMON MISTAKES
-        ═══════════════════════════════════════════════════════ */}
+        <section id="styling-aesthetics">
+          <DocH2>✨ Styling & Aesthetics</DocH2>
+          <DocP>
+            Physics aren't just for transforms. You can drive visual aesthetics—colors, shadows, filters, and border radii—directly from spatial proximity.
+          </DocP>
+          
+          <div className="grid md:grid-cols-2 gap-6 my-6">
+            <div className="border border-[var(--border-color)] p-8 flex flex-col items-center justify-center mono-grid min-h-[250px] shadow-xl relative group">
+              <span className="absolute top-4 left-4 text-[9px] uppercase font-bold tracking-widest opacity-60">Glow & Color Shift</span>
+              <Proximity preset="glow-color" glow={[0, 40]} color={["var(--text-color)", "#3b82f6"]} reach={2}>
+                <div className="prox-item text-5xl font-black tracking-tighter">NEON</div>
+              </Proximity>
+            </div>
+            <div className="border border-[var(--border-color)] p-8 flex flex-col items-center justify-center mono-grid min-h-[250px] shadow-xl relative group">
+              <span className="absolute top-4 left-4 text-[9px] uppercase font-bold tracking-widest opacity-60">Border Radius & Background</span>
+              <Proximity preset="borderRadius-rotate-background-scale" borderRadius={[0, 50]} background={["transparent", "var(--text-color)"]} rotate={[0, 90]} scale={[1, 1.2]} reach={2}>
+                <div className="prox-item w-24 h-24 border-2 border-[var(--text-color)] flex items-center justify-center font-bold text-[var(--bg-color)]">
+                </div>
+              </Proximity>
+            </div>
+          </div>
+          
+          <CodeBlock code={`// 1. Color Shift & Drop Shadow Glow
+<Proximity 
+  preset="glow-color" 
+  glow={[0, 30]} 
+  color={["var(--text-color)", "#3b82f6"]}
+>
+  <div className="prox-item">NEON</div>
+</Proximity>
+
+// 2. Border Morphing & Background Color
+<Proximity 
+  preset="borderRadius-rotate-background" 
+  borderRadius={[0, 50]} 
+  background={["transparent", "var(--text-color)"]}
+>
+  <div className="prox-item w-24 h-24 border-2"></div>
+</Proximity>`} />
+        </section>
+
         <section id="common-mistakes">
           <DocH2>⚠️ Common Mistakes</DocH2>
           <DocP>
@@ -1227,9 +1231,6 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
           />
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            7. TEXT MAGIC
-        ═══════════════════════════════════════════════════════ */}
         <section id="text-magic">
           <DocH2>✍️ Text Magic</DocH2>
           <DocP>
@@ -1243,9 +1244,9 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
               { split: 'word',   desc: 'Each word is a reactive target. Great for body text and call-to-actions.' },
               { split: 'line',   desc: 'Each line is a reactive target. Best for scroll reveals with stagger.' },
             ].map(s => (
-              <div key={s.split} className="border border-[var(--border-color)] p-4">
+              <div key={s.split} className="border border-[var(--border-color)] p-4 shadow-sm">
                 <Mono>splitBy="{s.split}"</Mono>
-                <p className="text-[11px] opacity-60 mt-2 leading-relaxed">{s.desc}</p>
+                <p className="text-[11px] opacity-80 mt-2 leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -1288,13 +1289,14 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
             on every frame.
           </DocP>
 
-          <div className="border border-[var(--border-color)] mono-grid flex items-center justify-center p-16 my-6">
+          <div className="border border-[var(--border-color)] mono-grid flex items-center justify-center p-16 my-6 shadow-xl">
             <ProximityText
               text="CLASSIFIED DATA"
               splitBy="letter"
-              preset="cipher-scale"
+              preset="cipher-scale-color"
               cipher={[0, 1]}
               scale={[0.8, 1]}
+              color={["var(--text-color)", "#ef4444"]}
               reach={2}
               textClassName="text-3xl font-black tracking-widest"
             />
@@ -1303,9 +1305,10 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
           <CodeBlock code={`<ProximityText
   text="CLASSIFIED DATA"
   splitBy="letter"
-  preset="cipher-scale"
+  preset="cipher-scale-color"
   cipher={[0, 1]}
   scale={[0.8, 1]}
+  color={["var(--text-color)", "#ef4444"]}
   reach={2}
   textClassName="text-3xl font-black tracking-widest"
 />`} />
@@ -1324,13 +1327,28 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
   text="Email me@domain.com"
   splitBy="letter"
   preset="blur"
-  ignoreText={[/@/, /\./]}
+  ignoreText={[/@/, /\\./]}
 />`} />
+
+          <DocH3>Full Arabic & RTL Support</DocH3>
+          <DocP>
+            <Mono>ProximityText</Mono> seamlessly handles Arabic diacritics, ligatures (like Lam-Alef), and continuous cursive connections without breaking the font joining behavior.
+          </DocP>
+          <div className="border border-[var(--border-color)] mono-grid flex items-center justify-center p-10 my-6 shadow-xl">
+            <ProximityText
+              text="مرحباً بالعالم"
+              splitBy="letter"
+              preset="scale-y-blur"
+              scale={[1, 1.5]}
+              y={[0, -10]}
+              blur={[0, 4]}
+              reach={1.5}
+              textClassName="text-5xl font-black font-sans tracking-normal"
+              dir="rtl"
+            />
+          </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            8. NEIGHBOR VS NEAREST
-        ═══════════════════════════════════════════════════════ */}
         <section id="neighbor-nearest">
           <DocH2>🎯 Neighbor vs Nearest</DocH2>
           <DocP>
@@ -1364,7 +1382,7 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 
           <DocH3>Three layers of targeting</DocH3>
 
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6">
+          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
             <table className="w-full text-left text-[11px]">
               <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)] uppercase text-[10px] font-black tracking-widest">
                 <tr>
@@ -1374,17 +1392,14 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                <tr><td className="p-4 font-mono">preset</td><td className="p-4">All elements in reach</td><td className="p-4 opacity-60">Uniform glow, opacity change on all elements</td></tr>
-                <tr><td className="p-4 font-mono">nearestPreset</td><td className="p-4">Only the closest element</td><td className="p-4 opacity-60">Dock icon scale, magnetic pull on hovered item</td></tr>
-                <tr><td className="p-4 font-mono">neighborPreset</td><td className="p-4">All other elements in reach</td><td className="p-4 opacity-60">Repel, dim, or blur surrounding elements</td></tr>
+                <tr><td className="p-4 font-mono font-bold">preset</td><td className="p-4">All elements in reach</td><td className="p-4 opacity-80">Uniform glow, opacity change on all elements</td></tr>
+                <tr><td className="p-4 font-mono font-bold">nearestPreset</td><td className="p-4">Only the closest element</td><td className="p-4 opacity-80">Dock icon scale, magnetic pull on hovered item</td></tr>
+                <tr><td className="p-4 font-mono font-bold">neighborPreset</td><td className="p-4">All other elements in reach</td><td className="p-4 opacity-80">Repel, dim, or blur surrounding elements</td></tr>
               </tbody>
             </table>
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            9. SCROLL MODE
-        ═══════════════════════════════════════════════════════ */}
         <section id="scroll-mode">
           <DocH2>📜 Scroll Mode</DocH2>
           <DocP>
@@ -1412,19 +1427,40 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 
           <ScrollDemo />
 
+          <DocH3>Velocity & Parallax</DocH3>
+          <DocP>
+            Add high-end Awwwards-style scrolling with <Mono>parallax</Mono>, <Mono>velocitySkew</Mono>, and <Mono>velocityScale</Mono>. 
+            The engine automatically calculates scroll velocity and transforms it into physical distortion.
+          </DocP>
+
+          <CodeBlock code={`<Proximity
+  mode="scroll"
+  preset="parallax-velocitySkew-velocityScale"
+  config={{
+    scroll: { start: 'top bottom', end: 'bottom top', scrub: true },
+    parallax: [0, 150],        // Element moves 150px against the scroll
+    velocitySkew: [-20, 20],   // Skews based on scroll speed
+    velocityScale: [0.8, 1.2]  // Squashes and stretches based on velocity
+  }}
+>
+  {/* Adding data-speed multiplies the parallax effect for this specific item! */}
+  <div className="prox-item" data-speed="1.5">Faster</div>
+  <div className="prox-item" data-speed="0.8">Slower</div>
+</Proximity>`} />
+
           <DocH3>scrub vs trigger mode</DocH3>
           <div className="grid md:grid-cols-2 gap-4 my-6">
-            <div className="border border-[var(--border-color)] p-5">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm">
               <div className="text-[11px] font-black uppercase tracking-wider mb-2">scrub: true (or number)</div>
-              <p className="text-[11px] opacity-60 leading-relaxed">
+              <p className="text-[11px] opacity-80 leading-relaxed">
                 Animation is directly tied to scroll position. Scroll down = animate forward.
                 Scroll up = animate backward. Perfect for parallax and progress effects.
                 The number value adds lag (e.g. <Mono>scrub: 0.5</Mono> = 500ms delay).
               </p>
             </div>
-            <div className="border border-[var(--border-color)] p-5">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm">
               <div className="text-[11px] font-black uppercase tracking-wider mb-2">scrub: false (trigger mode)</div>
-              <p className="text-[11px] opacity-60 leading-relaxed">
+              <p className="text-[11px] opacity-80 leading-relaxed">
                 Animation plays once when the scroll position hits the trigger point.
                 Uses <Mono>duration</Mono> and <Mono>ease</Mono> for the tween.
                 Combine with <Mono>once: true</Mono> to prevent re-triggering.
@@ -1433,9 +1469,6 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            10. CUSTOM PHYSICS
-        ═══════════════════════════════════════════════════════ */}
         <section id="custom-physics">
           <DocH2>🔬 Custom Physics</DocH2>
           <DocP>
@@ -1522,9 +1555,6 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 </Proximity>`} />
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            11. PERFORMANCE
-        ═══════════════════════════════════════════════════════ */}
         <section id="performance">
           <DocH2>🚀 Performance</DocH2>
           <DocP>
@@ -1559,9 +1589,9 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                 desc: 'will-change: transform is applied only when an element enters the influence zone, and removed when it returns to rest. Prevents GPU memory bloat.',
               },
             ].map(s => (
-              <div key={s.title} className="border border-[var(--border-color)] p-4">
+              <div key={s.title} className="border border-[var(--border-color)] p-4 shadow-sm">
                 <div className="text-[11px] font-black uppercase tracking-wider mb-2">{s.title}</div>
-                <div className="text-[11px] opacity-60 leading-relaxed">{s.desc}</div>
+                <div className="text-[11px] opacity-80 leading-relaxed">{s.desc}</div>
               </div>
             ))}
           </div>
@@ -1571,7 +1601,7 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
           <Callout type="danger" icon={<AlertTriangle size={14} />}>
             <ul className="space-y-2 text-[12px]">
               <li><strong>Animating layout properties:</strong> Never animate <Mono>width</Mono>, <Mono>height</Mono>, <Mono>top</Mono>, <Mono>left</Mono>, <Mono>padding</Mono>, or <Mono>margin</Mono> in <Mono>onCalculate</Mono>. Use <Mono>scaleX/Y</Mono> instead of width/height, and <Mono>x/y</Mono> instead of top/left.</li>
-              <li><strong>100+ elements with complex filter presets:</strong> Each <Mono>blur</Mono> or <Mono>glow</Mono> triggers a compositing layer per element. Cap at ~50 for blur effects.</li>
+              <li><strong>100+ elements with complex filter presets:</strong> Each <Mono>blur</Mono>, <Mono>brightness</Mono>, or <Mono>glow</Mono> triggers a compositing layer per element. Cap at ~50 for filter effects.</li>
               <li><strong>CSS transitions on .prox-item:</strong> They fight GSAP every frame. Remove them entirely.</li>
               <li><strong>Very low precision values:</strong> <Mono>precision={`{0.00001}`}</Mono> means every sub-pixel mouse movement fires animation. Keep it above 0.001.</li>
             </ul>
@@ -1588,14 +1618,11 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 />`} />
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-            12. API REFERENCE
-        ═══════════════════════════════════════════════════════ */}
         <section id="api-reference">
           <DocH2>📖 API Reference</DocH2>
           <DocP>Complete reference for all props on the <Mono>Proximity</Mono> component.</DocP>
 
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6">
+          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
             <table className="w-full text-left text-[11px] border-collapse">
               <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)]">
                 <tr>
@@ -1607,11 +1634,11 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
               </thead>
               <tbody className="divide-y divide-black/5 dark:divide-white/5">
                 {API_ROWS.map(([prop, type, def, desc]) => (
-                  <tr key={prop} className="hover:bg-black/2 dark:hover:bg-white/2 transition-colors">
+                  <tr key={prop} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <td className="p-3 font-mono font-bold text-[11px] whitespace-nowrap">{prop}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-50 whitespace-nowrap">{type}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-60">{def}</td>
-                    <td className="p-3 text-[11px] opacity-70 leading-relaxed">{desc}</td>
+                    <td className="p-3 font-mono text-[10px] opacity-70 whitespace-nowrap">{type}</td>
+                    <td className="p-3 font-mono text-[10px] opacity-80">{def}</td>
+                    <td className="p-3 text-[11px] opacity-90 leading-relaxed">{desc}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1621,7 +1648,7 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
           <DocH3>Preset bounds reference</DocH3>
           <DocP>Every preset accepts a <Mono>[from, to]</Mono> tuple to override its range.</DocP>
 
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6">
+          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
             <table className="w-full text-left text-[11px] border-collapse">
               <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)]">
                 <tr>
@@ -1633,6 +1660,7 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
               <tbody className="divide-y divide-black/5 dark:divide-white/5">
                 {[
                   ['scale',         '[1, 1.5]',           'transform: scale()'],
+                  ['flexScale',     '[1, 1.5]',           'transform: scale() + margin offset'],
                   ['x',             '[0, 30]',            'transform: translateX() in px'],
                   ['y',             '[0, -30]',           'transform: translateY() in px'],
                   ['rotate',        '[0, 90]',            'transform: rotate() in degrees'],
@@ -1640,6 +1668,7 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                   ['opacity',       '[0.2, 1]',           'opacity'],
                   ['blur',          '[8, 0]',             'filter: blur() in px'],
                   ['reveal',        '[110, 0]',           'clip-path inset + translateY in %'],
+                  ['scroll',        '[0, 100]',           'scroll-driven offset travel'],
                   ['magnetic',      '[0, 0.1]',           'pull strength multiplier'],
                   ['repel',         '[0, 0.4]',           'push strength multiplier'],
                   ['tilt',          '[0, 30]',            'rotationX/Y in degrees'],
@@ -1654,11 +1683,14 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                   ['grayScale',     '[1, 0]',             'filter: grayscale()'],
                   ['color',         '["#888", "#fff"]',   'text color interpolation'],
                   ['background',    '["transparent","rgba(255,255,255,0.1)"]', 'background-color interpolation'],
+                  ['parallax',      '[0, 100]',           'scroll-driven parallax vertical travel'],
+                  ['velocitySkew',  '[-15, 15]',          'scroll-velocity based skewing'],
+                  ['velocityScale', '[0.95, 1.05]',       'scroll-velocity based squash & stretch'],
                 ].map(([p, d, w]) => (
-                  <tr key={p} className="hover:bg-black/2 dark:hover:bg-white/2 transition-colors">
+                  <tr key={p} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <td className="p-3 font-mono font-bold">{p}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-60">{d}</td>
-                    <td className="p-3 text-[11px] opacity-60">{w}</td>
+                    <td className="p-3 font-mono text-[10px] opacity-70">{d}</td>
+                    <td className="p-3 text-[11px] opacity-90">{w}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1666,7 +1698,7 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
           </div>
 
           <DocH3>Built-in ease names</DocH3>
-          <div className="flex flex-wrap gap-2 p-5 border border-[var(--border-color)] my-6">
+          <div className="flex flex-wrap gap-2 p-5 border border-[var(--border-color)] my-6 shadow-sm">
             {[
               'smooth','heavy','sharp','fluid','bouncy','elastic','jello','bounce',
               'swing','vibrate','robot','ghost','expo','circus','glitch','slowmo',
@@ -1675,13 +1707,13 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
               <span key={e} className="text-[10px] font-mono bg-[var(--text-color)] text-[var(--bg-color)] px-2 py-0.5">{e}</span>
             ))}
           </div>
-          <p className="text-[11px] opacity-60 leading-relaxed">
+          <p className="text-[11px] opacity-90 leading-relaxed">
             These are shorthand aliases for GSAP eases, tuned specifically for UI physics response.
             You can also pass any raw GSAP ease string like <Mono>"back.out(2.5)"</Mono> or <Mono>"elastic.out(1, 0.3)"</Mono>.
           </p>
 
           <DocH3>ProximityText additional props</DocH3>
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6">
+          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
             <table className="w-full text-left text-[11px] border-collapse">
               <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)]">
                 <tr>
@@ -1702,21 +1734,21 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                   ['wordSpacing',    'number',                    '0.5',      'Gap between words in em units.'],
                   ['clipFix',        'string',                    '"0.2em"',  'Padding added to prevent clip during scale/bounce.'],
                   ['ignoreText',     '(string|RegExp)[]',         '—',        'Characters or patterns to skip from animation.'],
+                  ['dir',            '"ltr"|"rtl"|"auto"',        '"auto"',   'Directionality. Automatically supports Arabic parsing.'],
                 ].map(([prop, type, def, desc]) => (
-                  <tr key={prop} className="hover:bg-black/2 dark:hover:bg-white/2 transition-colors">
+                  <tr key={prop} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <td className="p-3 font-mono font-bold text-[11px]">{prop}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-50">{type}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-60">{def}</td>
-                    <td className="p-3 text-[11px] opacity-70 leading-relaxed">{desc}</td>
+                    <td className="p-3 font-mono text-[10px] opacity-70">{type}</td>
+                    <td className="p-3 font-mono text-[10px] opacity-80">{def}</td>
+                    <td className="p-3 text-[11px] opacity-90 leading-relaxed">{desc}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Final playground */}
-          <div className="mt-16 p-10 border border-[var(--border-color)] mono-grid relative overflow-hidden">
-            <div className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-6 text-center">
+          <div className="mt-16 p-10 border border-[var(--border-color)] mono-grid relative overflow-hidden shadow-2xl">
+            <div className="text-[10px] uppercase font-bold tracking-widest opacity-60 mb-6 text-center">
               You've read the whole thing. You deserve a reward.
             </div>
             <div className="flex items-center justify-center">
@@ -1724,13 +1756,13 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                 onCalculate={(intensity, dist, dx, dy) => ({
                   scaleX: 1 + intensity * 0.4,
                   scaleY: 1 - intensity * 0.08,
-                  filter: `hue-rotate(${intensity * 240}deg) brightness(${1 + intensity * 0.3})`,
+                  filter: `hue-rotate(${intensity * 240}deg) brightness(${1 + intensity * 0.3}) drop-shadow(0 0 ${intensity * 20}px var(--text-color))`,
                   rotation: (dx / Math.max(Math.abs(dx), 1)) * intensity * 8,
                   y: -intensity * 12,
                 })}
                 onReset={() => ({
                   scaleX: 1, scaleY: 1,
-                  filter: 'hue-rotate(0deg) brightness(1)',
+                  filter: 'hue-rotate(0deg) brightness(1) drop-shadow(0 0 0px transparent)',
                   rotation: 0, y: 0,
                 })}
                 reach={2.5}
@@ -1743,6 +1775,9 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                   textClassName="text-xl md:text-3xl font-black tracking-tighter text-center"
                   wordSpacing={0.5}
                   selector=".prox-part"
+                  config={{
+                      scroll: { once: false }
+                    }}
                 />
               </Proximity>
             </div>

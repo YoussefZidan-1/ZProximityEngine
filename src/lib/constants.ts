@@ -16,6 +16,10 @@ export const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]
   reveal: [110, 0],
   cycle: [0, 100],
   cycleSide: [0, 100],
+  scroll: [0, 100],
+  parallax: [0, 100],
+  velocitySkew: [-15, 15],
+  velocityScale: [0.95, 1.05],
   glow: [0, 20],
   brightness: [0.6, 1.2],
   contrast: [0.8, 1.4],
@@ -57,10 +61,10 @@ export const OPTIMIZED_WILL_CHANGE = "transform, filter, opacity, font-variation
 export const FILTER_PRESETS = new Set(["blur", "glow", "brightness", "contrast", "grayScale"]);
 
 export const QUICK_TO_PROPS =[
-  "scaleX", "scaleY", "x", "y", "rotation", "skewX", "opacity",
+  "scaleX", "scaleY", "x", "y", "rotation", "skewX", "skewY", "opacity",
   "rotationX", "rotationY", "transformPerspective",
   "marginLeft", "marginRight", "marginTop", "marginBottom", "fontWeight",
-  "proxCipher", "--prox-x", "--prox-y", "--prox-radius"
+  "proxCipher", "--prox-x", "--prox-y", "--prox-radius", "proxScroll"
 ];
 
 export const ARABIC_NON_CONNECTING_LEFT = /[اأإآدذرزوؤءة\s]/;

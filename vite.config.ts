@@ -5,19 +5,30 @@ import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 import Sitemap from 'vite-plugin-sitemap';
 
+const useClientPlugin = () => ({
+  name: 'add-use-client-directive',
+  renderChunk(code: string, chunk: any) {
+    if (chunk.fileName.endsWith('.js') && !code.includes('use client')) {
+      return '"use client";\n' + code;
+    }
+    return null;
+  }
+});
+
 export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
 
   return {
     publicDir: isLib ? false : 'public',
-
-    plugins:[
+    plugins: [
       react(),
       tailwindcss(),
       isLib && dts({ 
         insertTypesEntry: true, 
-        include: ['src/lib']
+        include: ['src/lib'],
+        rollupTypes: true, 
       }),
+      isLib && useClientPlugin(),
       !isLib && Sitemap({ 
         hostname: 'https://z-proximity-engine.vercel.app',
         dynamicRoutes: ['/'] 
@@ -25,7 +36,7 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
 
     esbuild: {
-      drop: isLib ?['console', 'debugger'] :[],
+      drop: isLib ? ['console', 'debugger'] : [],
       legalComments: 'none', 
     },
 
@@ -36,36 +47,43 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
 
       ...(isLib ? {
-        // --- LIBRARY CONFIG ---
         lib: {
           entry: resolve(__dirname, 'src/lib/index.ts'),
           name: 'ZProximityEngine',
-          formats: ['es', 'umd'],
-          fileName: (format) => `index.${format}.js`,
         },
         rollupOptions: {
-          external:[
+          external: [
             'react', 
             'react-dom', 
             'react/jsx-runtime', 
             '@gsap/react', 
             /^gsap(\/.*)?$/
           ],
-          output: {
-            compact: true, 
-            format: 'es',
-            globals: {
-              react: 'React',
-              'react-dom': 'ReactDOM',
-              'react/jsx-runtime': 'jsxRuntime',
-              gsap: 'gsap',
-              'gsap/ScrollTrigger': 'ScrollTrigger',
-              '@gsap/react': 'gsapReact'
+          output: [
+            {
+              format: 'es',
+              exports: 'named',
+              preserveModules: true,            
+              preserveModulesRoot: 'src/lib',  
+              entryFileNames: '[name].es.js',  
             },
-          },
+            {
+              format: 'umd',
+              name: 'ZProximityEngine',
+              exports: 'named',
+              entryFileNames: 'index.umd.js',
+              globals: {
+                react: 'React',
+                'react-dom': 'ReactDOM',
+                'react/jsx-runtime': 'jsxRuntime',
+                gsap: 'gsap',
+                'gsap/ScrollTrigger': 'ScrollTrigger',
+                '@gsap/react': 'gsapReact'
+              },
+            }
+          ],
         },
       } : {
-        // --- APP CONFIG ---
         cssCodeSplit: true,
       })
     },

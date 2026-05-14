@@ -1,5 +1,4 @@
-import React, { CSSProperties } from "react";
-import gsap from "gsap";
+import { CSSProperties } from "react";
 
 export type EasePreset =
   | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic"
@@ -12,7 +11,7 @@ export type ProximityPreset =
   | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
   | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
   | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "cycle" | "cycleSide"
-  | "fill" | "fillText" | (string & {});
+  | "fill" | "fillText" | "scroll" | "parallax" | "velocitySkew" | "velocityScale" | (string & {});
 
 export type ProximityMode = "pointer" | "scroll";
 export type AxisLock = "x" | "y" | "both" | "none";
@@ -27,6 +26,9 @@ export interface ProximityScrollConfig {
   once?: boolean;
   stagger?: number | gsap.StaggerVars;
   resetStagger?: number | gsap.StaggerVars;
+  pin?: boolean | string | Element;
+  pinSpacing?: boolean | string;
+  envelope?: [number, number];
 }
 
 export interface ProximityTimelineConfig {
@@ -96,6 +98,9 @@ export interface ProximityConfig {
   grayScale?: [number, number];
   color?: [string, string];
   background?: [string, string];
+  parallax?: [number, number];
+  velocitySkew?: [number, number];
+  velocityScale?: [number, number];
   onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
   onReset?: () => gsap.TweenVars;
   disableOnMobile?: boolean | string | string[];

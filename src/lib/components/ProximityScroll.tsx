@@ -45,7 +45,7 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
   scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
   magnetic, tilt, tiltCard, repel, cipher, reveal, scroll,
   color, background, glow, brightness, contrast,
-  borderRadius, letterSpacing, grayScale,
+  borderRadius, letterSpacing, grayScale, parallax, velocitySkew, velocityScale,
   timeline, delay, resetDelay, scrub, resetScrub,
   start, end, stagger, resetStagger, targets,
   ignoreSelectors = [],
@@ -119,6 +119,9 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
     cipher: config.cipher ?? cipher,
     reveal: config.reveal ?? reveal,
     scroll: Array.isArray(config.scroll) ? config.scroll : (Array.isArray(scroll) ? scroll : undefined),
+    parallax: config.parallax ?? parallax,
+    velocitySkew: config.velocitySkew ?? velocitySkew,
+    velocityScale: config.velocityScale ?? velocityScale,
     color: config.color ?? color,
     background: config.background ?? background,
     glow: config.glow ?? glow,
@@ -414,10 +417,10 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
           del: number, 
           ez: string
         ): void => {
-          // Determine if we need a full GSAP tween (complex presets) or if we can use the quickTo cache
           const needsGsapTo =
             key === "cipher" ||
             key === "reveal" ||
+            key === "scroll" ||
             key === "cycle" ||
             key === "cycleSide" ||
             key === "custom" ||
@@ -426,10 +429,9 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
             !!activeTimeline?.[key];
     
           if (needsGsapTo) {
-            // --- CYCLE (Vertical Teleport Logic) ---
-            if (key === "cycle") {
-              const shouldCycle = vars.proxCycle === 1;
-              const travel = vars.proxCycleTravel || 100;
+            if (key === "scroll" || key === "cycle") {
+              const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
+              const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
               const currentState = item._scrollState || "resting";
               
               if (shouldCycle && currentState !== "hovered") {
@@ -486,7 +488,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
               return;
             }
     
-            // --- CYCLE SIDE (Horizontal Teleport Logic) ---
             if (key === "cycleSide") {
               const shouldCycle = vars.proxCycleSide === 1;
               const travel = vars.proxCycleSideTravel || 100;
@@ -496,7 +497,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
                 item._scrollState = "hovered";
                 gsap.killTweensOf(item, "xPercent,clipPath");
                 
-                // Phase 1: Slide Left and Out
                 gsap.to(item, {
                   xPercent: -travel, 
                   clipPath: `inset(0% 0% 0% ${travel}%)`, 
@@ -505,7 +505,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
                   ease: ez, 
                   overwrite: "auto",
                   onComplete: () => {
-                    // Phase 2: Teleport to Right and Slide Left to Center
                     gsap.fromTo(item,
                       { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` },
                       { 
@@ -521,7 +520,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
                 item._scrollState = "resting";
                 gsap.killTweensOf(item, "xPercent,clipPath");
                 
-                // Phase 1 (Reverse): Slide Right and Out
                 gsap.to(item, {
                   xPercent: travel, 
                   clipPath: `inset(0% ${travel}% 0% 0%)`, 
@@ -530,7 +528,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
                   ease: ez, 
                   overwrite: "auto",
                   onComplete: () => {
-                    // Phase 2 (Reverse): Teleport to Left and Slide Right to Center
                     gsap.fromTo(item,
                       { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
                       { 
@@ -546,7 +543,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
               return;
             }
     
-            // --- STANDARD TWEEN (Cipher, Reveal, Custom, or Timelined Props) ---
             gsap.to(item, {
               ...vars, 
               duration: dur, 
@@ -556,13 +552,11 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
               onUpdate: key === "cipher" ? cipherUpdate : undefined,
             });
           } else {
-            // --- HIGH PERFORMANCE (Cached quickTo for Standard Props) ---
             for (const cssProp in vars) {
               const qt = item._quickTos?.[cssProp];
               if (qt) {
                 qt(vars[cssProp] as any);
               } else {
-                // Fallback for props not in the quickTo cache
                 gsap.to(item, { 
                   [cssProp]: vars[cssProp], 
                   duration: dur, 
@@ -667,6 +661,8 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
 
         scrollTriggersRef.current.push(ScrollTrigger.create({
           trigger: item, scroller: scrollerTarget,
+          pin: activeScrollConfig.pin,
+          pinSpacing: activeScrollConfig.pinSpacing,
           start: parsedStart, end: parsedEnd,
           scrub: isTriggerMode ? false : activeScrub,
           once: isOnce, markers: activeScrollConfig.markers ?? false,
@@ -676,13 +672,47 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
           onLeaveBack: () => guarded(runLeave, false, activeWaitForEnterAnimationEnd ?? false, i),
           onUpdate: isTriggerMode ? undefined : (self) => {
             let nd = 0;
-            if (focusPoint === 0) nd = 1 - self.progress;
-            else if (focusPoint === 1) nd = self.progress;
-            else nd = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
+            const env = activeScrollConfig.envelope;
+            
+            if (env) {
+              const [inEnd, outStart] = env;
+              if (self.progress <= inEnd) {
+                nd = inEnd === 0 ? 1 : self.progress / inEnd;
+              } else if (self.progress >= outStart) {
+                nd = outStart === 1 ? 1 : 1 - ((self.progress - outStart) / (1 - outStart));
+              } else {
+                nd = 1;
+              }
+            } else {
+              if (focusPoint === 0) nd = 1 - self.progress;
+              else if (focusPoint === 1) nd = self.progress;
+              else nd = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
+            }
 
             const intens = Math.pow(nd, activeFalloff);
             const vel = self.getVelocity();
             const simDy = Math.min(Math.max(vel * 0.05, -100), 100);
+
+            // Velocity & Parallax Awwwards Upgrades
+            const clampedVel = gsap.utils.clamp(-3000, 3000, vel);
+            const normalizedVel = clampedVel / 3000;
+            
+            if (activePresetKeys.includes('velocitySkew')) {
+              const maxSkew = (mergedBounds.velocitySkew ?? PRESET_DEFAULTS.velocitySkew)[1] as number;
+              item._quickTos?.skewY?.(normalizedVel * maxSkew);
+            }
+            if (activePresetKeys.includes('velocityScale')) {
+              const maxScale = (mergedBounds.velocityScale ?? PRESET_DEFAULTS.velocityScale)[1] as number;
+              const scaleDiff = maxScale - 1;
+              item._quickTos?.scaleY?.(1 + Math.abs(normalizedVel * scaleDiff));
+              item._quickTos?.scaleX?.(1 - Math.abs(normalizedVel * scaleDiff * 0.5));
+            }
+            if (activePresetKeys.includes('parallax')) {
+              const maxTravel = (mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number;
+              const speed = parseFloat(item.dataset.speed || "1");
+              const yOffset = gsap.utils.interpolate(maxTravel * speed, -maxTravel * speed, self.progress);
+              item._quickTos?.y?.(yOffset);
+            }
 
             if (Math.abs(intens - statesRef.current[i].lastIntensity) < activePrecision && Math.abs(simDy - statesRef.current[i].lastDy) < 1.0) return;
 

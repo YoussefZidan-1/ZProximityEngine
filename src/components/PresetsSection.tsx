@@ -39,8 +39,8 @@ const PresetCard = ({
           </div>
         )}
       </div>
-      <Badge className="opacity-40 mb-2">{title}</Badge>
-      <p className="text-[11px] uppercase tracking-tighter max-w-[200px] opacity-70">{description}</p>
+      <Badge className="opacity-70 mb-2">{title}</Badge>
+      <p className="text-[11px] uppercase tracking-tighter max-w-[200px] opacity-80">{description}</p>
     </div>
   </Proximity>
 );
@@ -60,18 +60,18 @@ export default function PresetsSection() {
           
           <div className="flex flex-wrap gap-4">
             <div className="flex border border-[var(--border-color)] overflow-hidden">
-              <button onClick={() => setViewMode('text')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${viewMode === 'text' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Text</button>
-              <button onClick={() => setViewMode('elements')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${viewMode === 'elements' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Elements</button>
+              <button onClick={() => setViewMode('text')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${viewMode === 'text' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>Text</button>
+              <button onClick={() => setViewMode('elements')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${viewMode === 'elements' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>Elements</button>
             </div>
 
             <div className={`flex border border-[var(--border-color)] overflow-hidden transition-opacity duration-300 ${viewMode === 'elements' ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-              <button onClick={() => setSplitMode('letter')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${splitMode === 'letter' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Letter</button>
-              <button onClick={() => setSplitMode('word')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${splitMode === 'word' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}>Word</button>
+              <button onClick={() => setSplitMode('letter')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all ${splitMode === 'letter' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>Letter</button>
+              <button onClick={() => setSplitMode('word')} className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest border-l border-[var(--border-color)] transition-all ${splitMode === 'word' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>Word</button>
             </div>
           </div>
         </div>
 
-        <p className="text-[11px] opacity-70 uppercase tracking-widest mb-10">Hover elements below to simulate spatial reaction.</p>
+        <p className="text-[11px] opacity-80 uppercase tracking-widest mb-10">Hover elements below to simulate spatial reaction.</p>
         
         <div className="grid grid-cols-2 gap-px bg-[var(--border-color)] border border-[var(--border-color)] overflow-hidden shadow-2xl">
           <PresetCard preset={viewMode === 'elements' ? 'flexScale' : 'scale'} title="Fluid Scale" description="Size adjustment based on pointer Euclidean distance." viewMode={viewMode} splitMode={splitMode} />
@@ -87,24 +87,36 @@ export default function PresetsSection() {
             <>
               <PresetCard preset="cipher" title="Cipher" description="Dynamic text decryption as cursor enters reach." config={{ cipher:[0, 1] }} viewMode={viewMode} splitMode={splitMode} />
               <PresetCard preset="weight" title="Weight" description="Variable font-weight modulation from Thin to Black." config={{ weight:[100, 900] }} viewMode={viewMode} splitMode={splitMode} />
+              <PresetCard preset="letterSpacing" title="Letter Spacing" description="Adjusts text tracking width dynamically." config={{ letterSpacing: [-0.05, 0.3] }} viewMode={viewMode} splitMode={splitMode} />
             </>
           )}
+
+          {viewMode === 'elements' && (
+            <PresetCard preset="borderRadius" title="Border Radius" description="Morphs corners from square to round seamlessly." config={{ borderRadius: [0, 50] }} viewMode={viewMode} splitMode={splitMode} />
+          )}
+
           <PresetCard preset="x" title="Horizontal" description="Linear X-axis translation based on proximity." config={{ x: [0, 50] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="y" title="Vertical" description="Linear Y-axis translation based on proximity." config={{ y: [0, -50] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="repel" title="Repel" description="Active avoidance physics pushing away from pointer." config={{ repel: [0, 0.4] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="opacity" title="Opacity" description="Visibility modulation for ghosting and focus effects." config={{ opacity:[0.1, 1] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="reveal" title="Hover Reveal" description="Starts hidden. Slides up and fades in seamlessly as the cursor approaches." viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="glow" title="Drop Glow" description="Dynamic shadow spread driven by proximity." config={{ glow: [0, 30] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="brightness" title="Brightness" description="Modulates CSS brightness filter." config={{ brightness: [0.5, 1.5] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="contrast" title="Contrast" description="Sharpens and deepens contrast." config={{ contrast: [0.5, 2] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="grayScale" title="Grayscale" description="Fades to black & white or vibrant color." config={{ grayScale: [1, 0] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="color" title="Color Shift" description="Interpolates text color dynamically." config={{ color: ["var(--text-color)", "#3b82f6"] }} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="background" title="Bg Morph" description="Shifts element background color." config={{ background: ["transparent", "rgba(59, 130, 246, 0.3)"] }} viewMode={viewMode} splitMode={splitMode} />
         </div>
       </div>
       
       <div className="p-10 flex-grow mono-grid">
-        <Badge className="mb-6 opacity-50">Custom Hooks</Badge>
+        <Badge className="mb-6 opacity-70">Custom Hooks</Badge>
         <h4 className="text-sm font-bold uppercase mb-4 tracking-[0.1em]">Technical Utility</h4>
-        <p className="text-sm leading-relaxed opacity-80">
+        <p className="text-sm leading-relaxed opacity-90">
           Custom <code className="bg-[var(--text-color)] text-[var(--bg-color)] px-1.5 py-0.5 rounded-sm font-mono text-xs">onCalculate</code> hooks allow engineers to inject complex physics—spring dynamics, flocking behaviors, or path-based attractions—directly into the component's render cycle.
         </p>
 
-        <div className="mt-10 p-8 border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm relative overflow-hidden group">
+        <div className="mt-10 p-8 border border-black/10 dark:border-white/10 bg-white/50 dark:bg-black/50 backdrop-blur-sm relative overflow-hidden group shadow-2xl">
            <Proximity 
               onCalculate={(intensity) => ({
                 scale: 1 + intensity * 0.05,
@@ -119,8 +131,8 @@ export default function PresetsSection() {
               className="flex flex-col items-center justify-center gap-4 py-8"
             >
               <div className="prox-item text-4xl font-serif italic font-bold">Spatial Playground</div>
-              <div className="w-1/2 h-[1px] bg-black/20 dark:bg-white/20"></div>
-              <Badge className="opacity-70">Move pointer to focus</Badge>
+              <div className="w-1/2 h-[1px] bg-black/30 dark:bg-white/30"></div>
+              <Badge className="opacity-90">Move pointer to focus</Badge>
             </Proximity>
         </div>
       </div>

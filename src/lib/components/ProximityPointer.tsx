@@ -42,7 +42,7 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
   scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
   magnetic, tilt, tiltCard, repel, cipher, reveal, scroll,
   color, background, glow, brightness, contrast,
-  borderRadius, letterSpacing, grayScale,
+  borderRadius, letterSpacing, grayScale, parallax, velocitySkew, velocityScale,
   timeline, delay, resetDelay, scrub, resetScrub,
   start, end, stagger, resetStagger, targets,
   ignoreSelectors = [],
@@ -117,6 +117,9 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
     cipher: config.cipher ?? cipher,
     reveal: config.reveal ?? reveal,
     scroll: Array.isArray(config.scroll) ? config.scroll : (Array.isArray(scroll) ? scroll : undefined),
+    parallax: config.parallax ?? parallax,
+    velocitySkew: config.velocitySkew ?? velocitySkew,
+    velocityScale: config.velocityScale ?? velocityScale,
     color: config.color ?? color,
     background: config.background ?? background,
     glow: config.glow ?? glow,
@@ -400,15 +403,16 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
             key === "reveal" ||
             key === "cycle" ||
             key === "cycleSide" ||
+            key === "scroll" ||
             key === "custom" ||
             key === "customStartEnd" ||
             del > 0 ||
             !!activeTimeline?.[key];
     
           if (needsGsapTo) {
-            if (key === "cycle") {
-              const shouldCycle = vars.proxCycle === 1;
-              const travel = vars.proxCycleTravel || 100;
+            if (key === "scroll" || key === "cycle") {
+              const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
+              const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
               const currentState = item._scrollState || "resting";
               
               if (shouldCycle && currentState !== "hovered") {
@@ -470,7 +474,6 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
                 item._scrollState = "hovered";
                 gsap.killTweensOf(item, "xPercent,clipPath");
                 
-                // Phase 1: Slide Left and Out
                 gsap.to(item, {
                   xPercent: -travel, 
                   clipPath: `inset(0% 0% 0% ${travel}%)`, 
@@ -502,7 +505,6 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
                   ease: ez, 
                   overwrite: "auto",
                   onComplete: () => {
-                    // Phase 2 (Reverse): Teleport to Left and Slide Right to Center
                     gsap.fromTo(item,
                       { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
                       { 
@@ -691,6 +693,16 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
       const onMove = (e: PointerEvent) => upd(e.clientX, e.clientY, e.target);
       const onTMove = (e: TouchEvent) => { if (e.touches[0]) upd(e.touches[0].clientX, e.touches[0].clientY, e.target); };
 
+      const onFocusIn = (e: FocusEvent) => {
+        const targetNode = e.target as HTMLElement;
+        const index = itemsRef.current.indexOf(targetNode as ProxHTMLElement);
+        if (index !== -1 && centersRef.current[index]) {
+          const b = centersRef.current[index];
+          const cRect = container.getBoundingClientRect();
+          upd(b.x + cRect.left, b.y + cRect.top, e.target);
+        }
+      };
+
       const handleReset = (): void => {
         pointer.current.active = false;
         itemsRef.current.forEach((item, i) => {
@@ -712,6 +724,8 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
       target.addEventListener("pointerleave", handleReset as EventListener);
       target.addEventListener("touchmove", onTMove as EventListener, { passive: true });
       target.addEventListener("touchend", handleReset as EventListener);
+      target.addEventListener("focusin", onFocusIn as EventListener);
+      target.addEventListener("focusout", handleReset as EventListener);
 
       return () => {
         gsap.ticker.remove(onTick);
@@ -720,6 +734,8 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
         target.removeEventListener("touchmove", onTMove as EventListener);
         target.removeEventListener("touchmove", onTMove as EventListener, { passive: true } as unknown as EventListenerOptions);
         target.removeEventListener("touchend", handleReset as EventListener);
+        target.removeEventListener("focusin", onFocusIn as EventListener);
+        target.removeEventListener("focusout", handleReset as EventListener);
         
         mediaQuery.removeEventListener("change", handleMotionChange);
         mutationObserver.disconnect();
