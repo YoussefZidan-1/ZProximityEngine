@@ -113,9 +113,14 @@ export const calculatePresetValues = (
       case "background":
         res.backgroundColor = useBase ? 0 : intensity;
         break;
-      case "scroll": {
-        res.proxScroll = curIntensity > 0.5 ? 1 : 0;
-        res.proxScrollTravel = max;
+      case "cycle": {
+        res.proxCycle = curIntensity > 0.5 ? 1 : 0;
+        res.proxCycleTravel = max;
+        break;
+       }
+      case "cycleSide": {
+        res.proxCycleSide = curIntensity > 0.5 ? 1 : 0;
+        res.proxCycleSideTravel = max;
         break;
       }
       case "magnetic": {

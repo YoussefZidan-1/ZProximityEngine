@@ -60,10 +60,14 @@ src/components/Gamebox.tsx
 src/components/PresetsSection.tsx
 src/Documentation.tsx
 src/index.css
+src/lib/constants.ts
+src/lib/hooks.ts
 src/lib/index.ts
 src/lib/Proximity.tsx
 src/lib/ProximityContext.tsx
 src/lib/ProximityText.tsx
+src/lib/types.ts
+src/lib/utils.ts
 src/main.tsx
 tsconfig.json
 vercel.json
@@ -303,10 +307,523 @@ export default function PresetsSection() {
 }
 </file>
 
-<file path="src/lib/index.ts">
-export * from './Proximity';
-export * from './ProximityText';
-export * from './ProximityContext';
+<file path="src/lib/constants.ts">
+export const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
+  scale: [1, 1.5],
+  flexScale: [1, 1.5],
+  y: [0, -30],
+  x: [0, 30],
+  opacity: [0.2, 1],
+  blur: [8, 0],
+  rotate: [0, 90],
+  weight: [100, 900],
+  skew: [0, 20],
+  magnetic: [0, 0.1],
+  tilt: [0, 30],
+  tiltCard: [0, 15],
+  repel: [0, 0.4],
+  cipher: [0, 1],
+  reveal: [110, 0],
+  scroll: [0, 100],
+  glow: [0, 20],
+  brightness: [0.6, 1.2],
+  contrast: [0.8, 1.4],
+  borderRadius: [0, 50],
+  letterSpacing: [-0.05, 0.2],
+  grayScale: [1, 0],
+  color: ["#888888", "#ffffff"],
+  background: ["transparent", "rgba(255,255,255,0.1)"],
+  fill: [0, 1],
+  fillText: [0, 1],
+};
+
+export const EASE_MAP: Record<string, string> = {
+  smooth: "power1.inOut",
+  heavy: "power4.out",
+  sharp: "expo.out",
+  fluid: "circ.inOut",
+  bouncy: "back.out(1.7)",
+  elastic: "elastic.out(1, 0.3)",
+  jello: "elastic.out(1.5, 0.2)",
+  bounce: "bounce.out",
+  swing: "back.inOut(3)",
+  vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
+  robot: "steps(8)",
+  ghost: "slow(0.6, 0.8, false)",
+  expo: "expo.inOut",
+  circus: "back.out(4)",
+  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
+  slowmo: "slow(0.7, 0.7, false)",
+  spring: "elastic.out(1, 0.75)",
+  heavySpring: "elastic.out(1.2, 0.3)",
+  anticipate: "back.inOut(2)",
+  launch: "slow(0.3, 0.4, false)",
+  drift: "rough({ template: none, strength: 0.5, points: 10, taper: none, randomize: true, clamp: true })",
+  whiplash: "back.out(4)",
+};
+
+export const OPTIMIZED_WILL_CHANGE = "transform, filter, opacity, font-variation-settings, clip-path";
+export const FILTER_PRESETS = new Set(["blur", "glow", "brightness", "contrast", "grayScale"]);
+
+export const QUICK_TO_PROPS =[
+  "scaleX", "scaleY", "x", "y", "rotation", "skewX", "opacity",
+  "rotationX", "rotationY", "transformPerspective",
+  "marginLeft", "marginRight", "marginTop", "marginBottom", "fontWeight",
+  "proxCipher", "--prox-x", "--prox-y", "--prox-radius"
+];
+
+export const ARABIC_NON_CONNECTING_LEFT = /[اأإآدذرزوؤءة\s]/;
+export const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670]/;
+export const LAM = "\u0644";
+export const ALEFS = /[\u0622\u0623\u0625\u0627]/;
+export const ZWJ = "\u200D";
+</file>
+
+<file path="src/lib/hooks.ts">
+import { useRef } from "react";
+import { deepEqual } from "./utils";
+
+export function useDeepMemo<T>(value: T): T {
+  const ref = useRef<T>(value);
+  if (!deepEqual(ref.current, value)) ref.current = value;
+  return ref.current;
+}
+</file>
+
+<file path="src/lib/types.ts">
+import React, { CSSProperties } from "react";
+import gsap from "gsap";
+
+export type EasePreset =
+  | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic"
+  | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost"
+  | "expo" | "circus" | "glitch" | "slowmo" | "spring" | "heavySpring"
+  | "anticipate" | "launch" | "drift" | "whiplash" | (string & {});
+
+export type ProximityPreset =
+  | "scale" | "flexScale" | "y" | "x" | "opacity" | "blur" | "rotate"
+  | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
+  | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
+  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "scroll"
+  | "fill" | "fillText" | (string & {});
+
+export type ProximityMode = "pointer" | "scroll";
+export type AxisLock = "x" | "y" | "both" | "none";
+
+export interface ProximityScrollConfig {
+  start?: "appear" | "top" | "center" | "middle" | "bottom" | (string & {});
+  end?: "top" | "center" | "middle" | "bottom" | "disappear" | (string & {});
+  focus?: "appear" | "top" | "center" | "middle" | "bottom" | "disappear" | number;
+  scroller?: string | Element | Window;
+  scrub?: boolean | number;
+  markers?: boolean;
+  once?: boolean;
+  stagger?: number | gsap.StaggerVars;
+  resetStagger?: number | gsap.StaggerVars;
+}
+
+export interface ProximityTimelineConfig {
+  duration?: number;
+  resetDuration?: number;
+  delay?: number;
+  resetDelay?: number;
+  ease?: EasePreset;
+  resetEase?: EasePreset;
+}
+
+export interface ProximityTargetOverride extends ProximityConfig {
+  selector: string;
+}
+
+export interface ProximityConfig {
+  mode?: ProximityMode;
+  scroll?: ProximityScrollConfig | [number, number];
+  scrollFocus?: "top" | "center" | "middle" | "bottom" | number;
+  scrollStart?: string;
+  scrollEnd?: string;
+  reach?: number;
+  falloff?: number;
+  duration?: number;
+  resetDuration?: number;
+  delay?: number;
+  resetDelay?: number;
+  stagger?: number | gsap.StaggerVars;
+  resetStagger?: number | gsap.StaggerVars;
+  scrub?: boolean | number;
+  resetScrub?: boolean | number;
+  start?: gsap.TweenVars;
+  end?: gsap.TweenVars;
+  global?: boolean;
+  explicit?: boolean;
+  preset?: ProximityPreset;
+  nearestPreset?: ProximityPreset;
+  neighborPreset?: ProximityPreset;
+  ease?: EasePreset;
+  resetEase?: EasePreset;
+  maxTravel?: number | [number, number] | { x: number; y: number };
+  lockAxis?: AxisLock;
+  splitBy?: "letter" | "word" | "line";
+  targets?: ProximityTargetOverride[];
+  timeline?: Record<string, ProximityTimelineConfig>;
+  precision?: number;
+  scale?: [number, number];
+  flexScale?: [number, number];
+  y?: [number, number];
+  x?: [number, number];
+  opacity?: [number, number];
+  blur?: [number, number];
+  rotate?: [number, number];
+  weight?: [number, number];
+  skew?: [number, number];
+  magnetic?: [number, number];
+  tilt?: [number, number];
+  tiltCard?: [number, number];
+  repel?: [number, number];
+  cipher?: [number, number];
+  reveal?: [number, number];
+  glow?: [number, number];
+  brightness?: [number, number];
+  contrast?: [number, number];
+  borderRadius?: [number, number];
+  letterSpacing?: [number, number];
+  grayScale?: [number, number];
+  color?: [string, string];
+  background?: [string, string];
+  onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
+  onReset?: () => gsap.TweenVars;
+  disableOnMobile?: boolean | string | string[];
+  waitForAnimationEnd?: boolean;
+  waitForEnterAnimationEnd?: boolean;
+  waitForLeaveAnimationEnd?: boolean;
+}
+
+export interface ProximityProps extends ProximityConfig {
+  children?: React.ReactNode;
+  selector?: string;
+  config?: ProximityConfig;
+  ignoreSelectors?: string[];
+  excludeElements?: string;
+  className?: string;
+  style?: CSSProperties;
+  scrollerRef?: React.RefObject<HTMLElement | null>;
+}
+
+export interface ProxHTMLElement extends HTMLElement {
+  proxCipher?: number;
+  _lastCipherUpdate?: number;
+  _quickTos?: Record<string, gsap.QuickToFunc>;
+  _isProxVisible?: boolean;
+  _willChangeCount?: number;
+  _scrollState?: "resting" | "hovered";
+  _colorTween?: gsap.core.Tween;
+  _bgTween?: gsap.core.Tween; 
+}
+
+export interface ItemCenter {
+  left: number; right: number; top: number; bottom: number;
+  x: number; y: number; w: number; h: number;
+  ml: number; mr: number; mt: number; mb: number;
+}
+
+export interface ItemState {
+  isOutside: boolean;
+  lastIntensity: number;
+  lastDx: number;
+  lastDy: number;
+}
+
+export interface ItemSetters {
+  intensity: (val: number | string) => void;
+  dx: (val: number | string) => void;
+  dy: (val: number | string) => void;
+}
+
+export interface ContainerBounds {
+  left: number; right: number; top: number; bottom: number;
+}
+
+export interface ProximityTextProps extends ProximityProps {
+  text: string;
+  splitBy?: "letter" | "word" | "line";
+  textClassName?: string;
+  fontFamily?: string;
+  lineHeight?: number;
+  textLetterSpacing?: number;
+  wordSpacing?: number;
+  clipFix?: string;
+  ignoreText?: (string | RegExp)[];
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
+  dir?: 'ltr' | 'rtl' | 'auto';
+}
+</file>
+
+<file path="src/lib/utils.ts">
+import gsap from "gsap";
+import { ItemCenter, AxisLock, ProxHTMLElement } from "./types";
+import { PRESET_DEFAULTS, FILTER_PRESETS, ARABIC_DIACRITICS, LAM, ALEFS, ARABIC_NON_CONNECTING_LEFT } from "./constants";
+
+export function deepEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (typeof a !== "object" || a === null || typeof b !== "object" || b === null) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (!deepEqual(a[key], b[key])) return false;
+  }
+  return true;
+}
+
+const CALC_RESULT: Record<string, gsap.TweenVars> = {};
+
+export const calculatePresetValues = (
+  activePresetString: string,
+  allPresetsString: string,
+  intensity: number,
+  userConfig: Record<string, [number, number] | [string, string] | undefined>,
+  dx: number,
+  dy: number,
+  center: ItemCenter | undefined | null,
+  isReset = false,
+  maxTravel?: number | [number, number] | { x: number; y: number },
+  lockAxis?: AxisLock,
+  startStyles?: gsap.TweenVars,
+  endStyles?: gsap.TweenVars,
+  skipAll = false,
+  disabledPresets: Set<string> = new Set(),
+): Record<string, gsap.TweenVars> => {
+  if (skipAll) return {};
+
+  for (const k in CALC_RESULT) delete CALC_RESULT[k];
+
+  const activeProps = new Set(activePresetString.split("-").filter(Boolean));
+  const allPropsArray = allPresetsString.split("-").filter(Boolean);
+
+  const lockX = lockAxis === "y";
+  const lockY = lockAxis === "x";
+  const w = center?.w || 1;
+  const h = center?.h || 1;
+  const ml = center?.ml || 0;
+  const mr = center?.mr || 0;
+  const mt = center?.mt || 0;
+  const mb = center?.mb || 0;
+
+  const clampTravel = (val: number, axis: "x" | "y"): number => {
+    if (maxTravel == null) return val;
+    let limit = Infinity;
+    if (typeof maxTravel === "number") limit = maxTravel;
+    else if (Array.isArray(maxTravel)) limit = axis === "x" ? maxTravel[0] : maxTravel[1];
+    else limit = axis === "x" ? (maxTravel as { x: number; y: number }).x : (maxTravel as { x: number; y: number }).y;
+    if (!isFinite(limit)) return val;
+    return Math.max(-limit, Math.min(val, limit));
+  };
+
+  const filterChunks: string[] =[];
+
+  for (const prop of allPropsArray) {
+    if (disabledPresets.has(prop)) continue;
+
+    const bounds = userConfig[prop] ?? PRESET_DEFAULTS[prop];
+    if (!bounds) continue;
+
+    const isActive = activeProps.has(prop);
+    const useBase = isReset || !isActive;
+    const curIntensity = useBase ? 0 : intensity;
+
+    const [base, max] = bounds as [number, number];
+    const curValue = base + (max - base) * curIntensity;
+
+    if (prop === "blur") { filterChunks.push(`blur(${curValue}px)`); continue; }
+    if (prop === "glow") { filterChunks.push(`drop-shadow(0 0 ${curValue}px currentColor)`); continue; }
+    if (prop === "brightness") { filterChunks.push(`brightness(${curValue})`); continue; }
+    if (prop === "contrast") { filterChunks.push(`contrast(${curValue})`); continue; }
+    if (prop === "grayScale") { filterChunks.push(`grayscale(${curValue})`); continue; }
+
+    if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
+    const res = CALC_RESULT[prop];
+
+    switch (prop) {
+      case "weight":
+        res.fontWeight = Math.round(curValue);
+        res.fontVariationSettings = `'wght' ${Math.round(curValue)}`;
+        break;
+      case "borderRadius":
+        res.borderRadius = `${curValue}%`;
+        break;
+      case "letterSpacing":
+        res.letterSpacing = `${curValue}em`;
+        break;
+      case "rotate":
+        res.rotation = curValue;
+        break;
+      case "skew":
+        res.skewX = curValue;
+        break;
+      case "cipher":
+        res.proxCipher = curValue;
+        break;
+      case "reveal":
+        res.y = `${curValue}%`;
+        res.clipPath = `inset(0% 0% ${curValue}% 0%)`;
+        break;
+      case "color":
+        res.color = useBase ? 0 : intensity;
+        break;
+      case "background":
+        res.backgroundColor = useBase ? 0 : intensity;
+        break;
+      case "scroll": {
+        res.proxScroll = curIntensity > 0.5 ? 1 : 0;
+        res.proxScrollTravel = max;
+        break;
+      }
+      case "magnetic": {
+        const pullX = lockX ? 0 : dx * curIntensity * max;
+        const pullY = lockY ? 0 : dy * curIntensity * max;
+        res.x = useBase ? 0 : clampTravel(pullX, "x");
+        res.y = useBase ? 0 : clampTravel(pullY, "y");
+        break;
+      }
+      case "repel": {
+        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+        const safeDx = dx === 0 ? 0.1 : dx;
+        const safeDy = dy === 0 ? 0.1 : dy;
+        const push = max * 100 * curIntensity;
+        res.x = useBase || lockX ? 0 : clampTravel(-(safeDx / dist) * push, "x");
+        res.y = useBase || lockY ? 0 : clampTravel(-(safeDy / dist) * push, "y");
+        break;
+      }
+      case "tilt":
+        res.rotationX = useBase || lockY ? 0 : -dy * curIntensity * (max / 10);
+        res.rotationY = useBase || lockX ? 0 : dx * curIntensity * (max / 10);
+        res.transformPerspective = 1000;
+        break;
+      case "tiltCard":
+        res.rotationX = useBase || lockY ? 0 : (dy / (h / 2)) * -max * curIntensity;
+        res.rotationY = useBase || lockX ? 0 : (dx / (w / 2)) * max * curIntensity;
+        res.transformPerspective = 1000;
+        break;
+      case "scale":
+        res.scaleX = curValue;
+        res.scaleY = curValue;
+        break;
+      case "flexScale": {
+        res.scaleX = curValue;
+        res.scaleY = curValue;
+        const ew = (w * (curValue - 1)) / 2;
+        const eh = (h * (curValue - 1)) / 2;
+        res.marginLeft = ml + ew;
+        res.marginRight = mr + ew;
+        res.marginTop = mt + eh;
+        res.marginBottom = mb + eh;
+        break;
+      }
+      case "fill":
+      case "fillText": {
+        const radius = curIntensity * 150;
+        res["--prox-radius"] = radius; 
+
+        if (!isReset) {
+          const mx = w === 0 ? 50 : ((dx + w / 2) / w) * 100;
+          const my = h === 0 ? 50 : ((dy + h / 2) / h) * 100;
+          const clampMx = Math.max(-50, Math.min(150, mx));
+          const clampMy = Math.max(-50, Math.min(150, my));
+          res["--prox-x"] = clampMx;
+          res["--prox-y"] = clampMy;
+        }
+        break;
+      }
+      default:
+        res[prop] = curValue;
+    }
+  }
+
+  if (!CALC_RESULT["_filters"]) CALC_RESULT["_filters"] = {};
+  CALC_RESULT["_filters"].filter = filterChunks.length > 0 ? filterChunks.join(" ") : "none";
+
+  if (startStyles || endStyles) {
+    if (!CALC_RESULT["customStartEnd"]) CALC_RESULT["customStartEnd"] = {};
+    const custom = CALC_RESULT["customStartEnd"];
+    for (const k in custom) delete custom[k];
+
+    const keys = new Set([...Object.keys(startStyles ?? {}), ...Object.keys(endStyles ?? {})]);
+    keys.forEach((k) => {
+      const sVal = startStyles?.[k];
+      const eVal = endStyles?.[k];
+      if (sVal !== undefined && eVal !== undefined) {
+        custom[k] = gsap.utils.interpolate(sVal, eVal, isReset ? 0 : intensity);
+      } else if (isReset && sVal !== undefined) {
+        custom[k] = sVal;
+      } else if (!isReset && eVal !== undefined) {
+        custom[k] = eVal;
+      }
+    });
+  }
+
+  return CALC_RESULT;
+};
+
+export function cipherUpdate(this: gsap.core.Tween) {
+  const item = this.targets()[0] as ProxHTMLElement;
+  if (!item || item.children.length > 0) return;
+  const val = item.proxCipher;
+  if (val === undefined) return;
+  const orig = item.dataset.proxOriginal;
+  if (!orig || orig.trim() === "") return;
+  if (val <= 0.01) {
+    if (item.textContent !== orig) item.textContent = orig;
+    return;
+  }
+  const now = Date.now();
+  if (item._lastCipherUpdate && now - item._lastCipherUpdate < 60) return;
+  item._lastCipherUpdate = now;
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$*&%0123456789";
+  let scrambled = "";
+  for (let i = 0; i < orig.length; i++) {
+    if (orig[i] === " " || orig[i] === "\n") { scrambled += orig[i]; continue; }
+    scrambled += Math.random() < val ? chars[Math.floor(Math.random() * chars.length)] : orig[i];
+  }
+  if (item.textContent !== scrambled) item.textContent = scrambled;
+}
+
+export const getArabicSegments = (word: string) => {
+  const segments: string[] =[];
+  const characters = Array.from(word);
+  let i = 0;
+  
+  while (i < characters.length) {
+    let char = characters[i];
+    
+    if (char === LAM && i + 1 < characters.length) {
+      let nextIdx = i + 1;
+      let tempDiacritics = "";
+      while (nextIdx < characters.length && ARABIC_DIACRITICS.test(characters[nextIdx])) {
+        tempDiacritics += characters[nextIdx];
+        nextIdx++;
+      }
+      if (nextIdx < characters.length && ALEFS.test(characters[nextIdx])) {
+        char += tempDiacritics + characters[nextIdx];
+        i = nextIdx;
+      }
+    }
+    
+    if (ARABIC_DIACRITICS.test(char) && segments.length > 0) {
+      segments[segments.length - 1] += char;
+    } else {
+      segments.push(char);
+    }
+    i++;
+  }
+  return segments;
+};
+
+export const doesSegmentConnectLeft = (seg: string) => {
+  const baseStr = seg.replace(ARABIC_DIACRITICS, '');
+  if (!baseStr) return false;
+  return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
+};
 </file>
 
 <file path="src/main.tsx">
@@ -593,6 +1110,16 @@ export default function Gamebox() {
     </section>
   );
 }
+</file>
+
+<file path="src/lib/index.ts">
+export * from './types';
+export * from './constants';
+export * from './utils';
+export * from './hooks';
+export * from './Proximity';
+export * from './ProximityText';
+export * from './ProximityContext';
 </file>
 
 <file path="src/lib/ProximityContext.tsx">
@@ -2962,68 +3489,96 @@ MIT © [Youssef Zidan](https://github.com/YoussefZidan-1)
 `react animation`, `proximity detection`, `magnetic cursor`, `hover effects`, `scroll animations`, `gsap react`, `motion design`, `interactive ui`, `spatial interactions`, `cursor effects`, `animation library`, `react gsap`, `framer motion alternative`, `react spring alternative`, `proximity-based animations`, `distance-based effects`
 </file>
 
+<file path="index.html">
+<!doctype html>
+<html lang="en" class="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#000000" /> 
+    
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "ZProximity Engine",
+          "alternateName": ["ZProximity", "Z-Proximity"],
+          "url": "https://z-proximity-engine.vercel.app/"
+        }
+        </script>
+    
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "ZProximity Engine",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Web",
+          "description": "High-performance React library for proximity-based animations. GSAP-powered engine with 8.7KB bundle size.",
+          "url": "https://z-proximity-engine.vercel.app/",
+          "downloadUrl": "https://www.npmjs.com/package/z-proximity-engine",
+          "softwareVersion": "2.4.4",
+          "author": {
+            "@type": "Person",
+            "name": "Youssef Zidan",
+            "url": "https://github.com/YoussefZidan-1"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Proximity-based animations",
+            "Magnetic cursor effects",
+            "Scroll-driven interactions",
+            "120+ FPS performance",
+            "8.7KB core bundle size"
+          ]
+        }
+        </script>
+    
+        <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48" />
+        <link rel="icon" type="image/png" href="/favicon-144.png" sizes="144x144" />
+        <link rel="apple-touch-icon" href="/favicon-144.png">
+        
+        <title>ZProximity Engine - React Proximity Animation Library | GSAP Powered</title>
+        <meta name="title" content="ZProximity Engine - React Proximity Animation Library | GSAP Powered" />
+        <meta name="description" content="High-performance React library for proximity-based animations. Create magnetic effects, hover animations, and scroll interactions with 8.7KB core. 120+ FPS performance." />
+        
+        <meta name="keywords" content="react animation library, proximity animation, gsap react, hover effects react, magnetic cursor, scroll animations, react motion design, proximity detection, interactive ui react, animation framework, react gsap library, cursor effects, spatial interactions, framer motion alternative, react spring alternative" />
+    
+        <link rel="canonical" href="https://z-proximity-engine.vercel.app/" />
+        <meta name="google-site-verification" content="kpZpGxomYOeqOMitjEl4EDhlANP33SaBq9WfbGmvdCU" />
+    
+        <!-- Open Graph / Facebook -->
+        <meta property="og:site_name" content="ZProximity Engine" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
+        <meta property="og:title" content="ZProximity Engine - React Proximity Animation Library" />
+        <meta property="og:description" content="High-performance React library for proximity-based animations. 120+ FPS performance." />
+        <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
+    
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cairo:wght@200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,200..900&display=swap" rel="stylesheet">
+    </head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
+</file>
+
 <file path="src/lib/ProximityText.tsx">
 import React, { Fragment, useMemo, CSSProperties } from "react";
-import { Proximity, ProximityProps, useDeepMemo } from "./Proximity";
+import { Proximity } from "./Proximity";
+import { useDeepMemo } from "./hooks";
 import { useProximityConfig } from "./ProximityContext";
-
-export interface ProximityTextProps extends ProximityProps {
-  text: string;
-  splitBy?: "letter" | "word" | "line";
-  textClassName?: string;
-  fontFamily?: string;
-  lineHeight?: number;
-  textLetterSpacing?: number;
-  wordSpacing?: number;
-  clipFix?: string;
-  ignoreText?: (string | RegExp)[];
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
-  dir?: 'ltr' | 'rtl' | 'auto';
-}
-
-const ARABIC_NON_CONNECTING_LEFT = /[اأإآدذرزوؤءة\s]/;
-const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670]/;
-const LAM = "\u0644";
-const ALEFS = /[\u0622\u0623\u0625\u0627]/;
-const ZWJ = "\u200D";
-
-const getArabicSegments = (word: string) => {
-  const segments: string[] =[];
-  const characters = Array.from(word);
-  let i = 0;
-  
-  while (i < characters.length) {
-    let char = characters[i];
-    
-    if (char === LAM && i + 1 < characters.length) {
-      let nextIdx = i + 1;
-      let tempDiacritics = "";
-      while (nextIdx < characters.length && ARABIC_DIACRITICS.test(characters[nextIdx])) {
-        tempDiacritics += characters[nextIdx];
-        nextIdx++;
-      }
-      if (nextIdx < characters.length && ALEFS.test(characters[nextIdx])) {
-        char += tempDiacritics + characters[nextIdx];
-        i = nextIdx;
-      }
-    }
-    
-    if (ARABIC_DIACRITICS.test(char) && segments.length > 0) {
-      segments[segments.length - 1] += char;
-    } else {
-      segments.push(char);
-    }
-    i++;
-  }
-  return segments;
-};
-
-const doesSegmentConnectLeft = (seg: string) => {
-  const baseStr = seg.replace(ARABIC_DIACRITICS, '');
-  if (!baseStr) return false;
-  return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
-};
+import { ProximityTextProps } from "./types";
+import { getArabicSegments, doesSegmentConnectLeft } from "./utils";
+import { ZWJ } from "./constants";
 
 export const ProximityText: React.FC<ProximityTextProps> = ({
   text,
@@ -3254,88 +3809,6 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
     </Proximity>
   );
 };
-</file>
-
-<file path="index.html">
-<!doctype html>
-<html lang="en" class="dark">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="theme-color" content="#000000" /> 
-    
-        <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "ZProximity Engine",
-          "alternateName": ["ZProximity", "Z-Proximity"],
-          "url": "https://z-proximity-engine.vercel.app/"
-        }
-        </script>
-    
-        <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "name": "ZProximity Engine",
-          "applicationCategory": "DeveloperApplication",
-          "operatingSystem": "Web",
-          "description": "High-performance React library for proximity-based animations. GSAP-powered engine with 8.7KB bundle size.",
-          "url": "https://z-proximity-engine.vercel.app/",
-          "downloadUrl": "https://www.npmjs.com/package/z-proximity-engine",
-          "softwareVersion": "2.4.4",
-          "author": {
-            "@type": "Person",
-            "name": "Youssef Zidan",
-            "url": "https://github.com/YoussefZidan-1"
-          },
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          },
-          "featureList": [
-            "Proximity-based animations",
-            "Magnetic cursor effects",
-            "Scroll-driven interactions",
-            "120+ FPS performance",
-            "8.7KB core bundle size"
-          ]
-        }
-        </script>
-    
-        <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48" />
-        <link rel="icon" type="image/png" href="/favicon-144.png" sizes="144x144" />
-        <link rel="apple-touch-icon" href="/favicon-144.png">
-        
-        <title>ZProximity Engine - React Proximity Animation Library | GSAP Powered</title>
-        <meta name="title" content="ZProximity Engine - React Proximity Animation Library | GSAP Powered" />
-        <meta name="description" content="High-performance React library for proximity-based animations. Create magnetic effects, hover animations, and scroll interactions with 8.7KB core. 120+ FPS performance." />
-        
-        <meta name="keywords" content="react animation library, proximity animation, gsap react, hover effects react, magnetic cursor, scroll animations, react motion design, proximity detection, interactive ui react, animation framework, react gsap library, cursor effects, spatial interactions, framer motion alternative, react spring alternative" />
-    
-        <link rel="canonical" href="https://z-proximity-engine.vercel.app/" />
-        <meta name="google-site-verification" content="kpZpGxomYOeqOMitjEl4EDhlANP33SaBq9WfbGmvdCU" />
-    
-        <!-- Open Graph / Facebook -->
-        <meta property="og:site_name" content="ZProximity Engine" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
-        <meta property="og:title" content="ZProximity Engine - React Proximity Animation Library" />
-        <meta property="og:description" content="High-performance React library for proximity-based animations. 120+ FPS performance." />
-        <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
-    
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cairo:wght@200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,200..900&display=swap" rel="stylesheet">
-    </head>
-<body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-</body>
-</html>
 </file>
 
 <file path="src/App.tsx">
@@ -3614,456 +4087,19 @@ export default function App() {
 </file>
 
 <file path="src/lib/Proximity.tsx">
-// src/lib/Proximity.tsx
-import React, { useRef, useMemo, CSSProperties } from "react";
+import React, { useRef, useMemo } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useDeepMemo } from "./hooks";
+import { calculatePresetValues, cipherUpdate } from "./utils";
+import { PRESET_DEFAULTS, EASE_MAP, OPTIMIZED_WILL_CHANGE, FILTER_PRESETS, QUICK_TO_PROPS } from "./constants";
+import { 
+  ProximityProps, ProxHTMLElement, ItemCenter, ItemState, ItemSetters, 
+  ContainerBounds, ProximityTargetOverride, ProximityScrollConfig
+} from "./types";
 
 gsap.registerPlugin(ScrollTrigger);
-
-export type EasePreset =
-  | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic"
-  | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost"
-  | "expo" | "circus" | "glitch" | "slowmo" | "spring" | "heavySpring"
-  | "anticipate" | "launch" | "drift" | "whiplash" | (string & {});
-
-export type ProximityPreset =
-  | "scale" | "flexScale" | "y" | "x" | "opacity" | "blur" | "rotate"
-  | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
-  | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
-  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "scroll"
-  | "fill" | "fillText" | (string & {});
-
-export type ProximityMode = "pointer" | "scroll";
-export type AxisLock = "x" | "y" | "both" | "none";
-
-export interface ProximityScrollConfig {
-  start?: "appear" | "top" | "center" | "middle" | "bottom" | (string & {});
-  end?: "top" | "center" | "middle" | "bottom" | "disappear" | (string & {});
-  focus?: "appear" | "top" | "center" | "middle" | "bottom" | "disappear" | number;
-  scroller?: string | Element | Window;
-  scrub?: boolean | number;
-  markers?: boolean;
-  once?: boolean;
-  stagger?: number | gsap.StaggerVars;
-  resetStagger?: number | gsap.StaggerVars;
-}
-
-export interface ProximityTimelineConfig {
-  duration?: number;
-  resetDuration?: number;
-  delay?: number;
-  resetDelay?: number;
-  ease?: EasePreset;
-  resetEase?: EasePreset;
-}
-
-export interface ProximityTargetOverride extends ProximityConfig {
-  selector: string;
-}
-
-export interface ProximityConfig {
-  mode?: ProximityMode;
-  scroll?: ProximityScrollConfig | [number, number];
-  scrollFocus?: "top" | "center" | "middle" | "bottom" | number;
-  scrollStart?: string;
-  scrollEnd?: string;
-  reach?: number;
-  falloff?: number;
-  duration?: number;
-  resetDuration?: number;
-  delay?: number;
-  resetDelay?: number;
-  stagger?: number | gsap.StaggerVars;
-  resetStagger?: number | gsap.StaggerVars;
-  scrub?: boolean | number;
-  resetScrub?: boolean | number;
-  start?: gsap.TweenVars;
-  end?: gsap.TweenVars;
-  global?: boolean;
-  explicit?: boolean;
-  preset?: ProximityPreset;
-  nearestPreset?: ProximityPreset;
-  neighborPreset?: ProximityPreset;
-  ease?: EasePreset;
-  resetEase?: EasePreset;
-  maxTravel?: number | [number, number] | { x: number; y: number };
-  lockAxis?: AxisLock;
-  splitBy?: "letter" | "word" | "line";
-  targets?: ProximityTargetOverride[];
-  timeline?: Record<string, ProximityTimelineConfig>;
-  precision?: number;
-  scale?: [number, number];
-  flexScale?: [number, number];
-  y?: [number, number];
-  x?: [number, number];
-  opacity?: [number, number];
-  blur?: [number, number];
-  rotate?: [number, number];
-  weight?: [number, number];
-  skew?: [number, number];
-  magnetic?: [number, number];
-  tilt?: [number, number];
-  tiltCard?: [number, number];
-  repel?: [number, number];
-  cipher?: [number, number];
-  reveal?: [number, number];
-  glow?: [number, number];
-  brightness?: [number, number];
-  contrast?: [number, number];
-  borderRadius?: [number, number];
-  letterSpacing?: [number, number];
-  grayScale?: [number, number];
-  color?: [string, string];
-  background?: [string, string];
-  onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
-  onReset?: () => gsap.TweenVars;
-  disableOnMobile?: boolean | string | string[];
-  waitForAnimationEnd?: boolean;
-  waitForEnterAnimationEnd?: boolean;
-  waitForLeaveAnimationEnd?: boolean;
-}
-
-export interface ProximityProps extends ProximityConfig {
-  children?: React.ReactNode;
-  selector?: string;
-  config?: ProximityConfig;
-  ignoreSelectors?: string[];
-  excludeElements?: string;
-  className?: string;
-  style?: CSSProperties;
-  scrollerRef?: React.RefObject<HTMLElement | null>;
-}
-
-interface ProxHTMLElement extends HTMLElement {
-  proxCipher?: number;
-  _lastCipherUpdate?: number;
-  _quickTos?: Record<string, gsap.QuickToFunc>;
-  _isProxVisible?: boolean;
-  _willChangeCount?: number;
-  _scrollState?: "resting" | "hovered";
-  _colorTween?: gsap.core.Tween;
-  _bgTween?: gsap.core.Tween; 
-}
-
-interface ItemCenter {
-  left: number; right: number; top: number; bottom: number;
-  x: number; y: number; w: number; h: number;
-  ml: number; mr: number; mt: number; mb: number;
-}
-
-interface ItemState {
-  isOutside: boolean;
-  lastIntensity: number;
-  lastDx: number;
-  lastDy: number;
-}
-
-interface ItemSetters {
-  intensity: (val: number | string) => void;
-  dx: (val: number | string) => void;
-  dy: (val: number | string) => void;
-}
-
-interface ContainerBounds {
-  left: number; right: number; top: number; bottom: number;
-}
-
-const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
-  scale: [1, 1.5],
-  flexScale: [1, 1.5],
-  y: [0, -30],
-  x: [0, 30],
-  opacity: [0.2, 1],
-  blur: [8, 0],
-  rotate: [0, 90],
-  weight: [100, 900],
-  skew: [0, 20],
-  magnetic: [0, 0.1],
-  tilt: [0, 30],
-  tiltCard: [0, 15],
-  repel: [0, 0.4],
-  cipher: [0, 1],
-  reveal: [110, 0],
-  scroll: [0, 100],
-  glow: [0, 20],
-  brightness: [0.6, 1.2],
-  contrast: [0.8, 1.4],
-  borderRadius: [0, 50],
-  letterSpacing: [-0.05, 0.2],
-  grayScale: [1, 0],
-  color: ["#888888", "#ffffff"],
-  background: ["transparent", "rgba(255,255,255,0.1)"],
-  fill: [0, 1],
-  fillText: [0, 1],
-};
-
-const EASE_MAP: Record<string, string> = {
-  smooth: "power1.inOut",
-  heavy: "power4.out",
-  sharp: "expo.out",
-  fluid: "circ.inOut",
-  bouncy: "back.out(1.7)",
-  elastic: "elastic.out(1, 0.3)",
-  jello: "elastic.out(1.5, 0.2)",
-  bounce: "bounce.out",
-  swing: "back.inOut(3)",
-  vibrate: "rough({ strength: 2, points: 20, template: 'none', taper: 'none', randomize: true })",
-  robot: "steps(8)",
-  ghost: "slow(0.6, 0.8, false)",
-  expo: "expo.inOut",
-  circus: "back.out(4)",
-  glitch: "rough({ template: 'none', strength: 3, points: 50, taper: 'both', randomize: true })",
-  slowmo: "slow(0.7, 0.7, false)",
-  spring: "elastic.out(1, 0.75)",
-  heavySpring: "elastic.out(1.2, 0.3)",
-  anticipate: "back.inOut(2)",
-  launch: "slow(0.3, 0.4, false)",
-  drift: "rough({ template: none, strength: 0.5, points: 10, taper: none, randomize: true, clamp: true })",
-  whiplash: "back.out(4)",
-};
-
-const OPTIMIZED_WILL_CHANGE = "transform, filter, opacity, font-variation-settings, clip-path";
-const FILTER_PRESETS = new Set(["blur", "glow", "brightness", "contrast", "grayScale"]);
-
-const QUICK_TO_PROPS =[
-  "scaleX", "scaleY", "x", "y", "rotation", "skewX", "opacity",
-  "rotationX", "rotationY", "transformPerspective",
-  "marginLeft", "marginRight", "marginTop", "marginBottom", "fontWeight",
-  "proxCipher", "--prox-x", "--prox-y", "--prox-radius"
-];
-
-export function deepEqual(a: any, b: any): boolean {
-  if (a === b) return true;
-  if (typeof a !== "object" || a === null || typeof b !== "object" || b === null) return false;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  for (const key of keysA) {
-    if (!deepEqual(a[key], b[key])) return false;
-  }
-  return true;
-}
-
-export function useDeepMemo<T>(value: T): T {
-  const ref = useRef<T>(value);
-  if (!deepEqual(ref.current, value)) ref.current = value;
-  return ref.current;
-}
-
-const CALC_RESULT: Record<string, gsap.TweenVars> = {};
-
-const calculatePresetValues = (
-  activePresetString: string,
-  allPresetsString: string,
-  intensity: number,
-  userConfig: Record<string, [number, number] | [string, string] | undefined>,
-  dx: number,
-  dy: number,
-  center: ItemCenter | undefined | null,
-  isReset = false,
-  maxTravel?: number | [number, number] | { x: number; y: number },
-  lockAxis?: AxisLock,
-  startStyles?: gsap.TweenVars,
-  endStyles?: gsap.TweenVars,
-  skipAll = false,
-  disabledPresets: Set<string> = new Set(),
-): Record<string, gsap.TweenVars> => {
-  if (skipAll) return {};
-
-  for (const k in CALC_RESULT) delete CALC_RESULT[k];
-
-  const activeProps = new Set(activePresetString.split("-").filter(Boolean));
-  const allPropsArray = allPresetsString.split("-").filter(Boolean);
-
-  const lockX = lockAxis === "y";
-  const lockY = lockAxis === "x";
-  const w = center?.w || 1;
-  const h = center?.h || 1;
-  const ml = center?.ml || 0;
-  const mr = center?.mr || 0;
-  const mt = center?.mt || 0;
-  const mb = center?.mb || 0;
-
-  const clampTravel = (val: number, axis: "x" | "y"): number => {
-    if (maxTravel == null) return val;
-    let limit = Infinity;
-    if (typeof maxTravel === "number") limit = maxTravel;
-    else if (Array.isArray(maxTravel)) limit = axis === "x" ? maxTravel[0] : maxTravel[1];
-    else limit = axis === "x" ? (maxTravel as { x: number; y: number }).x : (maxTravel as { x: number; y: number }).y;
-    if (!isFinite(limit)) return val;
-    return Math.max(-limit, Math.min(val, limit));
-  };
-
-  const filterChunks: string[] =[];
-
-  for (const prop of allPropsArray) {
-    if (disabledPresets.has(prop)) continue;
-
-    const bounds = userConfig[prop] ?? PRESET_DEFAULTS[prop];
-    if (!bounds) continue;
-
-    const isActive = activeProps.has(prop);
-    const useBase = isReset || !isActive;
-    const curIntensity = useBase ? 0 : intensity;
-
-    const [base, max] = bounds as [number, number];
-    const curValue = base + (max - base) * curIntensity;
-
-    if (prop === "blur") { filterChunks.push(`blur(${curValue}px)`); continue; }
-    if (prop === "glow") { filterChunks.push(`drop-shadow(0 0 ${curValue}px currentColor)`); continue; }
-    if (prop === "brightness") { filterChunks.push(`brightness(${curValue})`); continue; }
-    if (prop === "contrast") { filterChunks.push(`contrast(${curValue})`); continue; }
-    if (prop === "grayScale") { filterChunks.push(`grayscale(${curValue})`); continue; }
-
-    if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
-    const res = CALC_RESULT[prop];
-
-    switch (prop) {
-      case "weight":
-        res.fontWeight = Math.round(curValue);
-        res.fontVariationSettings = `'wght' ${Math.round(curValue)}`;
-        break;
-      case "borderRadius":
-        res.borderRadius = `${curValue}%`;
-        break;
-      case "letterSpacing":
-        res.letterSpacing = `${curValue}em`;
-        break;
-      case "rotate":
-        res.rotation = curValue;
-        break;
-      case "skew":
-        res.skewX = curValue;
-        break;
-      case "cipher":
-        res.proxCipher = curValue;
-        break;
-      case "reveal":
-        res.y = `${curValue}%`;
-        res.clipPath = `inset(0% 0% ${curValue}% 0%)`;
-        break;
-      case "color":
-        res.color = useBase ? 0 : intensity;
-        break;
-      case "background":
-        res.backgroundColor = useBase ? 0 : intensity;
-        break;
-      case "scroll": {
-        res.proxScroll = curIntensity > 0.5 ? 1 : 0;
-        res.proxScrollTravel = max;
-        break;
-      }
-      case "magnetic": {
-        const pullX = lockX ? 0 : dx * curIntensity * max;
-        const pullY = lockY ? 0 : dy * curIntensity * max;
-        res.x = useBase ? 0 : clampTravel(pullX, "x");
-        res.y = useBase ? 0 : clampTravel(pullY, "y");
-        break;
-      }
-      case "repel": {
-        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
-        const safeDx = dx === 0 ? 0.1 : dx;
-        const safeDy = dy === 0 ? 0.1 : dy;
-        const push = max * 100 * curIntensity;
-        res.x = useBase || lockX ? 0 : clampTravel(-(safeDx / dist) * push, "x");
-        res.y = useBase || lockY ? 0 : clampTravel(-(safeDy / dist) * push, "y");
-        break;
-      }
-      case "tilt":
-        res.rotationX = useBase || lockY ? 0 : -dy * curIntensity * (max / 10);
-        res.rotationY = useBase || lockX ? 0 : dx * curIntensity * (max / 10);
-        res.transformPerspective = 1000;
-        break;
-      case "tiltCard":
-        res.rotationX = useBase || lockY ? 0 : (dy / (h / 2)) * -max * curIntensity;
-        res.rotationY = useBase || lockX ? 0 : (dx / (w / 2)) * max * curIntensity;
-        res.transformPerspective = 1000;
-        break;
-      case "scale":
-        res.scaleX = curValue;
-        res.scaleY = curValue;
-        break;
-      case "flexScale": {
-        res.scaleX = curValue;
-        res.scaleY = curValue;
-        const ew = (w * (curValue - 1)) / 2;
-        const eh = (h * (curValue - 1)) / 2;
-        res.marginLeft = ml + ew;
-        res.marginRight = mr + ew;
-        res.marginTop = mt + eh;
-        res.marginBottom = mb + eh;
-        break;
-      }
-            case "fill":
-            case "fillText": {
-              const radius = curIntensity * 150;
-              res["--prox-radius"] = radius; 
-      
-              if (!isReset) {
-                const mx = w === 0 ? 50 : ((dx + w / 2) / w) * 100;
-                const my = h === 0 ? 50 : ((dy + h / 2) / h) * 100;
-                const clampMx = Math.max(-50, Math.min(150, mx));
-                const clampMy = Math.max(-50, Math.min(150, my));
-                res["--prox-x"] = clampMx;
-                res["--prox-y"] = clampMy;
-              }
-              break;
-            }
-      default:
-        res[prop] = curValue;
-    }
-  }
-
-  if (!CALC_RESULT["_filters"]) CALC_RESULT["_filters"] = {};
-  CALC_RESULT["_filters"].filter = filterChunks.length > 0 ? filterChunks.join(" ") : "none";
-
-  if (startStyles || endStyles) {
-    if (!CALC_RESULT["customStartEnd"]) CALC_RESULT["customStartEnd"] = {};
-    const custom = CALC_RESULT["customStartEnd"];
-    for (const k in custom) delete custom[k];
-
-    const keys = new Set([...Object.keys(startStyles ?? {}), ...Object.keys(endStyles ?? {})]);
-    keys.forEach((k) => {
-      const sVal = startStyles?.[k];
-      const eVal = endStyles?.[k];
-      if (sVal !== undefined && eVal !== undefined) {
-        custom[k] = gsap.utils.interpolate(sVal, eVal, isReset ? 0 : intensity);
-      } else if (isReset && sVal !== undefined) {
-        custom[k] = sVal;
-      } else if (!isReset && eVal !== undefined) {
-        custom[k] = eVal;
-      }
-    });
-  }
-
-  return CALC_RESULT;
-};
-
-function cipherUpdate(this: gsap.core.Tween) {
-  const item = this.targets()[0] as ProxHTMLElement;
-  if (!item || item.children.length > 0) return;
-  const val = item.proxCipher;
-  if (val === undefined) return;
-  const orig = item.dataset.proxOriginal;
-  if (!orig || orig.trim() === "") return;
-  if (val <= 0.01) {
-    if (item.textContent !== orig) item.textContent = orig;
-    return;
-  }
-  const now = Date.now();
-  if (item._lastCipherUpdate && now - item._lastCipherUpdate < 60) return;
-  item._lastCipherUpdate = now;
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$*&%0123456789";
-  let scrambled = "";
-  for (let i = 0; i < orig.length; i++) {
-    if (orig[i] === " " || orig[i] === "\n") { scrambled += orig[i]; continue; }
-    scrambled += Math.random() < val ? chars[Math.floor(Math.random() * chars.length)] : orig[i];
-  }
-  if (item.textContent !== scrambled) item.textContent = scrambled;
-}
 
 export const Proximity: React.FC<ProximityProps> = ({
   children,
@@ -4317,8 +4353,8 @@ export const Proximity: React.FC<ProximityProps> = ({
               right: rect.right - cRect.left,
               top: rect.top - cRect.top, 
               bottom: rect.bottom - cRect.top,
-              x: (rect.left + rect.width / 2) - cRect.left, // Local Center X
-              y: (rect.top + rect.height / 2) - cRect.top,  // Local Center Y
+              x: (rect.left + rect.width / 2) - cRect.left,
+              y: (rect.top + rect.height / 2) - cRect.top,
               w: rect.width, h: rect.height, ml, mr, mt, mb,
             };
           });
@@ -4395,7 +4431,6 @@ export const Proximity: React.FC<ProximityProps> = ({
               item._scrollState = "resting";
               const dur = lc?.duration ?? activeDuration;
               const ez = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
-      
       
               QUICK_TO_PROPS.forEach((prop) => {
                 item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
@@ -4544,7 +4579,6 @@ export const Proximity: React.FC<ProximityProps> = ({
                     item._scrollState = "resting";
                     gsap.killTweensOf(item, "yPercent,clipPath");
                     
-                    // Phase 1 (Unhover): Redo backward! Scroll DOWN and mask out bottom
                     gsap.to(item, {
                       yPercent: travel,
                       clipPath: `inset(0% 0% ${travel}% 0%)`,
@@ -4553,7 +4587,6 @@ export const Proximity: React.FC<ProximityProps> = ({
                       ease: ez,
                       overwrite: "auto",
                       onComplete: () => {
-                        // Phase 2: Teleport to TOP and scroll DOWN to rest, masking out top
                         gsap.fromTo(item,
                           { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
                           { 

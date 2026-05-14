@@ -11,7 +11,7 @@ export type ProximityPreset =
   | "scale" | "flexScale" | "y" | "x" | "opacity" | "blur" | "rotate"
   | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
   | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
-  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "scroll"
+  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "cycle" | "cycleSide"
   | "fill" | "fillText" | (string & {});
 
 export type ProximityMode = "pointer" | "scroll";
