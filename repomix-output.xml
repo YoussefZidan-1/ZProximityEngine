@@ -204,6 +204,417 @@ Allow: /
 Sitemap: https://z-proximity-engine.vercel.app/sitemap.xml
 </file>
 
+<file path="src/lib/hooks.ts">
+import { useRef } from "react";
+import { deepEqual } from "./utils";
+
+export function useDeepMemo<T>(value: T): T {
+  const ref = useRef<T>(value);
+  if (!deepEqual(ref.current, value)) ref.current = value;
+  return ref.current;
+}
+</file>
+
+<file path="src/lib/utils/proximityHelpers.ts">
+import gsap from "gsap";
+import { ProxHTMLElement } from "../types";
+import { OPTIMIZED_WILL_CHANGE } from "../constants";
+
+export const parseScrollPosition = (pos: string, isStart: boolean): string => {
+  if (pos === "appear") return "top bottom";
+  if (pos === "disappear") return "bottom top";
+  const m: Record<string, string> = { top: "top top", center: "center center", middle: "center center", bottom: "bottom bottom" };
+  return m[pos] ?? pos ?? (isStart ? "top bottom" : "bottom top");
+};
+
+export const getScrollFocusValue = (focus: string | number): number => {
+  if (typeof focus === "number") return focus / 100;
+  switch (focus) {
+    case "appear": return 0;
+    case "top": return 0.25;
+    case "middle":
+    case "center": return 0.5;
+    case "bottom": return 0.75;
+    case "disappear": return 1;
+    default: return 0.5;
+  }
+};
+
+export const addWillChange = (item: ProxHTMLElement): void => {
+  item._willChangeCount = (item._willChangeCount ?? 0) + 1;
+  if (item._willChangeCount === 1)
+    gsap.set(item, { willChange: OPTIMIZED_WILL_CHANGE });
+};
+
+export const removeWillChange = (item: ProxHTMLElement): void => {
+  if ((item._willChangeCount ?? 0) > 0) item._willChangeCount!--;
+  if (item._willChangeCount === 0)
+    gsap.set(item, { willChange: "auto" });
+};
+</file>
+
+<file path="src/main.tsx">
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
+</file>
+
+<file path="public/sitemap.xml">
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <url>
+    <loc>https://z-proximity-engine.vercel.app/</loc>
+    <lastmod>2026-05-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://z-proximity-engine.vercel.app/#vision</loc>
+    <lastmod>2026-05-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://z-proximity-engine.vercel.app/#presets</loc>
+    <lastmod>2026-05-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://z-proximity-engine.vercel.app/#implementation</loc>
+    <lastmod>2026-05-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://z-proximity-engine.vercel.app/#gamebox</loc>
+    <lastmod>2026-05-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>
+</file>
+
+<file path="src/lib/index.ts">
+export * from './types';
+export * from './constants';
+export * from './utils';
+export * from './hooks';
+export * from './Proximity';
+export * from './ProximityText';
+export * from './ProximityContext';
+</file>
+
+<file path="src/lib/ProximityContext.tsx">
+import React, { createContext, useContext, ReactNode } from "react";
+
+export interface GlobalProximityConfig {
+  defaultFont?: string;
+}
+
+const ProximityContext = createContext<GlobalProximityConfig>({
+  defaultFont: "sans-serif",
+});
+
+interface ProximityProviderProps {
+  children: ReactNode;
+  config?: GlobalProximityConfig;
+}
+
+export const ProximityProvider: React.FC<ProximityProviderProps> = ({ children, config }) => {
+  return (
+    <ProximityContext.Provider value={{ ...config }}>
+      {children}
+    </ProximityContext.Provider>
+  );
+};
+
+export const useProximityConfig = () => useContext(ProximityContext);
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "gsap"],
+    "allowImportingTsExtensions": true,
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path=".github/changelog_config.json">
+{
+  "categories": [
+    {
+      "title": "## 🚀 New Features",
+      "labels": ["feat", "feature"],
+      "patterns": ["feat:.*", "feat\\(.*", "feature:.*"]
+    },
+    {
+      "title": "## 🐛 Bug Fixes",
+      "labels": ["fix", "bug"],
+      "patterns": ["fix:.*", "fix\\(.*", "bug:.*"]
+    },
+    {
+      "title": "## ⚡ Performance",
+      "labels": ["perf", "optimization"],
+      "patterns": ["perf:.*", "optimization:.*"]
+    },
+    {
+      "title": "## 🔧 Maintenance",
+      "labels": ["chore", "refactor"],
+      "patterns": ["chore:.*", "refactor:.*", "style:.*"]
+    }
+  ],
+  "ignore_labels": ["ignore", "skip-chane-log"],
+  "template": "${{CHANGELOG}}",
+  "pr_template": "- ${{TITLE}}",
+  "empty_template": "## 🚀 What's Changed\n- Minor updates and performance improvements.",
+  "tag_resolver": {
+    "method": "semver"
+  },
+  "base_branches": ["main", "master"]
+}
+</file>
+
+<file path="src/components/Gamebox.tsx">
+import { useState, useMemo, useEffect } from 'react';
+import DOMPurify from 'dompurify';
+import { Proximity, ProximityText } from '../lib';
+import { 
+  Zap, Type, MousePointer2, RefreshCw, AlertCircle, Code2 
+} from 'lucide-react';
+
+const INITIAL_PROX = `<Proximity
+  preset="scale-magnetic"
+  reach={2.5}
+  scale={[1, 1.5]}
+  magnetic={[0, 0.4]}
+  ease="bouncy"
+>
+  <div class="flex flex-wrap justify-center gap-6">
+    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">1</div>
+    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">2</div>
+    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">3</div>
+  </div>
+</Proximity>`;
+
+const INITIAL_TEXT = `<ProximityText
+  text="VOID & SOUL"
+  preset="cipher-opacity-weight"
+  reach={2}
+  splitBy="word"
+  cipher={[0, 1]}
+  textClassName="text-5xl font-black italic tracking-tighter"
+  style={{ color: 'var(--text-color)' }}
+/>`;
+
+export default function Gamebox() {
+  const [code, setCode] = useState(INITIAL_PROX);
+  const [debouncedCode, setDebouncedCode] = useState(INITIAL_PROX);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedCode(code);
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [code]);
+  // Safely evaluates numbers, arrays, strings, and objects (handles double braces safely)
+  const parseProps = (codeString: string) => {
+    const props: any = {};
+    const regex = /([a-zA-Z0-9_]+)\s*=\s*({[\s\S]*?}|"[\s\S]*?"|'[\s\S]*?')/g;
+    let match;
+
+    while ((match = regex.exec(codeString)) !== null) {
+      const key = match[1];
+      let rawValue = match[2];
+
+      // Safe fallback: If the regex cuts off a double-brace style={{...}}, find the end
+      if (rawValue.startsWith('{{') && !rawValue.endsWith('}}')) {
+        const remainingPart = codeString.slice(regex.lastIndex);
+        const secondBraceIndex = remainingPart.indexOf('}');
+        if (secondBraceIndex !== -1) {
+          rawValue += remainingPart.slice(0, secondBraceIndex + 1);
+          regex.lastIndex += secondBraceIndex + 1;
+        }
+      }
+
+      try {
+        if (rawValue.startsWith('{')) {
+          const expression = rawValue.slice(1, -1).trim();
+          // Evaluate standard JS objects/numbers/arrays safely locally
+          props[key] = new Function(`return (${expression})`)();
+        } else {
+          // Remove wrapping quotes for standard strings
+          props[key] = rawValue.slice(1, -1);
+        }
+      } catch (e) {
+        throw new Error(`Syntax error in prop: ${key}`);
+      }
+    }
+    return props;
+  };
+
+  const parsedData = useMemo(() => {
+    try {
+      const isText = debouncedCode.includes('<ProximityText');
+      const type = isText ? 'ProximityText' : 'Proximity';
+
+      let propsString = '';
+      let innerHTML = '';
+
+      if (isText) {
+        const textMatch = debouncedCode.match(/<ProximityText([\s\S]*?)\/?>/);
+        if (textMatch) propsString = textMatch[1];
+      } else {
+        // Extract everything inside the Proximity tags
+        const proxMatch = debouncedCode.match(/<Proximity([\s\S]*?)>([\s\S]*?)<\/Proximity>/);
+        if (proxMatch) {
+          propsString = proxMatch[1];
+          // 1. Convert React's className to standard HTML class
+          const rawHTML = proxMatch[2].replace(/className=/g, 'class=');
+          // 2. SANITIZE: Strip out malicious <script> tags or onerror= attacks
+          innerHTML = DOMPurify.sanitize(rawHTML, {
+            ALLOWED_TAGS: ['div', 'span', 'img', 'svg', 'path', 'button', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'br'],
+            ALLOWED_ATTR: ['class', 'id', 'src', 'alt', 'href', 'style', 'd', 'viewBox', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin'],
+          });
+        } else {
+          throw new Error("Missing <Proximity> or </Proximity> tags.");
+        }
+      }
+
+      const props = parseProps(propsString);
+      setError(null);
+      return { type, props, innerHTML };
+    } catch (e: any) {
+      setError(e.message || "Parsing error: Check your JSX structure.");
+      return null;
+    }
+  }, [debouncedCode]);
+
+  return (
+    <section id="gamebox" className="w-full border-b border-[var(--border-color)] bg-[var(--bg-color)]">
+      <div className="flex flex-col md:flex-row items-center justify-between p-10 border-b border-[var(--border-color)] gap-6">
+        <div className="flex items-center gap-6">
+          <div className="bg-[var(--text-color)] text-[var(--bg-color)] p-3 rounded-sm">
+            <Zap size={20} />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-50 block mb-1">04 / Sandbox</span>
+            <h2 className="text-2xl font-black font-sans italic tracking-tighter">The Gamebox</h2>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setCode(INITIAL_PROX)}
+            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'Proximity' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+          >
+            <MousePointer2 size={14} /> &lt;Proximity /&gt;
+          </button>
+          <button 
+            onClick={() => setCode(INITIAL_TEXT)}
+            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'ProximityText' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+          >
+            <Type size={14} /> &lt;ProximityText /&gt;
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row min-h-[600px]">
+        {/* Codespace */}
+        <div className="lg:w-1/2 flex flex-col border-r border-[var(--border-color)] bg-black/[0.02] dark:bg-white/[0.02]">
+          <div className="px-6 py-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-color)]">
+            <div className="flex items-center gap-2">
+              <Code2 size={14} className="opacity-40" />
+              <span className="text-[10px] font-mono uppercase font-bold opacity-40">Live Component Editor</span>
+            </div>
+            {error && <span className="text-[9px] text-red-500 font-bold tracking-widest uppercase">Syntax Error</span>}
+          </div>
+          <textarea
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            spellCheck={false}
+            className="flex-1 p-10 font-mono text-[12px] bg-transparent outline-none resize-none leading-relaxed text-[var(--text-color)]"
+            style={{ fontFamily: "'JetBrains Mono', 'Cairo', monospace" }}
+          />
+        </div>
+
+        {/* Viewport */}
+        <div className="lg:w-1/2 flex flex-col relative mono-grid min-h-[450px]">
+          <div className="absolute top-8 left-8 z-10 flex gap-2">
+            <button 
+              onClick={() => setCode(parsedData?.type === 'Proximity' ? INITIAL_PROX : INITIAL_TEXT)}
+              className="p-3 border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+              title="Reset Code"
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center p-12 w-full">
+            {!error && parsedData ? (
+              parsedData.type === "Proximity" ? (
+                <Proximity {...parsedData.props} key={debouncedCode}>
+                  <div 
+                    className="w-full flex items-center justify-center"
+                    dangerouslySetInnerHTML={{ __html: parsedData.innerHTML }} 
+                  />
+                </Proximity>
+              ) : (
+                <ProximityText {...parsedData.props} key={debouncedCode} />
+              )
+            ) : (
+              <div className="bg-red-500/10 border border-red-500/20 p-8 rounded max-w-xs text-center">
+                <AlertCircle className="text-red-500 mx-auto mb-3" />
+                <p className="text-red-500 text-[11px] font-mono leading-relaxed">{error}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 border-t border-[var(--border-color)] text-center bg-[var(--bg-color)]">
+            <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-30">
+              Pointer-Driven Simulation
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+</file>
+
 <file path="src/components/PresetsSection.tsx">
 import React, { useState } from 'react';
 import { Proximity, ProximityText } from '../lib';
@@ -234,7 +645,7 @@ const PresetCard = ({
              preset={preset as any}
              fontFamily="'Source Serif 4', serif"
              style={{ fontStyle: 'italic' }}
-             textClassName="text-3xl font-normal font-serif italic tracking-widest"
+             textClassName="text-4xl font-normal font-serif italic tracking-widest font-[48px]"
              {...config}
           />
         ) : (
@@ -295,6 +706,7 @@ export default function PresetsSection() {
               <PresetCard preset="cipher" title="Cipher" description="Dynamic text decryption as cursor enters reach." config={{ cipher:[0, 1] }} viewMode={viewMode} splitMode={splitMode} />
               <PresetCard preset="weight" title="Weight" description="Variable font-weight modulation from Thin to Black." config={{ weight:[100, 900] }} viewMode={viewMode} splitMode={splitMode} />
               <PresetCard preset="letterSpacing" title="Letter Spacing" description="Adjusts text tracking width dynamically." config={{ letterSpacing: [-0.05, 0.3] }} viewMode={viewMode} splitMode={splitMode} />
+              <PresetCard preset="fillText" title="Fill Text" description="Text starts hollow then filled up." viewMode={viewMode} splitMode={splitMode} />
             </>
           )}
 
@@ -307,10 +719,10 @@ export default function PresetsSection() {
           <PresetCard preset="repel" title="Repel" description="Active avoidance physics pushing away from pointer." config={{ repel: [0, 0.4] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="opacity" title="Opacity" description="Visibility modulation for ghosting and focus effects." config={{ opacity:[0.1, 1] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="reveal" title="Hover Reveal" description="Starts hidden. Slides up and fades in seamlessly as the cursor approaches." viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="cycle" title="Cycle" description="Starts resting. Slides up and teleport down" config={{duration: 0.5}} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="cycleSide" title="CycleSide" description="Starts resting. Slides left and teleport from the right to rest again" config={{duration: 0.5}} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="glow" title="Drop Glow" description="Dynamic shadow spread driven by proximity." config={{ glow: [0, 30] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="brightness" title="Brightness" description="Modulates CSS brightness filter." config={{ brightness: [0.5, 1.5] }} viewMode={viewMode} splitMode={splitMode} />
-          <PresetCard preset="contrast" title="Contrast" description="Sharpens and deepens contrast." config={{ contrast: [0.5, 2] }} viewMode={viewMode} splitMode={splitMode} />
-          <PresetCard preset="grayScale" title="Grayscale" description="Fades to black & white or vibrant color." config={{ grayScale: [1, 0] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="color" title="Color Shift" description="Interpolates text color dynamically." config={{ color: ["var(--text-color)", "#3b82f6"] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="background" title="Bg Morph" description="Shifts element background color." config={{ background: ["transparent", "rgba(59, 130, 246, 0.3)"] }} viewMode={viewMode} splitMode={splitMode} />
         </div>
@@ -345,6 +757,93 @@ export default function PresetsSection() {
       </div>
     </section>
   );
+}
+</file>
+
+<file path="src/index.css">
+@import "tailwindcss";
+
+@theme {
+  --font-arabic: "Cairo";
+  --font-sans: "Bricolage Grotesque", "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Source Serif 4", serif;
+}
+
+@layer base {
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #0c0c0c;
+    --border-color: #0c0c0c;
+    --grid-dot: #d1d5db; /* Darkened dots for visibility */
+  }
+
+  .dark {
+    --bg-color: #000000;
+    --text-color: #f8fafc;
+    --border-color: #f8fafc;
+    --grid-dot: #1f2937;
+  }
+
+  body {
+    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  * {
+    @apply border-[var(--border-color)];
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  .prox-part {
+    transition: none !important;
+  }
+}
+
+.mono-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@layer utilities {
+  .smooth-strike {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-strike::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-strike:hover::after {
+    width: 100%;
+  }
+
+  .smooth-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-underline:hover::after {
+    width: 100%;
+  }
 }
 </file>
 
@@ -638,20 +1137,6 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
           item.style.backgroundImage = "radial-gradient(circle at calc(var(--prox-x, 50) * 1%) calc(var(--prox-y, 50) * 1%), var(--prox-fill-color, var(--prox-original-color)) calc(var(--prox-radius, 0) * 1%), transparent calc(var(--prox-radius, 0) * 1%))";
           item.style.backgroundRepeat = "no-repeat";
         }
-
-        if (itemPresetStr.includes("color")) {
-          const bounds = (lc?.color ?? mergedBounds.color ?? PRESET_DEFAULTS.color) as [string, string];
-          if (item._colorTween) item._colorTween.kill();
-          item._colorTween = gsap.fromTo(item, { color: bounds[0] }, { color: bounds[1], paused: true, ease: "none" });
-        }
-        
-        if (itemPresetStr.includes("background")) {
-          const bounds = (lc?.background ?? mergedBounds.background ?? PRESET_DEFAULTS.background) as [string, string];
-          const safeBase = bounds[0] === "transparent" ? "rgba(255,255,255,0)" : bounds[0];
-          const safeMax = bounds[1] === "transparent" ? "rgba(255,255,255,0)" : bounds[1];
-          if (item._bgTween) item._bgTween.kill();
-          item._bgTween = gsap.fromTo(item, { backgroundColor: safeBase }, { backgroundColor: safeMax, paused: true, ease: "none" });
-        }
         
         item._quickTos = {};
         item._scrollState = "resting";
@@ -661,12 +1146,6 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
         QUICK_TO_PROPS.forEach((prop) => {
           item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
         });
-        if (item._colorTween) {
-          item._quickTos!["color"] = gsap.quickTo(item._colorTween, "progress", { duration: dur, ease: ez });
-        }
-        if (item._bgTween) {
-          item._quickTos!["backgroundColor"] = gsap.quickTo(item._bgTween, "progress", { duration: dur, ease: ez });
-        }
       });
 
       statesRef.current = itemsRef.current.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
@@ -742,158 +1221,171 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
     resizeObserver.observe(document.body);
 
     const applyVars = (
-          item: ProxHTMLElement, 
-          key: string, 
-          vars: gsap.TweenVars, 
-          dur: number, 
-          del: number, 
-          ez: string
-        ): void => {
-          const needsGsapTo =
-            key === "cipher" ||
-            key === "reveal" ||
-            key === "cycle" ||
-            key === "cycleSide" ||
-            key === "scroll" ||
-            key === "custom" ||
-            key === "customStartEnd" ||
-            del > 0 ||
-            !!activeTimeline?.[key];
+      item: ProxHTMLElement, 
+      key: string, 
+      vars: gsap.TweenVars, 
+      dur: number, 
+      del: number, 
+      ez: string
+    ): void => {
+      const needsGsapTo =
+        key === "cipher" ||
+        key === "reveal" ||
+        key === "scroll" ||
+        key === "cycle" ||
+        key === "cycleSide" ||
+        key === "custom" ||
+        key === "customStartEnd" ||
+        del > 0 ||
+        !!activeTimeline?.[key];
     
-          if (needsGsapTo) {
-            if (key === "scroll" || key === "cycle") {
-              const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
-              const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
-              const currentState = item._scrollState || "resting";
-              
-              if (shouldCycle && currentState !== "hovered") {
-                item._scrollState = "hovered";
-                gsap.killTweensOf(item, "yPercent,clipPath");
-                
-                gsap.to(item, {
-                  yPercent: -travel, 
-                  clipPath: `inset(${travel}% 0% 0% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` },
-                      { 
-                        yPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              } else if (!shouldCycle && currentState === "hovered") {
-                item._scrollState = "resting";
-                gsap.killTweensOf(item, "yPercent,clipPath");
-                
-                gsap.to(item, {
-                  yPercent: travel, 
-                  clipPath: `inset(0% 0% ${travel}% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
-                      { 
-                        yPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              }
-              return;
-            }
-    
-            if (key === "cycleSide") {
-              const shouldCycle = vars.proxCycleSide === 1;
-              const travel = vars.proxCycleSideTravel || 100;
-              const currentState = item._scrollState || "resting";
-              
-              if (shouldCycle && currentState !== "hovered") {
-                item._scrollState = "hovered";
-                gsap.killTweensOf(item, "xPercent,clipPath");
-                
-                gsap.to(item, {
-                  xPercent: -travel, 
-                  clipPath: `inset(0% 0% 0% ${travel}%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` },
-                      { 
-                        xPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              } else if (!shouldCycle && currentState === "hovered") {
-                item._scrollState = "resting";
-                gsap.killTweensOf(item, "xPercent,clipPath");
-                
-                gsap.to(item, {
-                  xPercent: travel, 
-                  clipPath: `inset(0% ${travel}% 0% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
-                      { 
-                        xPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              }
-              return;
-            }
+      if (needsGsapTo) {
+        if (key === "scroll" || key === "cycle") {
+          const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
+          const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
             gsap.to(item, {
-              ...vars, 
-              duration: dur, 
+              yPercent: -travel, 
+              clipPath: `inset(${travel}% 0% 0% 0%)`, 
+              duration: dur * 0.5, 
               delay: del, 
               ease: ez, 
               overwrite: "auto",
-              onUpdate: key === "cipher" ? cipherUpdate : undefined,
-            });
-          } else {
-            for (const cssProp in vars) {
-              const qt = item._quickTos?.[cssProp];
-              if (qt) {
-                qt(vars[cssProp] as any);
-              } else {
-                gsap.to(item, { 
-                  [cssProp]: vars[cssProp], 
-                  duration: dur, 
-                  ease: ez, 
-                  overwrite: "auto" 
-                });
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` },
+                  { 
+                    yPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
               }
-            }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
+            gsap.to(item, {
+              yPercent: travel, 
+              clipPath: `inset(0% 0% ${travel}% 0%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
+                  { 
+                    yPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
           }
-        };
+          return;
+        }
+    
+        if (key === "cycleSide") {
+          const shouldCycle = vars.proxCycleSide === 1;
+          const travel = vars.proxCycleSideTravel || 100;
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            
+            gsap.to(item, {
+              xPercent: -travel, 
+              clipPath: `inset(0% 0% 0% ${travel}%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` },
+                  { 
+                    xPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            
+            gsap.to(item, {
+              xPercent: travel, 
+              clipPath: `inset(0% ${travel}% 0% 0%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
+                  { 
+                    xPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
+          }
+          return;
+        }
+    
+        gsap.to(item, {
+          ...vars, 
+          duration: dur, 
+          delay: del, 
+          ease: ez, 
+          overwrite: "auto",
+          onUpdate: key === "cipher" ? cipherUpdate : undefined,
+        });
+    
+      } else {
+        // 🔥 THE BATCHING FIX: Collects all non-quickTo properties and fires ONE tween per frame
+        const nonQuickVars: Record<string, any> = {};
+        let hasNonQuick = false;
+    
+        for (const cssProp in vars) {
+          const qt = item._quickTos?.[cssProp];
+          if (qt) {
+            // If it has a quickTo, use the ultra-fast pipeline
+            qt(vars[cssProp] as any);
+          } else {
+            // Otherwise, batch it to prevent overlap/overwrite lag
+            nonQuickVars[cssProp] = vars[cssProp];
+            hasNonQuick = true;
+          }
+        }
+    
+        if (hasNonQuick) {
+          gsap.to(item, {
+            ...nonQuickVars, 
+            duration: dur, 
+            ease: ez, 
+            overwrite: "auto" 
+          });
+        }
+      }
+    };
 
     if (document.fonts) document.fonts.ready.then(initItems); else initItems();
 
@@ -962,13 +1454,14 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
         if (!b) continue;
         const dx = localX - b.x;
         const dy = localY - b.y;
+        const distX = Math.max(0, Math.abs(dx) - b.w / 2);
+        const distY = Math.max(0, Math.abs(dy) - b.h / 2);
+        const dBox = Math.sqrt(distX * distX + distY * distY);
         const inside = localX >= b.left && localX <= b.right && localY >= b.top && localY <= b.bottom;
         const offScreen = (itemsRef.current[i] as ProxHTMLElement)._isProxVisible === false;
-        
-        const d = isBlocked || (activeExplicit && !inside) || offScreen ? Infinity : Math.sqrt(dx * dx + dy * dy);
-                    
+        const d = isBlocked || (activeExplicit && !inside) || offScreen ? Infinity : dBox;          
         if (d < minDist) { minDist = d; nearestIndex = i; }
-        dData[i] = { d, dx, dy };
+        dData[i] = { d, dx, dy }; 
       }
 
       for (const i of toCheck) {
@@ -1423,19 +1916,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
           item.style.backgroundRepeat = "no-repeat";
         }
 
-        if (itemPresetStr.includes("color")) {
-          const bounds = (lc?.color ?? mergedBounds.color ?? PRESET_DEFAULTS.color) as [string, string];
-          if (item._colorTween) item._colorTween.kill();
-          item._colorTween = gsap.fromTo(item, { color: bounds[0] }, { color: bounds[1], paused: true, ease: "none" });
-        }
-        
-        if (itemPresetStr.includes("background")) {
-          const bounds = (lc?.background ?? mergedBounds.background ?? PRESET_DEFAULTS.background) as [string, string];
-          const safeBase = bounds[0] === "transparent" ? "rgba(255,255,255,0)" : bounds[0];
-          const safeMax = bounds[1] === "transparent" ? "rgba(255,255,255,0)" : bounds[1];
-          if (item._bgTween) item._bgTween.kill();
-          item._bgTween = gsap.fromTo(item, { backgroundColor: safeBase }, { backgroundColor: safeMax, paused: true, ease: "none" });
-        }
         
         item._quickTos = {};
         item._scrollState = "resting";
@@ -1445,12 +1925,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
         QUICK_TO_PROPS.forEach((prop) => {
           item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
         });
-        if (item._colorTween) {
-          item._quickTos!["color"] = gsap.quickTo(item._colorTween, "progress", { duration: dur, ease: ez });
-        }
-        if (item._bgTween) {
-          item._quickTos!["backgroundColor"] = gsap.quickTo(item._bgTween, "progress", { duration: dur, ease: ez });
-        }
       });
 
       statesRef.current = itemsRef.current.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
@@ -1544,163 +2018,168 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
     };
 
     const applyVars = (
-          item: ProxHTMLElement, 
-          key: string, 
-          vars: gsap.TweenVars, 
-          dur: number, 
-          del: number, 
-          ez: string
-        ): void => {
-          const needsGsapTo =
-            key === "cipher" ||
-            key === "reveal" ||
-            key === "scroll" ||
-            key === "cycle" ||
-            key === "cycleSide" ||
-            key === "custom" ||
-            key === "customStartEnd" ||
-            del > 0 ||
-            !!activeTimeline?.[key];
+      item: ProxHTMLElement, 
+      key: string, 
+      vars: gsap.TweenVars, 
+      dur: number, 
+      del: number, 
+      ez: string
+    ): void => {
+      const needsGsapTo =
+        key === "cipher" ||
+        key === "reveal" ||
+        key === "scroll" ||
+        key === "cycle" ||
+        key === "cycleSide" ||
+        key === "custom" ||
+        key === "customStartEnd" ||
+        del > 0 ||
+        !!activeTimeline?.[key];
     
-          if (needsGsapTo) {
-            if (key === "scroll" || key === "cycle") {
-              const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
-              const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
-              const currentState = item._scrollState || "resting";
-              
-              if (shouldCycle && currentState !== "hovered") {
-                item._scrollState = "hovered";
-                gsap.killTweensOf(item, "yPercent,clipPath");
-                
-                // Phase 1: Slide Up and Out (Masked)
-                gsap.to(item, {
-                  yPercent: -travel, 
-                  clipPath: `inset(${travel}% 0% 0% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    // Phase 2: Teleport to Bottom and Slide Up to Center
-                    gsap.fromTo(item,
-                      { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` },
-                      { 
-                        yPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              } else if (!shouldCycle && currentState === "hovered") {
-                item._scrollState = "resting";
-                gsap.killTweensOf(item, "yPercent,clipPath");
-                
-                // Phase 1 (Reverse): Slide Down and Out
-                gsap.to(item, {
-                  yPercent: travel, 
-                  clipPath: `inset(0% 0% ${travel}% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    // Phase 2 (Reverse): Teleport to Top and Slide Down to Center
-                    gsap.fromTo(item,
-                      { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
-                      { 
-                        yPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              }
-              return;
-            }
-    
-            if (key === "cycleSide") {
-              const shouldCycle = vars.proxCycleSide === 1;
-              const travel = vars.proxCycleSideTravel || 100;
-              const currentState = item._scrollState || "resting";
-              
-              if (shouldCycle && currentState !== "hovered") {
-                item._scrollState = "hovered";
-                gsap.killTweensOf(item, "xPercent,clipPath");
-                
-                gsap.to(item, {
-                  xPercent: -travel, 
-                  clipPath: `inset(0% 0% 0% ${travel}%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` },
-                      { 
-                        xPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              } else if (!shouldCycle && currentState === "hovered") {
-                item._scrollState = "resting";
-                gsap.killTweensOf(item, "xPercent,clipPath");
-                
-                gsap.to(item, {
-                  xPercent: travel, 
-                  clipPath: `inset(0% ${travel}% 0% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
-                      { 
-                        xPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              }
-              return;
-            }
-    
+      if (needsGsapTo) {
+        if (key === "scroll" || key === "cycle") {
+          const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
+          const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
             gsap.to(item, {
-              ...vars, 
-              duration: dur, 
+              yPercent: -travel, 
+              clipPath: `inset(${travel}% 0% 0% 0%)`, 
+              duration: dur * 0.5, 
               delay: del, 
               ease: ez, 
               overwrite: "auto",
-              onUpdate: key === "cipher" ? cipherUpdate : undefined,
-            });
-          } else {
-            for (const cssProp in vars) {
-              const qt = item._quickTos?.[cssProp];
-              if (qt) {
-                qt(vars[cssProp] as any);
-              } else {
-                gsap.to(item, { 
-                  [cssProp]: vars[cssProp], 
-                  duration: dur, 
-                  ease: ez, 
-                  overwrite: "auto" 
-                });
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` },
+                  { 
+                    yPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
               }
-            }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
+            gsap.to(item, {
+              yPercent: travel, 
+              clipPath: `inset(0% 0% ${travel}% 0%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
+                  { 
+                    yPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
           }
-        };
+          return;
+        }
+    
+        if (key === "cycleSide") {
+          const shouldCycle = vars.proxCycleSide === 1;
+          const travel = vars.proxCycleSideTravel || 100;
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            
+            gsap.to(item, {
+              xPercent: -travel, 
+              clipPath: `inset(0% 0% 0% ${travel}%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` },
+                  { 
+                    xPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            
+            gsap.to(item, {
+              xPercent: travel, 
+              clipPath: `inset(0% ${travel}% 0% 0%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
+                  { 
+                    xPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
+          }
+          return;
+        }
+    
+        gsap.to(item, {
+          ...vars, 
+          duration: dur, 
+          delay: del, 
+          ease: ez, 
+          overwrite: "auto",
+          onUpdate: key === "cipher" ? cipherUpdate : undefined,
+        });
+    
+      } else {
+        const nonQuickVars: Record<string, any> = {};
+        let hasNonQuick = false;
+    
+        for (const cssProp in vars) {
+          const qt = item._quickTos?.[cssProp];
+          if (qt) {
+            qt(vars[cssProp] as any);
+          } else {
+            nonQuickVars[cssProp] = vars[cssProp];
+            hasNonQuick = true;
+          }
+        }
+    
+        if (hasNonQuick) {
+          gsap.to(item, {
+            ...nonQuickVars, 
+            duration: dur, 
+            ease: ez, 
+            overwrite: "auto" 
+          });
+        }
+      }
+    };
 
     const setupScroll = (): void => {
       if (isCancelled) return;
@@ -1920,315 +2399,6 @@ export const ProximityScroll: React.FC<ProximityProps> = ({
 };
 </file>
 
-<file path="src/lib/hooks.ts">
-import { useRef } from "react";
-import { deepEqual } from "./utils";
-
-export function useDeepMemo<T>(value: T): T {
-  const ref = useRef<T>(value);
-  if (!deepEqual(ref.current, value)) ref.current = value;
-  return ref.current;
-}
-</file>
-
-<file path="src/lib/utils/proximityHelpers.ts">
-import gsap from "gsap";
-import { ProxHTMLElement } from "../types";
-import { OPTIMIZED_WILL_CHANGE } from "../constants";
-
-export const parseScrollPosition = (pos: string, isStart: boolean): string => {
-  if (pos === "appear") return "top bottom";
-  if (pos === "disappear") return "bottom top";
-  const m: Record<string, string> = { top: "top top", center: "center center", middle: "center center", bottom: "bottom bottom" };
-  return m[pos] ?? pos ?? (isStart ? "top bottom" : "bottom top");
-};
-
-export const getScrollFocusValue = (focus: string | number): number => {
-  if (typeof focus === "number") return focus / 100;
-  switch (focus) {
-    case "appear": return 0;
-    case "top": return 0.25;
-    case "middle":
-    case "center": return 0.5;
-    case "bottom": return 0.75;
-    case "disappear": return 1;
-    default: return 0.5;
-  }
-};
-
-export const addWillChange = (item: ProxHTMLElement): void => {
-  item._willChangeCount = (item._willChangeCount ?? 0) + 1;
-  if (item._willChangeCount === 1)
-    gsap.set(item, { willChange: OPTIMIZED_WILL_CHANGE });
-};
-
-export const removeWillChange = (item: ProxHTMLElement): void => {
-  if ((item._willChangeCount ?? 0) > 0) item._willChangeCount!--;
-  if (item._willChangeCount === 0)
-    gsap.set(item, { willChange: "auto" });
-};
-</file>
-
-<file path="src/main.tsx">
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
-</file>
-
-<file path="public/sitemap.xml">
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml"
-        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-  <url>
-    <loc>https://z-proximity-engine.vercel.app/</loc>
-    <lastmod>2026-05-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://z-proximity-engine.vercel.app/#vision</loc>
-    <lastmod>2026-05-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://z-proximity-engine.vercel.app/#presets</loc>
-    <lastmod>2026-05-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://z-proximity-engine.vercel.app/#implementation</loc>
-    <lastmod>2026-05-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://z-proximity-engine.vercel.app/#gamebox</loc>
-    <lastmod>2026-05-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-</urlset>
-</file>
-
-<file path="src/components/Gamebox.tsx">
-import { useState, useMemo, useEffect } from 'react';
-import DOMPurify from 'dompurify';
-import { Proximity, ProximityText } from '../lib';
-import { 
-  Zap, Type, MousePointer2, RefreshCw, AlertCircle, Code2 
-} from 'lucide-react';
-
-const INITIAL_PROX = `<Proximity
-  preset="scale-magnetic"
-  reach={2.5}
-  scale={[1, 1.5]}
-  magnetic={[0, 0.4]}
-  ease="bouncy"
->
-  <div class="flex flex-wrap justify-center gap-6">
-    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">1</div>
-    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">2</div>
-    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">3</div>
-  </div>
-</Proximity>`;
-
-const INITIAL_TEXT = `<ProximityText
-  text="VOID & SOUL"
-  preset="cipher-opacity-weight"
-  reach={2}
-  splitBy="word"
-  cipher={[0, 1]}
-  textClassName="text-5xl font-black italic tracking-tighter"
-  style={{ color: 'var(--text-color)' }}
-/>`;
-
-export default function Gamebox() {
-  const [code, setCode] = useState(INITIAL_PROX);
-  const [debouncedCode, setDebouncedCode] = useState(INITIAL_PROX);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-      const timer = setTimeout(() => {
-        setDebouncedCode(code);
-      }, 500);
-      return () => clearTimeout(timer);
-    }, [code]);
-  // Safely evaluates numbers, arrays, strings, and objects (handles double braces safely)
-  const parseProps = (codeString: string) => {
-    const props: any = {};
-    const regex = /([a-zA-Z0-9_]+)\s*=\s*({[\s\S]*?}|"[\s\S]*?"|'[\s\S]*?')/g;
-    let match;
-
-    while ((match = regex.exec(codeString)) !== null) {
-      const key = match[1];
-      let rawValue = match[2];
-
-      // Safe fallback: If the regex cuts off a double-brace style={{...}}, find the end
-      if (rawValue.startsWith('{{') && !rawValue.endsWith('}}')) {
-        const remainingPart = codeString.slice(regex.lastIndex);
-        const secondBraceIndex = remainingPart.indexOf('}');
-        if (secondBraceIndex !== -1) {
-          rawValue += remainingPart.slice(0, secondBraceIndex + 1);
-          regex.lastIndex += secondBraceIndex + 1;
-        }
-      }
-
-      try {
-        if (rawValue.startsWith('{')) {
-          const expression = rawValue.slice(1, -1).trim();
-          // Evaluate standard JS objects/numbers/arrays safely locally
-          props[key] = new Function(`return (${expression})`)();
-        } else {
-          // Remove wrapping quotes for standard strings
-          props[key] = rawValue.slice(1, -1);
-        }
-      } catch (e) {
-        throw new Error(`Syntax error in prop: ${key}`);
-      }
-    }
-    return props;
-  };
-
-  const parsedData = useMemo(() => {
-    try {
-      const isText = debouncedCode.includes('<ProximityText');
-      const type = isText ? 'ProximityText' : 'Proximity';
-
-      let propsString = '';
-      let innerHTML = '';
-
-      if (isText) {
-        const textMatch = debouncedCode.match(/<ProximityText([\s\S]*?)\/?>/);
-        if (textMatch) propsString = textMatch[1];
-      } else {
-        // Extract everything inside the Proximity tags
-        const proxMatch = debouncedCode.match(/<Proximity([\s\S]*?)>([\s\S]*?)<\/Proximity>/);
-        if (proxMatch) {
-          propsString = proxMatch[1];
-          // 1. Convert React's className to standard HTML class
-          const rawHTML = proxMatch[2].replace(/className=/g, 'class=');
-          // 2. SANITIZE: Strip out malicious <script> tags or onerror= attacks
-          innerHTML = DOMPurify.sanitize(rawHTML, {
-            ALLOWED_TAGS: ['div', 'span', 'img', 'svg', 'path', 'button', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'br'],
-            ALLOWED_ATTR: ['class', 'id', 'src', 'alt', 'href', 'style', 'd', 'viewBox', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin'],
-          });
-        } else {
-          throw new Error("Missing <Proximity> or </Proximity> tags.");
-        }
-      }
-
-      const props = parseProps(propsString);
-      setError(null);
-      return { type, props, innerHTML };
-    } catch (e: any) {
-      setError(e.message || "Parsing error: Check your JSX structure.");
-      return null;
-    }
-  }, [debouncedCode]);
-
-  return (
-    <section id="gamebox" className="w-full border-b border-[var(--border-color)] bg-[var(--bg-color)]">
-      <div className="flex flex-col md:flex-row items-center justify-between p-10 border-b border-[var(--border-color)] gap-6">
-        <div className="flex items-center gap-6">
-          <div className="bg-[var(--text-color)] text-[var(--bg-color)] p-3 rounded-sm">
-            <Zap size={20} />
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-50 block mb-1">04 / Sandbox</span>
-            <h2 className="text-2xl font-black font-sans italic tracking-tighter">The Gamebox</h2>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setCode(INITIAL_PROX)}
-            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'Proximity' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-          >
-            <MousePointer2 size={14} /> &lt;Proximity /&gt;
-          </button>
-          <button 
-            onClick={() => setCode(INITIAL_TEXT)}
-            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'ProximityText' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-          >
-            <Type size={14} /> &lt;ProximityText /&gt;
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row min-h-[600px]">
-        {/* Codespace */}
-        <div className="lg:w-1/2 flex flex-col border-r border-[var(--border-color)] bg-black/[0.02] dark:bg-white/[0.02]">
-          <div className="px-6 py-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-color)]">
-            <div className="flex items-center gap-2">
-              <Code2 size={14} className="opacity-40" />
-              <span className="text-[10px] font-mono uppercase font-bold opacity-40">Live Component Editor</span>
-            </div>
-            {error && <span className="text-[9px] text-red-500 font-bold tracking-widest uppercase">Syntax Error</span>}
-          </div>
-          <textarea
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            spellCheck={false}
-            className="flex-1 p-10 font-mono text-[12px] bg-transparent outline-none resize-none leading-relaxed text-[var(--text-color)]"
-          />
-        </div>
-
-        {/* Viewport */}
-        <div className="lg:w-1/2 flex flex-col relative mono-grid min-h-[450px]">
-          <div className="absolute top-8 left-8 z-10 flex gap-2">
-            <button 
-              onClick={() => setCode(parsedData?.type === 'Proximity' ? INITIAL_PROX : INITIAL_TEXT)}
-              className="p-3 border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all"
-              title="Reset Code"
-            >
-              <RefreshCw size={16} />
-            </button>
-          </div>
-
-          <div className="flex-1 flex items-center justify-center p-12 w-full">
-            {!error && parsedData ? (
-              parsedData.type === "Proximity" ? (
-                <Proximity {...parsedData.props} key={debouncedCode}>
-                  <div 
-                    className="w-full flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: parsedData.innerHTML }} 
-                  />
-                </Proximity>
-              ) : (
-                <ProximityText {...parsedData.props} key={debouncedCode} />
-              )
-            ) : (
-              <div className="bg-red-500/10 border border-red-500/20 p-8 rounded max-w-xs text-center">
-                <AlertCircle className="text-red-500 mx-auto mb-3" />
-                <p className="text-red-500 text-[11px] font-mono leading-relaxed">{error}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="p-6 border-t border-[var(--border-color)] text-center bg-[var(--bg-color)]">
-            <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-30">
-              Pointer-Driven Simulation
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-</file>
-
 <file path="src/lib/constants.ts">
 export const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
   scale: [1, 1.5],
@@ -2306,41 +2476,100 @@ export const ALEFS = /[\u0622\u0623\u0625\u0627]/;
 export const ZWJ = "\u200D";
 </file>
 
-<file path="src/lib/index.ts">
-export * from './types';
-export * from './constants';
-export * from './utils';
-export * from './hooks';
-export * from './Proximity';
-export * from './ProximityText';
-export * from './ProximityContext';
+<file path=".github/workflows/release.yml">
+name: "🚀 Professional CI/CD Release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # IMPORTANT: Gets all history so we can see the commits
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🛠️ Build Library
+        run: npm run build:lib
+
+      - name: 📦 Create NPM Package Asset (.tgz)
+        run: npm pack
+
+      # NEW: This step builds the changelog by looking at your commit prefixes
+      - name: 📝 Build Categorized Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        with:
+          configuration: ".github/changelog_config.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Use the changelog generated in the step above
+          body: |
+            ## 🌟 Official Release ${{ github.ref_name }}
+            
+            This version was automatically built and published by **ZED Studios** CI/CD pipeline.
+            
+            ${{ steps.build_changelog.outputs.changelog }}
+            
+            ---
+            **Maintained by [Youssef Zidan](https://yzportfolio.vercel.app)**
+          files: |
+            *.tgz
+          generate_release_notes: false # We are using our own builder now
+          name: "ZProximity Engine ${{ github.ref_name }} ⚡"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚀 Publish to NPM
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 </file>
 
-<file path="src/lib/ProximityContext.tsx">
-import React, { createContext, useContext, ReactNode } from "react";
-
-export interface GlobalProximityConfig {
-  defaultFont?: string;
-}
-
-const ProximityContext = createContext<GlobalProximityConfig>({
-  defaultFont: "sans-serif",
-});
-
-interface ProximityProviderProps {
-  children: ReactNode;
-  config?: GlobalProximityConfig;
-}
-
-export const ProximityProvider: React.FC<ProximityProviderProps> = ({ children, config }) => {
-  return (
-    <ProximityContext.Provider value={{ ...config }}>
-      {children}
-    </ProximityContext.Provider>
-  );
-};
-
-export const useProximityConfig = () => useContext(ProximityContext);
+<file path=".gitignore">
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.npmrc
+*.tgz
 </file>
 
 <file path="src/lib/types.ts">
@@ -2473,8 +2702,6 @@ export interface ProxHTMLElement extends HTMLElement {
   _isProxVisible?: boolean;
   _willChangeCount?: number;
   _scrollState?: "resting" | "hovered";
-  _colorTween?: gsap.core.Tween;
-  _bgTween?: gsap.core.Tween; 
 }
 
 export interface ItemCenter {
@@ -2626,12 +2853,16 @@ export const calculatePresetValues = (
         res.y = `${curValue}%`;
         res.clipPath = `inset(0% 0% ${curValue}% 0%)`;
         break;
-      case "color":
-        res.color = useBase ? 0 : intensity;
-        break;
-      case "background":
-        res.backgroundColor = useBase ? 0 : intensity;
-        break;
+        case "color": {
+          const [cBase, cMax] = bounds as [string, string];
+          res.color = useBase ? cBase : gsap.utils.interpolate(cBase, cMax, curIntensity);
+          break;
+        }
+        case "background": {
+          const [bgBase, bgMax] = bounds as [string, string];
+          res.backgroundColor = useBase ? bgBase : gsap.utils.interpolate(bgBase, bgMax, curIntensity);
+          break;
+        }
       case "scroll":
         res.proxScroll = curIntensity > 0.5 ? 1 : 0;
         res.proxScrollTravel = max;
@@ -2791,253 +3022,6 @@ export const doesSegmentConnectLeft = (seg: string) => {
   if (!baseStr) return false;
   return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
 };
-</file>
-
-<file path="tsconfig.json">
-{
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    "types": ["node", "gsap"],
-    "allowImportingTsExtensions": true,
-  },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
-}
-</file>
-
-<file path=".github/changelog_config.json">
-{
-  "categories": [
-    {
-      "title": "## 🚀 New Features",
-      "labels": ["feat", "feature"],
-      "patterns": ["feat:.*", "feat\\(.*", "feature:.*"]
-    },
-    {
-      "title": "## 🐛 Bug Fixes",
-      "labels": ["fix", "bug"],
-      "patterns": ["fix:.*", "fix\\(.*", "bug:.*"]
-    },
-    {
-      "title": "## ⚡ Performance",
-      "labels": ["perf", "optimization"],
-      "patterns": ["perf:.*", "optimization:.*"]
-    },
-    {
-      "title": "## 🔧 Maintenance",
-      "labels": ["chore", "refactor"],
-      "patterns": ["chore:.*", "refactor:.*", "style:.*"]
-    }
-  ],
-  "ignore_labels": ["ignore", "skip-chane-log"],
-  "template": "${{CHANGELOG}}",
-  "pr_template": "- ${{TITLE}}",
-  "empty_template": "## 🚀 What's Changed\n- Minor updates and performance improvements.",
-  "tag_resolver": {
-    "method": "semver"
-  },
-  "base_branches": ["main", "master"]
-}
-</file>
-
-<file path=".github/workflows/release.yml">
-name: "🚀 Professional CI/CD Release"
-
-on:
-  push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
-  id-token: write
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # IMPORTANT: Gets all history so we can see the commits
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: 📦 Install Dependencies
-        run: npm install
-
-      - name: 🛠️ Build Library
-        run: npm run build:lib
-
-      - name: 📦 Create NPM Package Asset (.tgz)
-        run: npm pack
-
-      # NEW: This step builds the changelog by looking at your commit prefixes
-      - name: 📝 Build Categorized Changelog
-        id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v5
-        with:
-          configuration: ".github/changelog_config.json"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📝 Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          # Use the changelog generated in the step above
-          body: |
-            ## 🌟 Official Release ${{ github.ref_name }}
-            
-            This version was automatically built and published by **ZED Studios** CI/CD pipeline.
-            
-            ${{ steps.build_changelog.outputs.changelog }}
-            
-            ---
-            **Maintained by [Youssef Zidan](https://yzportfolio.vercel.app)**
-          files: |
-            *.tgz
-          generate_release_notes: false # We are using our own builder now
-          name: "ZProximity Engine ${{ github.ref_name }} ⚡"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🚀 Publish to NPM
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-</file>
-
-<file path=".gitignore">
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-dist
-dist-ssr
-*.local
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.npmrc
-*.tgz
-</file>
-
-<file path="src/index.css">
-@import "tailwindcss";
-
-@theme {
-  --font-arabic: "Cairo";
-  --font-sans: "Bricolage Grotesque", "Cairo", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-serif: "Source Serif 4", serif;
-}
-
-@layer base {
-  :root {
-    --bg-color: #ffffff;
-    --text-color: #0c0c0c;
-    --border-color: #0c0c0c;
-    --grid-dot: #d1d5db; /* Darkened dots for visibility */
-  }
-
-  .dark {
-    --bg-color: #000000;
-    --text-color: #f8fafc;
-    --border-color: #f8fafc;
-    --grid-dot: #1f2937;
-  }
-
-  body {
-    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-  }
-
-  * {
-    @apply border-[var(--border-color)];
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
-  }
-
-  .prox-part {
-    transition: none !important;
-  }
-}
-
-.mono-grid {
-  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
-  background-size: 24px 24px;
-}
-
-@layer utilities {
-  .smooth-strike {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-strike::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 0;
-    height: 1.5px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-strike:hover::after {
-    width: 100%;
-  }
-
-  .smooth-underline {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-underline::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-underline:hover::after {
-    width: 100%;
-  }
-}
 </file>
 
 <file path="vite.config.ts">
@@ -5359,6 +5343,9 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
         padding: `${pTop} ${pRight} ${pBottom} ${pLeft}`,
         margin: `${mTop} ${mRight} ${mBottom} ${mLeft}`,
         textRendering: isArabic ? "optimizeLegibility" : undefined,
+        whiteSpace: "pre",
+        fontFeatureSettings: '"kern", "liga", "clig", "calt"',
+        WebkitFontSmoothing: "antialiased",
         letterSpacing: isArabic ? "normal" : undefined, 
       };
     };
@@ -5638,7 +5625,7 @@ export default function App() {
 
   return (
     <ReactLenis root ref={lenisRef} autoRaf={false} options={{ lerp: 0.1, duration: 1.5 }}>
-      <ProximityProvider config={{ defaultFont: "'Bricolage Grotesque', sans-serif" }}>
+      <ProximityProvider config={{ defaultFont: "'Bricolage Grotesque', 'Cairo', sans-serif" }}>
         <div className={`min-h-screen transition-colors duration-700 bg-[var(--bg-color)] text-[var(--text-color)] flex flex-col overflow-x-hidden selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black`}>
           
           <header className="border-b border-[var(--border-color)] flex flex-col lg:flex-row w-full z-50 bg-[var(--bg-color)] sticky top-0">
