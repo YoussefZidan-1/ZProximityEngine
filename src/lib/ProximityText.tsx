@@ -88,6 +88,9 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
         padding: `${pTop} ${pRight} ${pBottom} ${pLeft}`,
         margin: `${mTop} ${mRight} ${mBottom} ${mLeft}`,
         textRendering: isArabic ? "optimizeLegibility" : undefined,
+        whiteSpace: "pre",
+        fontFeatureSettings: '"kern", "liga", "clig", "calt"',
+        WebkitFontSmoothing: "antialiased",
         letterSpacing: isArabic ? "normal" : undefined, 
       };
     };

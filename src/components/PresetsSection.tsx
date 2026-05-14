@@ -27,7 +27,7 @@ const PresetCard = ({
              preset={preset as any}
              fontFamily="'Source Serif 4', serif"
              style={{ fontStyle: 'italic' }}
-             textClassName="text-3xl font-normal font-serif italic tracking-widest"
+             textClassName="text-4xl font-normal font-serif italic tracking-widest font-[48px]"
              {...config}
           />
         ) : (
@@ -88,6 +88,7 @@ export default function PresetsSection() {
               <PresetCard preset="cipher" title="Cipher" description="Dynamic text decryption as cursor enters reach." config={{ cipher:[0, 1] }} viewMode={viewMode} splitMode={splitMode} />
               <PresetCard preset="weight" title="Weight" description="Variable font-weight modulation from Thin to Black." config={{ weight:[100, 900] }} viewMode={viewMode} splitMode={splitMode} />
               <PresetCard preset="letterSpacing" title="Letter Spacing" description="Adjusts text tracking width dynamically." config={{ letterSpacing: [-0.05, 0.3] }} viewMode={viewMode} splitMode={splitMode} />
+              <PresetCard preset="fillText" title="Fill Text" description="Text starts hollow then filled up." viewMode={viewMode} splitMode={splitMode} />
             </>
           )}
 
@@ -100,10 +101,10 @@ export default function PresetsSection() {
           <PresetCard preset="repel" title="Repel" description="Active avoidance physics pushing away from pointer." config={{ repel: [0, 0.4] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="opacity" title="Opacity" description="Visibility modulation for ghosting and focus effects." config={{ opacity:[0.1, 1] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="reveal" title="Hover Reveal" description="Starts hidden. Slides up and fades in seamlessly as the cursor approaches." viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="cycle" title="Cycle" description="Starts resting. Slides up and teleport down" config={{duration: 0.5}} viewMode={viewMode} splitMode={splitMode} />
+          <PresetCard preset="cycleSide" title="CycleSide" description="Starts resting. Slides left and teleport from the right to rest again" config={{duration: 0.5}} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="glow" title="Drop Glow" description="Dynamic shadow spread driven by proximity." config={{ glow: [0, 30] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="brightness" title="Brightness" description="Modulates CSS brightness filter." config={{ brightness: [0.5, 1.5] }} viewMode={viewMode} splitMode={splitMode} />
-          <PresetCard preset="contrast" title="Contrast" description="Sharpens and deepens contrast." config={{ contrast: [0.5, 2] }} viewMode={viewMode} splitMode={splitMode} />
-          <PresetCard preset="grayScale" title="Grayscale" description="Fades to black & white or vibrant color." config={{ grayScale: [1, 0] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="color" title="Color Shift" description="Interpolates text color dynamically." config={{ color: ["var(--text-color)", "#3b82f6"] }} viewMode={viewMode} splitMode={splitMode} />
           <PresetCard preset="background" title="Bg Morph" description="Shifts element background color." config={{ background: ["transparent", "rgba(59, 130, 246, 0.3)"] }} viewMode={viewMode} splitMode={splitMode} />
         </div>

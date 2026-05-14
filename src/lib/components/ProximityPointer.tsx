@@ -287,20 +287,6 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
           item.style.backgroundImage = "radial-gradient(circle at calc(var(--prox-x, 50) * 1%) calc(var(--prox-y, 50) * 1%), var(--prox-fill-color, var(--prox-original-color)) calc(var(--prox-radius, 0) * 1%), transparent calc(var(--prox-radius, 0) * 1%))";
           item.style.backgroundRepeat = "no-repeat";
         }
-
-        if (itemPresetStr.includes("color")) {
-          const bounds = (lc?.color ?? mergedBounds.color ?? PRESET_DEFAULTS.color) as [string, string];
-          if (item._colorTween) item._colorTween.kill();
-          item._colorTween = gsap.fromTo(item, { color: bounds[0] }, { color: bounds[1], paused: true, ease: "none" });
-        }
-        
-        if (itemPresetStr.includes("background")) {
-          const bounds = (lc?.background ?? mergedBounds.background ?? PRESET_DEFAULTS.background) as [string, string];
-          const safeBase = bounds[0] === "transparent" ? "rgba(255,255,255,0)" : bounds[0];
-          const safeMax = bounds[1] === "transparent" ? "rgba(255,255,255,0)" : bounds[1];
-          if (item._bgTween) item._bgTween.kill();
-          item._bgTween = gsap.fromTo(item, { backgroundColor: safeBase }, { backgroundColor: safeMax, paused: true, ease: "none" });
-        }
         
         item._quickTos = {};
         item._scrollState = "resting";
@@ -310,12 +296,6 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
         QUICK_TO_PROPS.forEach((prop) => {
           item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
         });
-        if (item._colorTween) {
-          item._quickTos!["color"] = gsap.quickTo(item._colorTween, "progress", { duration: dur, ease: ez });
-        }
-        if (item._bgTween) {
-          item._quickTos!["backgroundColor"] = gsap.quickTo(item._bgTween, "progress", { duration: dur, ease: ez });
-        }
       });
 
       statesRef.current = itemsRef.current.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
@@ -391,158 +371,171 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
     resizeObserver.observe(document.body);
 
     const applyVars = (
-          item: ProxHTMLElement, 
-          key: string, 
-          vars: gsap.TweenVars, 
-          dur: number, 
-          del: number, 
-          ez: string
-        ): void => {
-          const needsGsapTo =
-            key === "cipher" ||
-            key === "reveal" ||
-            key === "cycle" ||
-            key === "cycleSide" ||
-            key === "scroll" ||
-            key === "custom" ||
-            key === "customStartEnd" ||
-            del > 0 ||
-            !!activeTimeline?.[key];
+      item: ProxHTMLElement, 
+      key: string, 
+      vars: gsap.TweenVars, 
+      dur: number, 
+      del: number, 
+      ez: string
+    ): void => {
+      const needsGsapTo =
+        key === "cipher" ||
+        key === "reveal" ||
+        key === "scroll" ||
+        key === "cycle" ||
+        key === "cycleSide" ||
+        key === "custom" ||
+        key === "customStartEnd" ||
+        del > 0 ||
+        !!activeTimeline?.[key];
     
-          if (needsGsapTo) {
-            if (key === "scroll" || key === "cycle") {
-              const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
-              const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
-              const currentState = item._scrollState || "resting";
-              
-              if (shouldCycle && currentState !== "hovered") {
-                item._scrollState = "hovered";
-                gsap.killTweensOf(item, "yPercent,clipPath");
-                
-                gsap.to(item, {
-                  yPercent: -travel, 
-                  clipPath: `inset(${travel}% 0% 0% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` },
-                      { 
-                        yPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              } else if (!shouldCycle && currentState === "hovered") {
-                item._scrollState = "resting";
-                gsap.killTweensOf(item, "yPercent,clipPath");
-                
-                gsap.to(item, {
-                  yPercent: travel, 
-                  clipPath: `inset(0% 0% ${travel}% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
-                      { 
-                        yPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              }
-              return;
-            }
-    
-            if (key === "cycleSide") {
-              const shouldCycle = vars.proxCycleSide === 1;
-              const travel = vars.proxCycleSideTravel || 100;
-              const currentState = item._scrollState || "resting";
-              
-              if (shouldCycle && currentState !== "hovered") {
-                item._scrollState = "hovered";
-                gsap.killTweensOf(item, "xPercent,clipPath");
-                
-                gsap.to(item, {
-                  xPercent: -travel, 
-                  clipPath: `inset(0% 0% 0% ${travel}%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` },
-                      { 
-                        xPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              } else if (!shouldCycle && currentState === "hovered") {
-                item._scrollState = "resting";
-                gsap.killTweensOf(item, "xPercent,clipPath");
-                
-                gsap.to(item, {
-                  xPercent: travel, 
-                  clipPath: `inset(0% ${travel}% 0% 0%)`, 
-                  duration: dur * 0.5, 
-                  delay: del, 
-                  ease: ez, 
-                  overwrite: "auto",
-                  onComplete: () => {
-                    gsap.fromTo(item,
-                      { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
-                      { 
-                        xPercent: 0, 
-                        clipPath: `inset(0% 0% 0% 0%)`, 
-                        duration: dur * 0.5, 
-                        ease: ez 
-                      }
-                    );
-                  }
-                });
-              }
-              return;
-            }
+      if (needsGsapTo) {
+        if (key === "scroll" || key === "cycle") {
+          const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
+          const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
             gsap.to(item, {
-              ...vars, 
-              duration: dur, 
+              yPercent: -travel, 
+              clipPath: `inset(${travel}% 0% 0% 0%)`, 
+              duration: dur * 0.5, 
               delay: del, 
               ease: ez, 
               overwrite: "auto",
-              onUpdate: key === "cipher" ? cipherUpdate : undefined,
-            });
-          } else {
-            for (const cssProp in vars) {
-              const qt = item._quickTos?.[cssProp];
-              if (qt) {
-                qt(vars[cssProp] as any);
-              } else {
-                gsap.to(item, { 
-                  [cssProp]: vars[cssProp], 
-                  duration: dur, 
-                  ease: ez, 
-                  overwrite: "auto" 
-                });
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` },
+                  { 
+                    yPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
               }
-            }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            
+            gsap.to(item, {
+              yPercent: travel, 
+              clipPath: `inset(0% 0% ${travel}% 0%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` },
+                  { 
+                    yPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
           }
-        };
+          return;
+        }
+    
+        if (key === "cycleSide") {
+          const shouldCycle = vars.proxCycleSide === 1;
+          const travel = vars.proxCycleSideTravel || 100;
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            
+            gsap.to(item, {
+              xPercent: -travel, 
+              clipPath: `inset(0% 0% 0% ${travel}%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` },
+                  { 
+                    xPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            
+            gsap.to(item, {
+              xPercent: travel, 
+              clipPath: `inset(0% ${travel}% 0% 0%)`, 
+              duration: dur * 0.5, 
+              delay: del, 
+              ease: ez, 
+              overwrite: "auto",
+              onComplete: () => {
+                gsap.fromTo(item,
+                  { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` },
+                  { 
+                    xPercent: 0, 
+                    clipPath: `inset(0% 0% 0% 0%)`, 
+                    duration: dur * 0.5, 
+                    ease: ez 
+                  }
+                );
+              }
+            });
+          }
+          return;
+        }
+    
+        gsap.to(item, {
+          ...vars, 
+          duration: dur, 
+          delay: del, 
+          ease: ez, 
+          overwrite: "auto",
+          onUpdate: key === "cipher" ? cipherUpdate : undefined,
+        });
+    
+      } else {
+        // 🔥 THE BATCHING FIX: Collects all non-quickTo properties and fires ONE tween per frame
+        const nonQuickVars: Record<string, any> = {};
+        let hasNonQuick = false;
+    
+        for (const cssProp in vars) {
+          const qt = item._quickTos?.[cssProp];
+          if (qt) {
+            // If it has a quickTo, use the ultra-fast pipeline
+            qt(vars[cssProp] as any);
+          } else {
+            // Otherwise, batch it to prevent overlap/overwrite lag
+            nonQuickVars[cssProp] = vars[cssProp];
+            hasNonQuick = true;
+          }
+        }
+    
+        if (hasNonQuick) {
+          gsap.to(item, {
+            ...nonQuickVars, 
+            duration: dur, 
+            ease: ez, 
+            overwrite: "auto" 
+          });
+        }
+      }
+    };
 
     if (document.fonts) document.fonts.ready.then(initItems); else initItems();
 
@@ -611,13 +604,14 @@ export const ProximityPointer: React.FC<ProximityProps> = ({
         if (!b) continue;
         const dx = localX - b.x;
         const dy = localY - b.y;
+        const distX = Math.max(0, Math.abs(dx) - b.w / 2);
+        const distY = Math.max(0, Math.abs(dy) - b.h / 2);
+        const dBox = Math.sqrt(distX * distX + distY * distY);
         const inside = localX >= b.left && localX <= b.right && localY >= b.top && localY <= b.bottom;
         const offScreen = (itemsRef.current[i] as ProxHTMLElement)._isProxVisible === false;
-        
-        const d = isBlocked || (activeExplicit && !inside) || offScreen ? Infinity : Math.sqrt(dx * dx + dy * dy);
-                    
+        const d = isBlocked || (activeExplicit && !inside) || offScreen ? Infinity : dBox;          
         if (d < minDist) { minDist = d; nearestIndex = i; }
-        dData[i] = { d, dx, dy };
+        dData[i] = { d, dx, dy }; 
       }
 
       for (const i of toCheck) {

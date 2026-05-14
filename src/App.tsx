@@ -127,7 +127,7 @@ export default function App() {
 
   return (
     <ReactLenis root ref={lenisRef} autoRaf={false} options={{ lerp: 0.1, duration: 1.5 }}>
-      <ProximityProvider config={{ defaultFont: "'Bricolage Grotesque', sans-serif" }}>
+      <ProximityProvider config={{ defaultFont: "'Bricolage Grotesque', 'Cairo', sans-serif" }}>
         <div className={`min-h-screen transition-colors duration-700 bg-[var(--bg-color)] text-[var(--text-color)] flex flex-col overflow-x-hidden selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black`}>
           
           <header className="border-b border-[var(--border-color)] flex flex-col lg:flex-row w-full z-50 bg-[var(--bg-color)] sticky top-0">

@@ -107,12 +107,16 @@ export const calculatePresetValues = (
         res.y = `${curValue}%`;
         res.clipPath = `inset(0% 0% ${curValue}% 0%)`;
         break;
-      case "color":
-        res.color = useBase ? 0 : intensity;
-        break;
-      case "background":
-        res.backgroundColor = useBase ? 0 : intensity;
-        break;
+        case "color": {
+          const [cBase, cMax] = bounds as [string, string];
+          res.color = useBase ? cBase : gsap.utils.interpolate(cBase, cMax, curIntensity);
+          break;
+        }
+        case "background": {
+          const [bgBase, bgMax] = bounds as [string, string];
+          res.backgroundColor = useBase ? bgBase : gsap.utils.interpolate(bgBase, bgMax, curIntensity);
+          break;
+        }
       case "scroll":
         res.proxScroll = curIntensity > 0.5 ? 1 : 0;
         res.proxScrollTravel = max;

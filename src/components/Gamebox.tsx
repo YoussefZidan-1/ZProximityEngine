@@ -156,6 +156,7 @@ export default function Gamebox() {
             onChange={(e) => setCode(e.target.value)}
             spellCheck={false}
             className="flex-1 p-10 font-mono text-[12px] bg-transparent outline-none resize-none leading-relaxed text-[var(--text-color)]"
+            style={{ fontFamily: "'JetBrains Mono', 'Cairo', monospace" }}
           />
         </div>
 

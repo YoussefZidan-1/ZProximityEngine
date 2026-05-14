@@ -127,8 +127,6 @@ export interface ProxHTMLElement extends HTMLElement {
   _isProxVisible?: boolean;
   _willChangeCount?: number;
   _scrollState?: "resting" | "hovered";
-  _colorTween?: gsap.core.Tween;
-  _bgTween?: gsap.core.Tween; 
 }
 
 export interface ItemCenter {
