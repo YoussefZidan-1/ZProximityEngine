@@ -127,6 +127,8 @@ interface ProxHTMLElement extends HTMLElement {
   _isProxVisible?: boolean;
   _willChangeCount?: number;
   _scrollState?: "resting" | "hovered";
+  _colorTween?: gsap.core.Tween;
+  _bgTween?: gsap.core.Tween; 
 }
 
 interface ItemCenter {
@@ -291,14 +293,6 @@ const calculatePresetValues = (
     const useBase = isReset || !isActive;
     const curIntensity = useBase ? 0 : intensity;
 
-    if (prop === "color" || prop === "background") {
-      if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
-      const [baseColor, maxColor] = bounds as [string, string];
-      const interpolated = gsap.utils.interpolate(baseColor, maxColor, curIntensity);
-      CALC_RESULT[prop][prop === "color" ? "color" : "backgroundColor"] = interpolated;
-      continue;
-    }
-
     const [base, max] = bounds as [number, number];
     const curValue = base + (max - base) * curIntensity;
 
@@ -334,6 +328,12 @@ const calculatePresetValues = (
       case "reveal":
         res.y = `${curValue}%`;
         res.clipPath = `inset(0% 0% ${curValue}% 0%)`;
+        break;
+      case "color":
+        res.color = useBase ? 0 : intensity;
+        break;
+      case "background":
+        res.backgroundColor = useBase ? 0 : intensity;
         break;
       case "scroll": {
         res.proxScroll = curIntensity > 0.5 ? 1 : 0;
@@ -737,40 +737,60 @@ export const Proximity: React.FC<ProximityProps> = ({
               if (item.dataset.proxOriginal === undefined)
                 item.dataset.proxOriginal = item.textContent ?? "";
               if (item.proxCipher === undefined) item.proxCipher = 0;
-      
-              const lc = targetMapRef.current.get(item);
-                      const itemPresetStr = `${lc?.preset ?? activePreset}-${lc?.nearestPreset ?? activeNearestPreset}-${lc?.neighborPreset ?? activeNeighborPreset}`;
               
-                      if (itemPresetStr.includes("fillText")) {
-                        if (!item.dataset.proxColorSaved) item.dataset.proxColorSaved = window.getComputedStyle(item).color;
-                        item.style.setProperty("--prox-original-color", item.dataset.proxColorSaved); 
-                        item.style.color = "transparent";
-                        item.style.webkitTextStroke = "var(--prox-stroke-width, 1px) var(--prox-stroke-color, var(--prox-original-color))";
-                        item.style.setProperty("--prox-radius", "0");
-                        item.style.backgroundImage = "radial-gradient(circle at calc(var(--prox-x, 50) * 1%) calc(var(--prox-y, 50) * 1%), var(--prox-fill-color, var(--prox-original-color)) calc(var(--prox-radius, 0) * 1%), transparent calc(var(--prox-radius, 0) * 1%))";
-                        item.style.webkitBackgroundClip = "text";
-                        item.style.backgroundClip = "text";
-                        item.style.backgroundRepeat = "no-repeat";
-                      } 
-                      else if (itemPresetStr.includes("fill")) {
-                        if (!item.dataset.proxColorSaved) item.dataset.proxColorSaved = window.getComputedStyle(item).color;
-                        item.style.setProperty("--prox-original-color", item.dataset.proxColorSaved);
-                        
-                        item.style.setProperty("--prox-radius", "0");
-                        item.style.backgroundImage = "radial-gradient(circle at calc(var(--prox-x, 50) * 1%) calc(var(--prox-y, 50) * 1%), var(--prox-fill-color, var(--prox-original-color)) calc(var(--prox-radius, 0) * 1%), transparent calc(var(--prox-radius, 0) * 1%))";
-                        item.style.backgroundRepeat = "no-repeat";
-                      }
+              const lc = targetMapRef.current.get(item);
+              const itemPresetStr = `${lc?.preset ?? activePreset}-${lc?.nearestPreset ?? activeNearestPreset}-${lc?.neighborPreset ?? activeNeighborPreset}`;
+              
+              if (itemPresetStr.includes("fillText")) {
+                if (!item.dataset.proxColorSaved) item.dataset.proxColorSaved = window.getComputedStyle(item).color;
+                item.style.setProperty("--prox-original-color", item.dataset.proxColorSaved); 
+                item.style.color = "transparent";
+                item.style.webkitTextStroke = "var(--prox-stroke-width, 1px) var(--prox-stroke-color, var(--prox-original-color))";
+                item.style.setProperty("--prox-radius", "0");
+                item.style.backgroundImage = "radial-gradient(circle at calc(var(--prox-x, 50) * 1%) calc(var(--prox-y, 50) * 1%), var(--prox-fill-color, var(--prox-original-color)) calc(var(--prox-radius, 0) * 1%), transparent calc(var(--prox-radius, 0) * 1%))";
+                item.style.webkitBackgroundClip = "text";
+                item.style.backgroundClip = "text";
+                item.style.backgroundRepeat = "no-repeat";
+              } 
+              else if (itemPresetStr.includes("fill")) {
+                if (!item.dataset.proxColorSaved) item.dataset.proxColorSaved = window.getComputedStyle(item).color;
+                item.style.setProperty("--prox-original-color", item.dataset.proxColorSaved);
+                
+                item.style.setProperty("--prox-radius", "0");
+                item.style.backgroundImage = "radial-gradient(circle at calc(var(--prox-x, 50) * 1%) calc(var(--prox-y, 50) * 1%), var(--prox-fill-color, var(--prox-original-color)) calc(var(--prox-radius, 0) * 1%), transparent calc(var(--prox-radius, 0) * 1%))";
+                item.style.backgroundRepeat = "no-repeat";
+              }
       
+              if (itemPresetStr.includes("color")) {
+                const bounds = (lc?.color ?? mergedBounds.color ?? PRESET_DEFAULTS.color) as [string, string];
+                if (item._colorTween) item._colorTween.kill();
+                item._colorTween = gsap.fromTo(item, { color: bounds[0] }, { color: bounds[1], paused: true, ease: "none" });
+              }
+              
+              if (itemPresetStr.includes("background")) {
+                const bounds = (lc?.background ?? mergedBounds.background ?? PRESET_DEFAULTS.background) as [string, string];
+                const safeBase = bounds[0] === "transparent" ? "rgba(255,255,255,0)" : bounds[0];
+                const safeMax = bounds[1] === "transparent" ? "rgba(255,255,255,0)" : bounds[1];
+                if (item._bgTween) item._bgTween.kill();
+                item._bgTween = gsap.fromTo(item, { backgroundColor: safeBase }, { backgroundColor: safeMax, paused: true, ease: "none" });
+              }
+              
               item._quickTos = {};
-        item._quickTos = {};
-        item._scrollState = "resting";
-        const dur = lc?.duration ?? activeDuration;
-        const ez = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
-
-        QUICK_TO_PROPS.forEach((prop) => {
-          item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
-        });
-      });
+              item._scrollState = "resting";
+              const dur = lc?.duration ?? activeDuration;
+              const ez = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? targetEase;
+      
+      
+              QUICK_TO_PROPS.forEach((prop) => {
+                item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
+              });
+              if (item._colorTween) {
+                item._quickTos!["color"] = gsap.quickTo(item._colorTween, "progress", { duration: dur, ease: ez });
+              }
+              if (item._bgTween) {
+                item._quickTos!["backgroundColor"] = gsap.quickTo(item._bgTween, "progress", { duration: dur, ease: ez });
+              }
+            });
 
       statesRef.current = itemsRef.current.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
       settersRef.current = itemsRef.current.map((item) => ({
