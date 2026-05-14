@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { Proximity, ProximityText } from '../lib';
 import { 
-  Terminal, Plus, Minus, Zap, Type, 
-  MousePointer2, RefreshCw, AlertCircle, Code2 
+  Zap, Type, MousePointer2, RefreshCw, AlertCircle, Code2 
 } from 'lucide-react';
 
 const INITIAL_PROX = `<Proximity
@@ -12,9 +12,11 @@ const INITIAL_PROX = `<Proximity
   magnetic={[0, 0.4]}
   ease="bouncy"
 >
-  <div className="prox-item">1</div>
-  <div className="prox-item">2</div>
-  <div className="prox-item">3</div>
+  <div class="flex flex-wrap justify-center gap-6">
+    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">1</div>
+    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">2</div>
+    <div class="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">3</div>
+  </div>
 </Proximity>`;
 
 const INITIAL_TEXT = `<ProximityText
@@ -24,26 +26,46 @@ const INITIAL_TEXT = `<ProximityText
   splitBy="word"
   cipher={[0, 1]}
   textClassName="text-5xl font-black italic tracking-tighter"
+  style={{ color: 'var(--text-color)' }}
 />`;
 
 export default function Gamebox() {
   const [code, setCode] = useState(INITIAL_PROX);
+  const [debouncedCode, setDebouncedCode] = useState(INITIAL_PROX);
   const [error, setError] = useState<string | null>(null);
-
-  // Safe prop evaluator for numbers, arrays, objects, and strings
+  useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedCode(code);
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [code]);
+  // Safely evaluates numbers, arrays, strings, and objects (handles double braces safely)
   const parseProps = (codeString: string) => {
     const props: any = {};
-    const regex = /([a-zA-Z0-9]+)=({[\s\S]*?}|"[\s\S]*?")/g;
+    const regex = /([a-zA-Z0-9_]+)\s*=\s*({[\s\S]*?}|"[\s\S]*?"|'[\s\S]*?')/g;
     let match;
 
     while ((match = regex.exec(codeString)) !== null) {
       const key = match[1];
-      const rawValue = match[2];
+      let rawValue = match[2];
+
+      // Safe fallback: If the regex cuts off a double-brace style={{...}}, find the end
+      if (rawValue.startsWith('{{') && !rawValue.endsWith('}}')) {
+        const remainingPart = codeString.slice(regex.lastIndex);
+        const secondBraceIndex = remainingPart.indexOf('}');
+        if (secondBraceIndex !== -1) {
+          rawValue += remainingPart.slice(0, secondBraceIndex + 1);
+          regex.lastIndex += secondBraceIndex + 1;
+        }
+      }
+
       try {
         if (rawValue.startsWith('{')) {
           const expression = rawValue.slice(1, -1).trim();
+          // Evaluate standard JS objects/numbers/arrays safely locally
           props[key] = new Function(`return (${expression})`)();
         } else {
+          // Remove wrapping quotes for standard strings
           props[key] = rawValue.slice(1, -1);
         }
       } catch (e) {
@@ -55,58 +77,43 @@ export default function Gamebox() {
 
   const parsedData = useMemo(() => {
     try {
-      const isText = code.includes('<ProximityText');
+      const isText = debouncedCode.includes('<ProximityText');
       const type = isText ? 'ProximityText' : 'Proximity';
 
-      // 1. Extract Props from the opening tag
-      const openingTagMatch = code.match(/<[a-zA-Z]+([\s\S]*?)>/);
-      const propsString = openingTagMatch ? openingTagMatch[1] : "";
-      const props = parseProps(propsString);
+      let propsString = '';
+      let innerHTML = '';
 
-      // 2. Extract Children (Numbers inside the divs)
-      let children: string[] = [];
-      if (!isText) {
-        // Find everything between > and < inside the prox-item divs
-        const itemRegex = /<div[^>]*prox-item[^>]*>([\s\S]*?)<\/div>/g;
-        let itemMatch;
-        while ((itemMatch = itemRegex.exec(code)) !== null) {
-          children.push(itemMatch[1].trim());
+      if (isText) {
+        const textMatch = debouncedCode.match(/<ProximityText([\s\S]*?)\/?>/);
+        if (textMatch) propsString = textMatch[1];
+      } else {
+        // Extract everything inside the Proximity tags
+        const proxMatch = debouncedCode.match(/<Proximity([\s\S]*?)>([\s\S]*?)<\/Proximity>/);
+        if (proxMatch) {
+          propsString = proxMatch[1];
+          // 1. Convert React's className to standard HTML class
+          const rawHTML = proxMatch[2].replace(/className=/g, 'class=');
+          // 2. SANITIZE: Strip out malicious <script> tags or onerror= attacks
+          innerHTML = DOMPurify.sanitize(rawHTML, {
+            ALLOWED_TAGS: ['div', 'span', 'img', 'svg', 'path', 'button', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'br'],
+            ALLOWED_ATTR: ['class', 'id', 'src', 'alt', 'href', 'style', 'd', 'viewBox', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin'],
+          });
+        } else {
+          throw new Error("Missing <Proximity> or </Proximity> tags.");
         }
       }
 
+      const props = parseProps(propsString);
       setError(null);
-      return { type, props, children };
+      return { type, props, innerHTML };
     } catch (e: any) {
       setError(e.message || "Parsing error: Check your JSX structure.");
       return null;
     }
-  }, [code]);
-
-  const updateItems = (action: 'add' | 'remove') => {
-    if (!parsedData || parsedData.type !== 'Proximity') return;
-    
-    let newItems = [...parsedData.children];
-    if (action === 'add') {
-      newItems.push((newItems.length + 1).toString());
-    } else {
-      newItems.pop();
-    }
-
-    // Rebuild the code string
-    const propString = Object.entries(parsedData.props)
-      .map(([k, v]) => `  ${k}={${JSON.stringify(v)}}`)
-      .join('\n');
-
-    const itemString = newItems
-      .map(num => `  <div className="prox-item">${num}</div>`)
-      .join('\n');
-
-    setCode(`<Proximity\n${propString}\n>\n${itemString}\n</Proximity>`);
-  };
+  }, [debouncedCode]);
 
   return (
     <section id="gamebox" className="w-full border-b border-[var(--border-color)] bg-[var(--bg-color)]">
-      {/* UI Header - Preserved from original */}
       <div className="flex flex-col md:flex-row items-center justify-between p-10 border-b border-[var(--border-color)] gap-6">
         <div className="flex items-center gap-6">
           <div className="bg-[var(--text-color)] text-[var(--bg-color)] p-3 rounded-sm">
@@ -121,13 +128,13 @@ export default function Gamebox() {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setCode(INITIAL_PROX)}
-            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'Proximity' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}
+            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'Proximity' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
           >
             <MousePointer2 size={14} /> &lt;Proximity /&gt;
           </button>
           <button 
             onClick={() => setCode(INITIAL_TEXT)}
-            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'ProximityText' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5'}`}
+            className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] transition-all flex items-center gap-2 ${parsedData?.type === 'ProximityText' ? 'bg-[var(--text-color)] text-[var(--bg-color)]' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
           >
             <Type size={14} /> &lt;ProximityText /&gt;
           </button>
@@ -155,38 +162,26 @@ export default function Gamebox() {
         {/* Viewport */}
         <div className="lg:w-1/2 flex flex-col relative mono-grid min-h-[450px]">
           <div className="absolute top-8 left-8 z-10 flex gap-2">
-            {parsedData?.type === "Proximity" && (
-              <div className="flex border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xl overflow-hidden">
-                <button onClick={() => updateItems('add')} className="px-4 py-3 hover:bg-black/5 border-r border-[var(--border-color)] transition-all" title="Add Item">
-                  <Plus size={16} />
-                </button>
-                <button onClick={() => updateItems('remove')} className="px-4 py-3 hover:bg-black/5 transition-all" title="Remove Item">
-                  <Minus size={16} />
-                </button>
-              </div>
-            )}
             <button 
               onClick={() => setCode(parsedData?.type === 'Proximity' ? INITIAL_PROX : INITIAL_TEXT)}
-              className="p-3 border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xl hover:bg-black/5 transition-all"
+              className="p-3 border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+              title="Reset Code"
             >
               <RefreshCw size={16} />
             </button>
           </div>
 
-          <div className="flex-1 flex items-center justify-center p-12">
+          <div className="flex-1 flex items-center justify-center p-12 w-full">
             {!error && parsedData ? (
               parsedData.type === "Proximity" ? (
-                <Proximity {...parsedData.props} key={code}>
-                  <div className="flex flex-wrap justify-center gap-6">
-                    {parsedData.children.map((num, i) => (
-                      <div key={i} className="prox-item w-24 h-24 bg-[var(--text-color)] text-[var(--bg-color)] rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
+                <Proximity {...parsedData.props} key={debouncedCode}>
+                  <div 
+                    className="w-full flex items-center justify-center"
+                    dangerouslySetInnerHTML={{ __html: parsedData.innerHTML }} 
+                  />
                 </Proximity>
               ) : (
-                <ProximityText {...parsedData.props} key={code} />
+                <ProximityText {...parsedData.props} key={debouncedCode} />
               )
             ) : (
               <div className="bg-red-500/10 border border-red-500/20 p-8 rounded max-w-xs text-center">
