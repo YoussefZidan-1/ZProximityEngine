@@ -5,12 +5,21 @@ import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 import Sitemap from 'vite-plugin-sitemap';
 
+const useClientPlugin = () => ({
+  name: 'add-use-client-directive',
+  renderChunk(code: string, chunk: any) {
+    if (chunk.fileName.endsWith('.js') && !code.includes('use client')) {
+      return '"use client";\n' + code;
+    }
+    return null;
+  }
+});
+
 export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
 
   return {
     publicDir: isLib ? false : 'public',
-
     plugins: [
       react(),
       tailwindcss(),
@@ -19,6 +28,7 @@ export default defineConfig(({ mode }) => {
         include: ['src/lib'],
         rollupTypes: true, 
       }),
+      isLib && useClientPlugin(),
       !isLib && Sitemap({ 
         hostname: 'https://z-proximity-engine.vercel.app',
         dynamicRoutes: ['/'] 
