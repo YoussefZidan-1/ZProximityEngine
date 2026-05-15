@@ -3,5 +3,7 @@ export * from './constants';
 export * from './utils';
 export * from './hooks';
 export * from './Proximity';
+export * from './components/ProximityPointer';
+export * from './components/ProximityScroll';
 export * from './ProximityText';
 export * from './ProximityContext';

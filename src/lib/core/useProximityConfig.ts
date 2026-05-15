@@ -1,3 +1,4 @@
+// src/lib/core/useProximityConfig.ts
 import { useMemo } from "react";
 import { useDeepMemo } from "../hooks";
 import { FILTER_PRESETS, EASE_MAP } from "../constants";

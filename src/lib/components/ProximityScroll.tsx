@@ -9,9 +9,9 @@ import { addWillChange, removeWillChange, parseScrollPosition, getScrollFocusVal
 import { PRESET_DEFAULTS, EASE_MAP } from "../constants";
 import { ProximityProps } from "../types";
 
-gsap.registerPlugin(ScrollTrigger);
-
 export const ProximityScroll: React.FC<ProximityProps> = (props) => {
+  gsap.registerPlugin(ScrollTrigger);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const config = useProximityConfig(props);
   const scrollTriggersRef = useRef<ScrollTrigger[]>([]);
