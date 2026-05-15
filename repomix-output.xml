@@ -2570,6 +2570,7 @@ dist-ssr
 *.sw?
 .npmrc
 *.tgz
+repomix-output.xml*
 </file>
 
 <file path="src/lib/types.ts">
@@ -3022,100 +3023,6 @@ export const doesSegmentConnectLeft = (seg: string) => {
   if (!baseStr) return false;
   return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
 };
-</file>
-
-<file path="vite.config.ts">
-import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import dts from 'vite-plugin-dts';
-import { resolve } from 'path';
-import Sitemap from 'vite-plugin-sitemap';
-
-const useClientPlugin = () => ({
-  name: 'add-use-client-directive',
-  renderChunk(code: string, chunk: any) {
-    if (chunk.fileName.endsWith('.js') && !code.includes('use client')) {
-      return '"use client";\n' + code;
-    }
-    return null;
-  }
-});
-
-export default defineConfig(({ mode }) => {
-  const isLib = mode === 'lib';
-
-  return {
-    publicDir: isLib ? false : 'public',
-    plugins: [
-      react(),
-      tailwindcss(),
-      isLib && dts({ 
-        insertTypesEntry: true, 
-        include: ['src/lib'],
-        rollupTypes: true, 
-      }),
-      isLib && useClientPlugin(),
-      !isLib && Sitemap({ 
-        hostname: 'https://z-proximity-engine.vercel.app',
-        dynamicRoutes: ['/'] 
-      })
-    ].filter(Boolean),
-
-    esbuild: {
-      drop: isLib ? ['console', 'debugger'] : [],
-      legalComments: 'none', 
-    },
-
-    build: {
-      outDir: 'dist',
-      emptyOutDir: true,
-      minify: 'esbuild',
-      chunkSizeWarningLimit: 500,
-
-      ...(isLib ? {
-        lib: {
-          entry: resolve(__dirname, 'src/lib/index.ts'),
-          name: 'ZProximityEngine',
-        },
-        rollupOptions: {
-          external: [
-            'react', 
-            'react-dom', 
-            'react/jsx-runtime', 
-            '@gsap/react', 
-            /^gsap(\/.*)?$/
-          ],
-          output: [
-            {
-              format: 'es',
-              exports: 'named',
-              preserveModules: true,            
-              preserveModulesRoot: 'src/lib',  
-              entryFileNames: '[name].es.js',  
-            },
-            {
-              format: 'umd',
-              name: 'ZProximityEngine',
-              exports: 'named',
-              entryFileNames: 'index.umd.js',
-              globals: {
-                react: 'React',
-                'react-dom': 'ReactDOM',
-                'react/jsx-runtime': 'jsxRuntime',
-                gsap: 'gsap',
-                'gsap/ScrollTrigger': 'ScrollTrigger',
-                '@gsap/react': 'gsapReact'
-              },
-            }
-          ],
-        },
-      } : {
-        cssCodeSplit: true,
-      })
-    },
-  };
-});
 </file>
 
 <file path="src/Documentation.tsx">
@@ -5170,6 +5077,144 @@ MIT © [Youssef Zidan](https://github.com/YoussefZidan-1)
 `react animation`, `proximity detection`, `magnetic cursor`, `hover effects`, `scroll animations`, `gsap react`, `motion design`, `interactive ui`, `spatial interactions`, `cursor effects`, `animation library`, `react gsap`, `framer motion alternative`, `react spring alternative`, `proximity-based animations`, `distance-based effects`
 </file>
 
+<file path="vite.config.ts">
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import dts from "vite-plugin-dts";
+import { resolve } from "path";
+import Sitemap from "vite-plugin-sitemap";
+
+const useClientPlugin = () => ({
+  name: "add-use-client-directive",
+  renderChunk(code: string, chunk: any) {
+    if (chunk.fileName.endsWith(".es.js") && !code.includes("use client")) {
+      return '"use client";\n' + code;
+    }
+    return null;
+  },
+});
+
+export default defineConfig(({ mode }) => {
+  const isLib = mode === "lib";
+
+  return {
+    publicDir: isLib ? false : "public",
+    plugins: [
+      react(),
+      tailwindcss(),
+      isLib &&
+        dts({
+          insertTypesEntry: true,
+          include: ["src/lib"],
+          rollupTypes: true,
+        }),
+      isLib && useClientPlugin(),
+      !isLib &&
+        Sitemap({
+          hostname: "https://z-proximity-engine.vercel.app",
+          dynamicRoutes: ["/"],
+        }),
+    ].filter(Boolean),
+
+    esbuild: {
+      drop: isLib ? ["console", "debugger"] : [],
+      legalComments: "none",
+    },
+
+    build: {
+      outDir: "dist",
+      emptyOutDir: true,
+      minify: "terser",
+      cssMinify: 'lightningcss',
+      modulePreload: { polyfill: false },
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_getters: true,
+          dead_code: true,
+          passes: 3,
+          unsafe: true,
+          unsafe_arrows: true,
+          unsafe_comps: true,
+          unsafe_math: true,
+          unsafe_methods: true,
+          unsafe_proto: true,
+          hoist_funs: true,
+          hoist_vars: true,
+          unsafe_undefined: true,
+          inline: 2,
+          comparisons: true,
+          evaluate: true,
+        },
+        mangle: {
+          toplevel: true,
+          safari10: false,
+        },
+        format: {
+          comments: false,
+          wrap_iife: true,
+        },
+      },
+      chunkSizeWarningLimit: 500,
+
+      ...(isLib
+        ? {
+            lib: {
+              entry: resolve(__dirname, "src/lib/index.ts"),
+              name: "ZProximityEngine",
+            },
+            rollupOptions: {
+              external: [
+                "react",
+                "react-dom",
+                "react/jsx-runtime",
+                "@gsap/react",
+                /^gsap(\/.*)?$/,
+              ],
+              treeshake: {
+                  moduleSideEffects: false,
+                  propertyReadSideEffects: false,
+                  tryCatchDeoptimization: false,
+                },
+              output: [
+                {
+                  format: "es",
+                  exports: "named",
+                  preserveModules: true,
+                  preserveModulesRoot: "src/lib",
+                  entryFileNames: "[name].es.js",
+                  compact: true,
+                  minifyInternalExports: true
+                },
+                {
+                  format: "umd",
+                  name: "ZProximityEngine",
+                  exports: "named",
+                  entryFileNames: "index.umd.js",
+                  compact: true,
+                  minifyInternalExports: true,
+                  globals: {
+                    react: "React",
+                    "react-dom": "ReactDOM",
+                    "react/jsx-runtime": "jsxRuntime",
+                    gsap: "gsap",
+                    "gsap/ScrollTrigger": "ScrollTrigger",
+                    "@gsap/react": "gsapReact",
+                  },
+                },
+              ],
+            },
+          }
+        : {
+            cssCodeSplit: true,
+          }),
+    },
+  };
+});
+</file>
+
 <file path="index.html">
 <!doctype html>
 <html lang="en" class="dark">
@@ -5652,7 +5697,7 @@ export default function App() {
                   <Moon size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-100 dark:opacity-0" />
                   <Sun size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-0 dark:opacity-100" />
                 </button>
-                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.5.1 — STABLE</span>
+                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.5.5 — STABLE</span>
                 <div className="reveal-item px-5 py-2.5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-mono flex items-center gap-2">
                   <Terminal size={12} />
                   npm i z-proximity-engine
@@ -5770,10 +5815,27 @@ export default function App() {
 }
 </file>
 
+<file path="src/lib/Proximity.tsx">
+import React from "react";
+import { ProximityProps } from "./types";
+import { ProximityPointer } from "./components/ProximityPointer";
+import { ProximityScroll } from "./components/ProximityScroll";
+
+export const Proximity: React.FC<ProximityProps> = (props) => {
+  const activeMode = props.config?.mode ?? props.mode ?? "pointer";
+  
+  if (activeMode === "scroll") {
+    return <ProximityScroll {...props} />;
+  }
+  
+  return <ProximityPointer {...props} />;
+};
+</file>
+
 <file path="package.json">
 {
   "name": "z-proximity-engine",
-  "version": "2.5.1",
+  "version": "2.5.5",
   "sideEffects": false,
   "description": "ِA high-performance proximity-based motion engine by Youssef Zidan for organic proximity-based UI.",
   "type": "module",
@@ -5785,6 +5847,16 @@ export default function App() {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.es.js",
       "require": "./dist/index.umd.js"
+    },
+    "./Proximity": {
+      "types": "./dist/Proximity.d.ts",
+      "import": "./dist/Proximity.es.js",
+      "require": "./dist/Proximity.umd.js"
+    },
+    "./ProximityText": {
+      "types": "./dist/ProximityText.d.ts",
+      "import": "./dist/ProximityText.es.js",
+      "require": "./dist/ProximityText.umd.js"
     }
   },
   "files": [
@@ -5853,37 +5925,20 @@ export default function App() {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.0.0",
+    "dompurify": "^3.4.3",
     "lenis": "^1.3.23",
     "lucide-react": "^1.11.0",
     "motion": "^12.38.0",
     "size-limit": "^12.1.0",
     "split-type": "^0.3.4",
     "tailwindcss": "^4.2.4",
+    "terser": "^5.47.1",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-sitemap": "^0.8.2",
-    "dompurify": "^3.4.3"
-  },
-  "dependencies": {}
-}
-</file>
-
-<file path="src/lib/Proximity.tsx">
-import React from "react";
-import { ProximityProps } from "./types";
-import { ProximityPointer } from "./components/ProximityPointer";
-import { ProximityScroll } from "./components/ProximityScroll";
-
-export const Proximity: React.FC<ProximityProps> = (props) => {
-  const activeMode = props.config?.mode ?? props.mode ?? "pointer";
-  
-  if (activeMode === "scroll") {
-    return <ProximityScroll {...props} />;
+    "vite-plugin-sitemap": "^0.8.2"
   }
-  
-  return <ProximityPointer {...props} />;
-};
+}
 </file>
 
 </files>

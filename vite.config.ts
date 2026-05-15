@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => {
       outDir: "dist",
       emptyOutDir: true,
       minify: "terser",
+      cssMinify: 'lightningcss',
+      modulePreload: { polyfill: false },
       terserOptions: {
         compress: {
           drop_console: true,
