@@ -23,7 +23,7 @@
 
 ### Performance First
 - ⚡ **120+ FPS**: Runs at native refresh rates
-- 📦 **8.7KB Core**: Minimal bundle impact
+- 📦 **10.7KB Core**: Minimal bundle impact
 - 🚀 **GSAP Powered**: Industry-standard animation engine
 - 🎭 **Zero Re-renders**: Animations bypass React's render cycle
 
@@ -169,7 +169,7 @@ preset="scale-blur-magnetic-opacity"
 
 | Metric | Value |
 |--------|-------|
-| Core Bundle Size | 8KB (gzipped) |
+| Core Bundle Size | 10KB (gzipped) |
 | First Contentful Paint | < 1s |
 | Time to Interactive | < 1.5s |
 | Animation FPS | 120+ |
@@ -238,7 +238,7 @@ MIT © [Youssef Zidan](https://github.com/YoussefZidan-1)
 | Feature | ZProximity | Framer Motion | React Spring |
 |---------|-----------|---------------|--------------|
 | Proximity Detection | ✅ Built-in | ❌ Manual | ❌ Manual |
-| Bundle Size | 8.7KB | ~50KB | ~15KB |
+| Bundle Size | 10.7KB | ~50KB | ~15KB |
 | GSAP Integration | ✅ Native | ⚠️ Possible | ❌ No |
 | Scroll Animations | ✅ Built-in | ✅ Built-in | ⚠️ External |
 | TypeScript | ✅ Full | ✅ Full | ✅ Full |

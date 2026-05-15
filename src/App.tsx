@@ -197,7 +197,7 @@ export default function App() {
                   <div className="flex justify-between items-end text-right">
                     <Badge>Core Engine Weight</Badge>
                     <RevealGroup delay={0.6} duration={0.8}>
-                      <span className="reveal-item text-3xl font-black tabular-nums">8.16KB</span>
+                      <span className="reveal-item text-3xl font-black tabular-nums">10.16KB</span>
                     </RevealGroup>
                   </div>
                   <div className="flex justify-between items-end text-right">
