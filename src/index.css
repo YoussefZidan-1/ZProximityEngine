@@ -12,7 +12,7 @@
     --bg-color: #ffffff;
     --text-color: #0c0c0c;
     --border-color: #0c0c0c;
-    --grid-dot: #d1d5db; /* Darkened dots for visibility */
+    --grid-dot: #d1d5db;
   }
 
   .dark {
@@ -41,7 +41,7 @@
 }
 
 .mono-grid {
-  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 2px, transparent 0);
   background-size: 24px 24px;
 }
 
