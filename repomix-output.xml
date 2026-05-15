@@ -500,123 +500,6 @@ export class ProximityEngine {
 }
 </file>
 
-<file path="src/lib/core/useProximityConfig.ts">
-import { useMemo } from "react";
-import { useDeepMemo } from "../hooks";
-import { FILTER_PRESETS, EASE_MAP } from "../constants";
-import { ProximityProps, ProximityScrollConfig } from "../types";
-
-export function useProximityConfig(props: ProximityProps) {
-  const {
-    children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "",
-    reach = 2, falloff = 2.4, duration = 0.2, resetDuration = 0.4, global = false, explicit = false,
-    mode = "pointer", scrollerRef, scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top",
-    lockAxis, precision = 0.002, maxTravel, onCalculate, onReset, ease, resetEase, disableOnMobile,
-    waitForAnimationEnd, waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
-    magnetic, tilt, tiltCard, repel, cipher, reveal, scroll, color, background, glow, brightness, contrast,
-    borderRadius, letterSpacing, grayScale, parallax, velocitySkew, velocityScale, timeline, delay, resetDelay, scrub, resetScrub,
-    start, end, stagger, resetStagger, targets, ignoreSelectors = [], excludeElements, className = "", style = {}, ...restProps
-  } = props;
-
-  const activeMode = config.mode ?? mode;
-  const activeReach = config.reach ?? reach;
-  const activeFalloff = config.falloff ?? falloff;
-  const activeDuration = config.duration ?? duration;
-  const activeResetDuration = config.resetDuration ?? resetDuration;
-  const activeDelay = config.delay ?? delay ?? 0;
-  const activeResetDelay = config.resetDelay ?? resetDelay ?? 0;
-  const activeGlobal = config.global ?? global;
-  const activeExplicit = config.explicit ?? explicit;
-  const activePreset = config.preset ?? preset;
-  const activeNearestPreset = config.nearestPreset ?? nearestPreset;
-  const activeNeighborPreset = config.neighborPreset ?? neighborPreset;
-  const activeMaxTravel = config.maxTravel ?? maxTravel;
-  const activeLockAxis = config.lockAxis ?? lockAxis;
-  const activePrecision = config.precision ?? precision;
-  const activeOnCalculate = config.onCalculate ?? onCalculate;
-  const activeOnReset = config.onReset ?? onReset;
-  const activeTargets = config.targets ?? targets ?? [];
-  const activeScrollStart = config.scrollStart ?? scrollStart;
-  const activeScrollEnd = config.scrollEnd ?? scrollEnd;
-  const activeScrollFocus = config.scrollFocus ?? scrollFocus;
-  const activeDisableOnMobile = config.disableOnMobile ?? disableOnMobile;
-  const activeWaitForAnimationEnd = config.waitForAnimationEnd ?? waitForAnimationEnd;
-  const activeWaitForEnterAnimationEnd = config.waitForEnterAnimationEnd ?? waitForEnterAnimationEnd;
-  const activeWaitForLeaveAnimationEnd = config.waitForLeaveAnimationEnd ?? waitForLeaveAnimationEnd;
-
-  const safeScrollConfig = (config.scroll && !Array.isArray(config.scroll)) ? (config.scroll as ProximityScrollConfig) : undefined;
-  const safeScrollProp = (scroll && !Array.isArray(scroll)) ? (scroll as ProximityScrollConfig) : undefined;
-
-  const activeStagger = safeScrollConfig?.stagger ?? config.stagger ?? stagger ?? 0.1;
-  const activeResetStagger = safeScrollConfig?.resetStagger ?? config.resetStagger ?? resetStagger ?? 0;
-  const activeScrub = safeScrollConfig?.scrub ?? config.scrub ?? scrub ?? activeDuration ?? true;
-
-  const targetEase = EASE_MAP[config.ease ?? (ease as string)] ?? config.ease ?? ease ?? "power1.out";
-  const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] ?? config.resetEase ?? resetEase ?? "power2.out";
-
-  const mergedBounds = useDeepMemo({
-    scale: config.scale ?? scale, flexScale: config.flexScale ?? flexScale, y: config.y ?? y, x: config.x ?? x,
-    opacity: config.opacity ?? opacity, blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
-    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard,
-    repel: config.repel ?? repel, cipher: config.cipher ?? cipher, reveal: config.reveal ?? reveal,
-    scroll: Array.isArray(config.scroll) ? config.scroll : (Array.isArray(scroll) ? scroll : undefined),
-    parallax: config.parallax ?? parallax, velocitySkew: config.velocitySkew ?? velocitySkew, velocityScale: config.velocityScale ?? velocityScale,
-    color: config.color ?? color, background: config.background ?? background, glow: config.glow ?? glow,
-    brightness: config.brightness ?? brightness, contrast: config.contrast ?? contrast, borderRadius: config.borderRadius ?? borderRadius,
-    letterSpacing: config.letterSpacing ?? letterSpacing, grayScale: config.grayScale ?? grayScale,
-  });
-
-  const activeTimeline = useDeepMemo(config.timeline ?? timeline ?? {});
-  const activeScrollConfig = useDeepMemo(safeScrollConfig ?? safeScrollProp ?? {});
-  const activeStartStyles = useDeepMemo(config.start ?? start ?? {});
-  const activeEndStyles = useDeepMemo(config.end ?? end ?? {});
-  const parsedMaxTravel = useDeepMemo(activeMaxTravel);
-  const parsedTargets = useDeepMemo(activeTargets);
-  const memoizedStagger = useDeepMemo(activeStagger);
-  const memoizedResetStagger = useDeepMemo(activeResetStagger);
-  const memoizedDisableOnMobile = useDeepMemo(activeDisableOnMobile);
-
-  const allPresetsStr = useMemo(() => {
-    const base = [activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap((p) => p.split("-"));
-    const tgt = parsedTargets.flatMap((t) => [t.preset, t.nearestPreset, t.neighborPreset]).filter(Boolean).flatMap((p) => (p as string).split("-"));
-    return Array.from(new Set([...base, ...tgt])).join("-");
-  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
-
-  const activePresetKeys = useMemo(() => {
-    const keys = new Set<string>();
-    allPresetsStr.split("-").forEach((k) => {
-      if (!k) return;
-      if (FILTER_PRESETS.has(k)) keys.add("_filters");
-      else keys.add(k);
-    });
-    if (Object.keys(activeStartStyles).length > 0 || Object.keys(activeEndStyles).length > 0) keys.add("customStartEnd");
-    if (activeOnCalculate) keys.add("custom");
-    return Array.from(keys);
-  }, [allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
-
-  const deps = [
-    selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset,
-    activeReach, activeFalloff, activeDuration, activePrecision, parsedMaxTravel, activeLockAxis,
-    activeResetDuration, activeDelay, activeResetDelay, activeGlobal, activeExplicit,
-    mergedBounds, activeStartStyles, activeEndStyles, parsedTargets, allPresetsStr, activeTimeline, 
-    activeScrollConfig, ignoreSelectors.join(","), targetEase, targetResetEase, activeMode,
-    activeScrollFocus, activeScrollStart, activeScrollEnd, memoizedStagger, memoizedResetStagger,
-    memoizedDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd, activeWaitForLeaveAnimationEnd,
-  ];
-
-  return {
-    selector, excludeElements, ignoreSelectors, className, style, children, scrollerRef, restProps,
-    activeMode, activeReach, activeFalloff, activeDuration, activeResetDuration, activeDelay, activeResetDelay,
-    activeGlobal, activeExplicit, activePreset, activeNearestPreset, activeNeighborPreset, activeMaxTravel,
-    activeLockAxis, activePrecision, activeOnCalculate, activeOnReset, activeTargets, activeScrollStart,
-    activeScrollEnd, activeScrollFocus, activeDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd,
-    activeWaitForLeaveAnimationEnd, activeStagger, activeResetStagger, activeScrub, targetEase, targetResetEase,
-    mergedBounds, activeTimeline, activeScrollConfig, activeStartStyles, activeEndStyles, parsedMaxTravel,
-    parsedTargets, memoizedStagger, memoizedResetStagger, memoizedDisableOnMobile, allPresetsStr, activePresetKeys, deps
-  };
-}
-</file>
-
 <file path="src/lib/hooks.ts">
 import { useRef } from "react";
 import { deepEqual } from "./utils";
@@ -626,16 +509,6 @@ export function useDeepMemo<T>(value: T): T {
   if (!deepEqual(ref.current, value)) ref.current = value;
   return ref.current;
 }
-</file>
-
-<file path="src/lib/index.ts">
-export * from './types';
-export * from './constants';
-export * from './utils';
-export * from './hooks';
-export * from './Proximity';
-export * from './ProximityText';
-export * from './ProximityContext';
 </file>
 
 <file path="src/lib/ProximityContext.tsx">
@@ -784,6 +657,136 @@ createRoot(document.getElementById('root')!).render(
     <priority>0.7</priority>
   </url>
 </urlset>
+</file>
+
+<file path="src/lib/core/useProximityConfig.ts">
+// src/lib/core/useProximityConfig.ts
+import { useMemo } from "react";
+import { useDeepMemo } from "../hooks";
+import { FILTER_PRESETS, EASE_MAP } from "../constants";
+import { ProximityProps, ProximityScrollConfig } from "../types";
+
+export function useProximityConfig(props: ProximityProps) {
+  const {
+    children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "",
+    reach = 2, falloff = 2.4, duration = 0.2, resetDuration = 0.4, global = false, explicit = false,
+    mode = "pointer", scrollerRef, scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top",
+    lockAxis, precision = 0.002, maxTravel, onCalculate, onReset, ease, resetEase, disableOnMobile,
+    waitForAnimationEnd, waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
+    magnetic, tilt, tiltCard, repel, cipher, reveal, scroll, color, background, glow, brightness, contrast,
+    borderRadius, letterSpacing, grayScale, parallax, velocitySkew, velocityScale, timeline, delay, resetDelay, scrub, resetScrub,
+    start, end, stagger, resetStagger, targets, ignoreSelectors = [], excludeElements, className = "", style = {}, ...restProps
+  } = props;
+
+  const activeMode = config.mode ?? mode;
+  const activeReach = config.reach ?? reach;
+  const activeFalloff = config.falloff ?? falloff;
+  const activeDuration = config.duration ?? duration;
+  const activeResetDuration = config.resetDuration ?? resetDuration;
+  const activeDelay = config.delay ?? delay ?? 0;
+  const activeResetDelay = config.resetDelay ?? resetDelay ?? 0;
+  const activeGlobal = config.global ?? global;
+  const activeExplicit = config.explicit ?? explicit;
+  const activePreset = config.preset ?? preset;
+  const activeNearestPreset = config.nearestPreset ?? nearestPreset;
+  const activeNeighborPreset = config.neighborPreset ?? neighborPreset;
+  const activeMaxTravel = config.maxTravel ?? maxTravel;
+  const activeLockAxis = config.lockAxis ?? lockAxis;
+  const activePrecision = config.precision ?? precision;
+  const activeOnCalculate = config.onCalculate ?? onCalculate;
+  const activeOnReset = config.onReset ?? onReset;
+  const activeTargets = config.targets ?? targets ?? [];
+  const activeScrollStart = config.scrollStart ?? scrollStart;
+  const activeScrollEnd = config.scrollEnd ?? scrollEnd;
+  const activeScrollFocus = config.scrollFocus ?? scrollFocus;
+  const activeDisableOnMobile = config.disableOnMobile ?? disableOnMobile;
+  const activeWaitForAnimationEnd = config.waitForAnimationEnd ?? waitForAnimationEnd;
+  const activeWaitForEnterAnimationEnd = config.waitForEnterAnimationEnd ?? waitForEnterAnimationEnd;
+  const activeWaitForLeaveAnimationEnd = config.waitForLeaveAnimationEnd ?? waitForLeaveAnimationEnd;
+
+  const safeScrollConfig = (config.scroll && !Array.isArray(config.scroll)) ? (config.scroll as ProximityScrollConfig) : undefined;
+  const safeScrollProp = (scroll && !Array.isArray(scroll)) ? (scroll as ProximityScrollConfig) : undefined;
+
+  const activeStagger = safeScrollConfig?.stagger ?? config.stagger ?? stagger ?? 0.1;
+  const activeResetStagger = safeScrollConfig?.resetStagger ?? config.resetStagger ?? resetStagger ?? 0;
+  const activeScrub = safeScrollConfig?.scrub ?? config.scrub ?? scrub ?? activeDuration ?? true;
+
+  const targetEase = EASE_MAP[config.ease ?? (ease as string)] ?? config.ease ?? ease ?? "power1.out";
+  const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] ?? config.resetEase ?? resetEase ?? "power2.out";
+
+  const mergedBounds = useDeepMemo({
+    scale: config.scale ?? scale, flexScale: config.flexScale ?? flexScale, y: config.y ?? y, x: config.x ?? x,
+    opacity: config.opacity ?? opacity, blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
+    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard,
+    repel: config.repel ?? repel, cipher: config.cipher ?? cipher, reveal: config.reveal ?? reveal,
+    scroll: Array.isArray(config.scroll) ? config.scroll : (Array.isArray(scroll) ? scroll : undefined),
+    parallax: config.parallax ?? parallax, velocitySkew: config.velocitySkew ?? velocitySkew, velocityScale: config.velocityScale ?? velocityScale,
+    color: config.color ?? color, background: config.background ?? background, glow: config.glow ?? glow,
+    brightness: config.brightness ?? brightness, contrast: config.contrast ?? contrast, borderRadius: config.borderRadius ?? borderRadius,
+    letterSpacing: config.letterSpacing ?? letterSpacing, grayScale: config.grayScale ?? grayScale,
+  });
+
+  const activeTimeline = useDeepMemo(config.timeline ?? timeline ?? {});
+  const activeScrollConfig = useDeepMemo(safeScrollConfig ?? safeScrollProp ?? {});
+  const activeStartStyles = useDeepMemo(config.start ?? start ?? {});
+  const activeEndStyles = useDeepMemo(config.end ?? end ?? {});
+  const parsedMaxTravel = useDeepMemo(activeMaxTravel);
+  const parsedTargets = useDeepMemo(activeTargets);
+  const memoizedStagger = useDeepMemo(activeStagger);
+  const memoizedResetStagger = useDeepMemo(activeResetStagger);
+  const memoizedDisableOnMobile = useDeepMemo(activeDisableOnMobile);
+
+  const allPresetsStr = useMemo(() => {
+    const base = [activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap((p) => p.split("-"));
+    const tgt = parsedTargets.flatMap((t) => [t.preset, t.nearestPreset, t.neighborPreset]).filter(Boolean).flatMap((p) => (p as string).split("-"));
+    return Array.from(new Set([...base, ...tgt])).join("-");
+  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
+
+  const activePresetKeys = useMemo(() => {
+    const keys = new Set<string>();
+    allPresetsStr.split("-").forEach((k) => {
+      if (!k) return;
+      if (FILTER_PRESETS.has(k)) keys.add("_filters");
+      else keys.add(k);
+    });
+    if (Object.keys(activeStartStyles).length > 0 || Object.keys(activeEndStyles).length > 0) keys.add("customStartEnd");
+    if (activeOnCalculate) keys.add("custom");
+    return Array.from(keys);
+  }, [allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
+
+  const deps = [
+    selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset,
+    activeReach, activeFalloff, activeDuration, activePrecision, parsedMaxTravel, activeLockAxis,
+    activeResetDuration, activeDelay, activeResetDelay, activeGlobal, activeExplicit,
+    mergedBounds, activeStartStyles, activeEndStyles, parsedTargets, allPresetsStr, activeTimeline, 
+    activeScrollConfig, ignoreSelectors.join(","), targetEase, targetResetEase, activeMode,
+    activeScrollFocus, activeScrollStart, activeScrollEnd, memoizedStagger, memoizedResetStagger,
+    memoizedDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd, activeWaitForLeaveAnimationEnd,
+  ];
+
+  return {
+    selector, excludeElements, ignoreSelectors, className, style, children, scrollerRef, restProps,
+    activeMode, activeReach, activeFalloff, activeDuration, activeResetDuration, activeDelay, activeResetDelay,
+    activeGlobal, activeExplicit, activePreset, activeNearestPreset, activeNeighborPreset, activeMaxTravel,
+    activeLockAxis, activePrecision, activeOnCalculate, activeOnReset, activeTargets, activeScrollStart,
+    activeScrollEnd, activeScrollFocus, activeDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd,
+    activeWaitForLeaveAnimationEnd, activeStagger, activeResetStagger, activeScrub, targetEase, targetResetEase,
+    mergedBounds, activeTimeline, activeScrollConfig, activeStartStyles, activeEndStyles, parsedMaxTravel,
+    parsedTargets, memoizedStagger, memoizedResetStagger, memoizedDisableOnMobile, allPresetsStr, activePresetKeys, deps
+  };
+}
+</file>
+
+<file path="src/lib/index.ts">
+export * from './types';
+export * from './constants';
+export * from './utils';
+export * from './hooks';
+export * from './Proximity';
+export * from './components/ProximityPointer';
+export * from './components/ProximityScroll';
+export * from './ProximityText';
+export * from './ProximityContext';
 </file>
 
 <file path=".github/changelog_config.json">
@@ -1650,195 +1653,6 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
 };
 </file>
 
-<file path="src/lib/components/ProximityScroll.tsx">
-import React, { useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useProximityConfig } from "../core/useProximityConfig";
-import { ProximityEngine } from "../core/ProximityEngine";
-import { calculatePresetValues } from "../utils";
-import { addWillChange, removeWillChange, parseScrollPosition, getScrollFocusValue } from "../utils/proximityHelpers";
-import { PRESET_DEFAULTS, EASE_MAP } from "../constants";
-import { ProximityProps } from "../types";
-
-gsap.registerPlugin(ScrollTrigger);
-
-export const ProximityScroll: React.FC<ProximityProps> = (props) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const config = useProximityConfig(props);
-  const scrollTriggersRef = useRef<ScrollTrigger[]>([]);
-
-  useGSAP(() => {
-    if (!containerRef.current) return;
-    const engine = new ProximityEngine(containerRef.current, config);
-    engine.setup();
-    let isCancelled = false;
-
-    let scrollTimeout: ReturnType<typeof setTimeout>;
-    const onScroll = (): void => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(engine.updateCenters, 100);
-    };
-    const scrollListenTarget = config.scrollerRef?.current;
-    if (scrollListenTarget && scrollListenTarget !== (window as unknown) && scrollListenTarget !== document.documentElement && scrollListenTarget !== document.body) {
-      scrollListenTarget.addEventListener("scroll", onScroll as EventListener, { passive: true });
-    }
-
-    const getStaggerValue = (i: number, target: HTMLElement, list: HTMLElement[], staggerVal: number | gsap.StaggerVars): number => {
-      if (!staggerVal) return 0;
-      if (typeof staggerVal === "number") return i * staggerVal;
-      return gsap.utils.distribute(staggerVal)(i, target, list);
-    };
-
-    const setupScroll = (): void => {
-      if (isCancelled) return;
-      scrollTriggersRef.current.forEach((t) => t.kill());
-      scrollTriggersRef.current = [];
-
-      const isTriggerMode = config.activeScrollConfig.scrub === false;
-      const scrollerTarget = config.scrollerRef?.current ?? config.activeScrollConfig.scroller ?? window;
-      const parsedStart = parseScrollPosition(config.activeScrollConfig.start ?? config.activeScrollStart, true);
-      const parsedEnd = parseScrollPosition(config.activeScrollConfig.end ?? config.activeScrollEnd, false);
-      const focusPoint = getScrollFocusValue(config.activeScrollConfig.focus ?? config.activeScrollFocus);
-      const isOnce = config.activeScrollConfig.once ?? true;
-
-      const animStates = engine.items.map(() => ({ isEntering: false, isLeaving: false, enterEndTime: 0, leaveEndTime: 0, queuedCall: null as gsap.core.Tween | null }));
-
-      engine.items.forEach((item, i) => {
-        const lc = engine.targetMap.get(item);
-        const localPreset = lc?.preset ?? config.activePreset;
-        const localDuration = lc?.duration ?? config.activeDuration;
-        const localResetDuration = lc?.resetDuration ?? config.activeResetDuration;
-        const localEase = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? config.targetEase;
-
-        const runEnter = (): void => {
-          item.dataset.proxScrollActive = "true";
-          if (!engine.skipAllAnimations) addWillChange(item);
-          if (!isTriggerMode) return;
-
-          const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate ? { custom: config.activeOnCalculate(1, 0, 0, 0, true) } : calculatePresetValues(localPreset, config.allPresetsStr, 1, config.mergedBounds, 0, 0, engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis, config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets);
-          let maxDur = 0;
-          const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-          for (const key of keys) {
-            const vars = gp[key]; if (!vars) continue;
-            const tl = config.activeTimeline?.[key] ?? {};
-            const stV = config.activeWaitForAnimationEnd ? (localDuration + (tl.delay ?? config.activeDelay)) : config.memoizedStagger;
-            const del = (tl.delay ?? config.activeDelay) + getStaggerValue(i, item, engine.items, stV);
-            maxDur = Math.max(maxDur, localDuration + del);
-            engine.applyVars(item, key, vars, localDuration, del, localEase);
-          }
-          if (config.activeWaitForEnterAnimationEnd) {
-            animStates[i].isEntering = true; animStates[i].enterEndTime = Date.now() + maxDur * 1000;
-            gsap.delayedCall(maxDur, () => { animStates[i].isEntering = false; });
-          }
-        };
-
-        const runLeave = (): void => {
-          item.dataset.proxScrollActive = "false";
-          if (!isTriggerMode || isOnce) { if (!isTriggerMode && !engine.skipAllAnimations) removeWillChange(item); return; }
-
-          const gr = engine.resetProps[i] ?? {};
-          let maxWait = localResetDuration + config.activeResetDelay;
-          const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-          for (const key of keys) {
-            const vars = gr[key]; if (!vars) continue;
-            const tl = config.activeTimeline?.[key] ?? {};
-            const rsV = config.activeWaitForAnimationEnd ? (localResetDuration + (tl.resetDelay ?? config.activeResetDelay)) : config.memoizedResetStagger;
-            const del = (tl.resetDelay ?? config.activeResetDelay) + getStaggerValue(i, item, engine.items, rsV);
-            maxWait = Math.max(maxWait, localResetDuration + del);
-            engine.applyVars(item, key, vars, localResetDuration, del, config.targetResetEase);
-          }
-          if (config.activeWaitForLeaveAnimationEnd) {
-            animStates[i].isLeaving = true; animStates[i].leaveEndTime = Date.now() + maxWait * 1000;
-            gsap.delayedCall(maxWait, () => { animStates[i].isLeaving = false; });
-          }
-          if (!engine.skipAllAnimations) gsap.delayedCall(maxWait, () => { if (item.dataset.proxScrollActive !== "true") removeWillChange(item); });
-        };
-
-        const guarded = (fn: () => void, waitLeave: boolean, waitEnter: boolean, idx: number) => {
-          if (animStates[idx].queuedCall) animStates[idx].queuedCall?.kill();
-          if (waitLeave && animStates[idx].isLeaving) {
-            const left = Math.max(0, (animStates[idx].leaveEndTime - Date.now()) / 1000);
-            if (left > 0) { animStates[idx].queuedCall = gsap.delayedCall(left, fn); return; }
-          }
-          if (waitEnter && animStates[idx].isEntering) {
-            const left = Math.max(0, (animStates[idx].enterEndTime - Date.now()) / 1000);
-            if (left > 0) { animStates[idx].queuedCall = gsap.delayedCall(left, fn); return; }
-          }
-          fn();
-        };
-
-        scrollTriggersRef.current.push(ScrollTrigger.create({
-          trigger: item, scroller: scrollerTarget, pin: config.activeScrollConfig.pin, pinSpacing: config.activeScrollConfig.pinSpacing,
-          start: parsedStart, end: parsedEnd, scrub: isTriggerMode ? false : config.activeScrub, once: isOnce, markers: config.activeScrollConfig.markers ?? false,
-          onEnter: () => guarded(runEnter, config.activeWaitForLeaveAnimationEnd ?? false, false, i),
-          onLeave: () => guarded(runLeave, false, config.activeWaitForEnterAnimationEnd ?? false, i),
-          onEnterBack: () => guarded(runEnter, config.activeWaitForLeaveAnimationEnd ?? false, false, i),
-          onLeaveBack: () => guarded(runLeave, false, config.activeWaitForEnterAnimationEnd ?? false, i),
-          onUpdate: isTriggerMode ? undefined : (self) => {
-            let nd = 0; const env = config.activeScrollConfig.envelope;
-            if (env) {
-              const [inEnd, outStart] = env;
-              if (self.progress <= inEnd) nd = inEnd === 0 ? 1 : self.progress / inEnd;
-              else if (self.progress >= outStart) nd = outStart === 1 ? 1 : 1 - ((self.progress - outStart) / (1 - outStart));
-              else nd = 1;
-            } else {
-              if (focusPoint === 0) nd = 1 - self.progress; else if (focusPoint === 1) nd = self.progress;
-              else nd = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
-            }
-            const intens = Math.pow(nd, config.activeFalloff);
-            const vel = self.getVelocity();
-            const simDy = Math.min(Math.max(vel * 0.05, -100), 100);
-
-            const clampedVel = gsap.utils.clamp(-3000, 3000, vel);
-            const normalizedVel = clampedVel / 3000;
-            if (config.activePresetKeys.includes('velocitySkew')) item._quickTos?.skewY?.(normalizedVel * ((config.mergedBounds.velocitySkew ?? PRESET_DEFAULTS.velocitySkew)[1] as number));
-            if (config.activePresetKeys.includes('velocityScale')) {
-              const maxScale = (config.mergedBounds.velocityScale ?? PRESET_DEFAULTS.velocityScale)[1] as number;
-              item._quickTos?.scaleY?.(1 + Math.abs(normalizedVel * (maxScale - 1)));
-              item._quickTos?.scaleX?.(1 - Math.abs(normalizedVel * (maxScale - 1) * 0.5));
-            }
-            if (config.activePresetKeys.includes('parallax')) item._quickTos?.y?.(gsap.utils.interpolate(((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), -((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), self.progress));
-
-            if (Math.abs(intens - engine.states[i].lastIntensity) < config.activePrecision && Math.abs(simDy - engine.states[i].lastDy) < 1.0) return;
-
-            engine.states[i].lastIntensity = intens; engine.states[i].lastDy = simDy;
-
-            const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate ? { custom: config.activeOnCalculate(intens, 0, 0, simDy, true) } : calculatePresetValues(localPreset, config.allPresetsStr, intens, config.mergedBounds, 0, simDy, engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis, config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets);
-            const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-            for (const key of keys) {
-              const vars = gp[key]; if (!vars) continue;
-              const tl = config.activeTimeline?.[key] ?? {};
-              engine.applyVars(item, key, vars, tl.duration ?? 0.1, tl.delay ?? 0, EASE_MAP[tl.ease as string] ?? tl.ease ?? "none");
-            }
-            engine.setters[i].intensity(intens.toFixed(3));
-          },
-        }));
-      });
-    };
-
-    if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
-
-    return () => {
-      isCancelled = true;
-      engine.destroy();
-      if (scrollListenTarget && scrollListenTarget !== (window as unknown) && scrollListenTarget !== document.documentElement && scrollListenTarget !== document.body) {
-        scrollListenTarget.removeEventListener("scroll", onScroll as EventListener);
-      }
-      clearTimeout(scrollTimeout!);
-      scrollTriggersRef.current.forEach((t) => t.kill());
-    };
-  }, { dependencies: config.deps, scope: containerRef });
-
-  return (
-    <div ref={containerRef} className={`proximity-container ${config.className}`.trim()} style={{ position: "relative", touchAction: "auto", ...config.style }} {...config.restProps}>
-      {config.children}
-    </div>
-  );
-};
-</file>
-
 <file path="src/lib/types.ts">
 import { CSSProperties } from "react";
 
@@ -2288,6 +2102,195 @@ export const doesSegmentConnectLeft = (seg: string) => {
   const baseStr = seg.replace(ARABIC_DIACRITICS, '');
   if (!baseStr) return false;
   return !ARABIC_NON_CONNECTING_LEFT.test(baseStr[baseStr.length - 1]);
+};
+</file>
+
+<file path="src/lib/components/ProximityScroll.tsx">
+import React, { useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useProximityConfig } from "../core/useProximityConfig";
+import { ProximityEngine } from "../core/ProximityEngine";
+import { calculatePresetValues } from "../utils";
+import { addWillChange, removeWillChange, parseScrollPosition, getScrollFocusValue } from "../utils/proximityHelpers";
+import { PRESET_DEFAULTS, EASE_MAP } from "../constants";
+import { ProximityProps } from "../types";
+
+export const ProximityScroll: React.FC<ProximityProps> = (props) => {
+  gsap.registerPlugin(ScrollTrigger);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const config = useProximityConfig(props);
+  const scrollTriggersRef = useRef<ScrollTrigger[]>([]);
+
+  useGSAP(() => {
+    if (!containerRef.current) return;
+    const engine = new ProximityEngine(containerRef.current, config);
+    engine.setup();
+    let isCancelled = false;
+
+    let scrollTimeout: ReturnType<typeof setTimeout>;
+    const onScroll = (): void => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(engine.updateCenters, 100);
+    };
+    const scrollListenTarget = config.scrollerRef?.current;
+    if (scrollListenTarget && scrollListenTarget !== (window as unknown) && scrollListenTarget !== document.documentElement && scrollListenTarget !== document.body) {
+      scrollListenTarget.addEventListener("scroll", onScroll as EventListener, { passive: true });
+    }
+
+    const getStaggerValue = (i: number, target: HTMLElement, list: HTMLElement[], staggerVal: number | gsap.StaggerVars): number => {
+      if (!staggerVal) return 0;
+      if (typeof staggerVal === "number") return i * staggerVal;
+      return gsap.utils.distribute(staggerVal)(i, target, list);
+    };
+
+    const setupScroll = (): void => {
+      if (isCancelled) return;
+      scrollTriggersRef.current.forEach((t) => t.kill());
+      scrollTriggersRef.current = [];
+
+      const isTriggerMode = config.activeScrollConfig.scrub === false;
+      const scrollerTarget = config.scrollerRef?.current ?? config.activeScrollConfig.scroller ?? window;
+      const parsedStart = parseScrollPosition(config.activeScrollConfig.start ?? config.activeScrollStart, true);
+      const parsedEnd = parseScrollPosition(config.activeScrollConfig.end ?? config.activeScrollEnd, false);
+      const focusPoint = getScrollFocusValue(config.activeScrollConfig.focus ?? config.activeScrollFocus);
+      const isOnce = config.activeScrollConfig.once ?? true;
+
+      const animStates = engine.items.map(() => ({ isEntering: false, isLeaving: false, enterEndTime: 0, leaveEndTime: 0, queuedCall: null as gsap.core.Tween | null }));
+
+      engine.items.forEach((item, i) => {
+        const lc = engine.targetMap.get(item);
+        const localPreset = lc?.preset ?? config.activePreset;
+        const localDuration = lc?.duration ?? config.activeDuration;
+        const localResetDuration = lc?.resetDuration ?? config.activeResetDuration;
+        const localEase = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? config.targetEase;
+
+        const runEnter = (): void => {
+          item.dataset.proxScrollActive = "true";
+          if (!engine.skipAllAnimations) addWillChange(item);
+          if (!isTriggerMode) return;
+
+          const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate ? { custom: config.activeOnCalculate(1, 0, 0, 0, true) } : calculatePresetValues(localPreset, config.allPresetsStr, 1, config.mergedBounds, 0, 0, engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis, config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets);
+          let maxDur = 0;
+          const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+          for (const key of keys) {
+            const vars = gp[key]; if (!vars) continue;
+            const tl = config.activeTimeline?.[key] ?? {};
+            const stV = config.activeWaitForAnimationEnd ? (localDuration + (tl.delay ?? config.activeDelay)) : config.memoizedStagger;
+            const del = (tl.delay ?? config.activeDelay) + getStaggerValue(i, item, engine.items, stV);
+            maxDur = Math.max(maxDur, localDuration + del);
+            engine.applyVars(item, key, vars, localDuration, del, localEase);
+          }
+          if (config.activeWaitForEnterAnimationEnd) {
+            animStates[i].isEntering = true; animStates[i].enterEndTime = Date.now() + maxDur * 1000;
+            gsap.delayedCall(maxDur, () => { animStates[i].isEntering = false; });
+          }
+        };
+
+        const runLeave = (): void => {
+          item.dataset.proxScrollActive = "false";
+          if (!isTriggerMode || isOnce) { if (!isTriggerMode && !engine.skipAllAnimations) removeWillChange(item); return; }
+
+          const gr = engine.resetProps[i] ?? {};
+          let maxWait = localResetDuration + config.activeResetDelay;
+          const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+          for (const key of keys) {
+            const vars = gr[key]; if (!vars) continue;
+            const tl = config.activeTimeline?.[key] ?? {};
+            const rsV = config.activeWaitForAnimationEnd ? (localResetDuration + (tl.resetDelay ?? config.activeResetDelay)) : config.memoizedResetStagger;
+            const del = (tl.resetDelay ?? config.activeResetDelay) + getStaggerValue(i, item, engine.items, rsV);
+            maxWait = Math.max(maxWait, localResetDuration + del);
+            engine.applyVars(item, key, vars, localResetDuration, del, config.targetResetEase);
+          }
+          if (config.activeWaitForLeaveAnimationEnd) {
+            animStates[i].isLeaving = true; animStates[i].leaveEndTime = Date.now() + maxWait * 1000;
+            gsap.delayedCall(maxWait, () => { animStates[i].isLeaving = false; });
+          }
+          if (!engine.skipAllAnimations) gsap.delayedCall(maxWait, () => { if (item.dataset.proxScrollActive !== "true") removeWillChange(item); });
+        };
+
+        const guarded = (fn: () => void, waitLeave: boolean, waitEnter: boolean, idx: number) => {
+          if (animStates[idx].queuedCall) animStates[idx].queuedCall?.kill();
+          if (waitLeave && animStates[idx].isLeaving) {
+            const left = Math.max(0, (animStates[idx].leaveEndTime - Date.now()) / 1000);
+            if (left > 0) { animStates[idx].queuedCall = gsap.delayedCall(left, fn); return; }
+          }
+          if (waitEnter && animStates[idx].isEntering) {
+            const left = Math.max(0, (animStates[idx].enterEndTime - Date.now()) / 1000);
+            if (left > 0) { animStates[idx].queuedCall = gsap.delayedCall(left, fn); return; }
+          }
+          fn();
+        };
+
+        scrollTriggersRef.current.push(ScrollTrigger.create({
+          trigger: item, scroller: scrollerTarget, pin: config.activeScrollConfig.pin, pinSpacing: config.activeScrollConfig.pinSpacing,
+          start: parsedStart, end: parsedEnd, scrub: isTriggerMode ? false : config.activeScrub, once: isOnce, markers: config.activeScrollConfig.markers ?? false,
+          onEnter: () => guarded(runEnter, config.activeWaitForLeaveAnimationEnd ?? false, false, i),
+          onLeave: () => guarded(runLeave, false, config.activeWaitForEnterAnimationEnd ?? false, i),
+          onEnterBack: () => guarded(runEnter, config.activeWaitForLeaveAnimationEnd ?? false, false, i),
+          onLeaveBack: () => guarded(runLeave, false, config.activeWaitForEnterAnimationEnd ?? false, i),
+          onUpdate: isTriggerMode ? undefined : (self) => {
+            let nd = 0; const env = config.activeScrollConfig.envelope;
+            if (env) {
+              const [inEnd, outStart] = env;
+              if (self.progress <= inEnd) nd = inEnd === 0 ? 1 : self.progress / inEnd;
+              else if (self.progress >= outStart) nd = outStart === 1 ? 1 : 1 - ((self.progress - outStart) / (1 - outStart));
+              else nd = 1;
+            } else {
+              if (focusPoint === 0) nd = 1 - self.progress; else if (focusPoint === 1) nd = self.progress;
+              else nd = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
+            }
+            const intens = Math.pow(nd, config.activeFalloff);
+            const vel = self.getVelocity();
+            const simDy = Math.min(Math.max(vel * 0.05, -100), 100);
+
+            const clampedVel = gsap.utils.clamp(-3000, 3000, vel);
+            const normalizedVel = clampedVel / 3000;
+            if (config.activePresetKeys.includes('velocitySkew')) item._quickTos?.skewY?.(normalizedVel * ((config.mergedBounds.velocitySkew ?? PRESET_DEFAULTS.velocitySkew)[1] as number));
+            if (config.activePresetKeys.includes('velocityScale')) {
+              const maxScale = (config.mergedBounds.velocityScale ?? PRESET_DEFAULTS.velocityScale)[1] as number;
+              item._quickTos?.scaleY?.(1 + Math.abs(normalizedVel * (maxScale - 1)));
+              item._quickTos?.scaleX?.(1 - Math.abs(normalizedVel * (maxScale - 1) * 0.5));
+            }
+            if (config.activePresetKeys.includes('parallax')) item._quickTos?.y?.(gsap.utils.interpolate(((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), -((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), self.progress));
+
+            if (Math.abs(intens - engine.states[i].lastIntensity) < config.activePrecision && Math.abs(simDy - engine.states[i].lastDy) < 1.0) return;
+
+            engine.states[i].lastIntensity = intens; engine.states[i].lastDy = simDy;
+
+            const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate ? { custom: config.activeOnCalculate(intens, 0, 0, simDy, true) } : calculatePresetValues(localPreset, config.allPresetsStr, intens, config.mergedBounds, 0, simDy, engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis, config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets);
+            const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+            for (const key of keys) {
+              const vars = gp[key]; if (!vars) continue;
+              const tl = config.activeTimeline?.[key] ?? {};
+              engine.applyVars(item, key, vars, tl.duration ?? 0.1, tl.delay ?? 0, EASE_MAP[tl.ease as string] ?? tl.ease ?? "none");
+            }
+            engine.setters[i].intensity(intens.toFixed(3));
+          },
+        }));
+      });
+    };
+
+    if (document.fonts) document.fonts.ready.then(setupScroll); else setupScroll();
+
+    return () => {
+      isCancelled = true;
+      engine.destroy();
+      if (scrollListenTarget && scrollListenTarget !== (window as unknown) && scrollListenTarget !== document.documentElement && scrollListenTarget !== document.body) {
+        scrollListenTarget.removeEventListener("scroll", onScroll as EventListener);
+      }
+      clearTimeout(scrollTimeout!);
+      scrollTriggersRef.current.forEach((t) => t.kill());
+    };
+  }, { dependencies: config.deps, scope: containerRef });
+
+  return (
+    <div ref={containerRef} className={`proximity-container ${config.className}`.trim()} style={{ position: "relative", touchAction: "auto", ...config.style }} {...config.restProps}>
+      {config.children}
+    </div>
+  );
 };
 </file>
 
@@ -4343,144 +4346,6 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 }
 </file>
 
-<file path="vite.config.ts">
-import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import dts from "vite-plugin-dts";
-import { resolve } from "path";
-import Sitemap from "vite-plugin-sitemap";
-
-const useClientPlugin = () => ({
-  name: "add-use-client-directive",
-  renderChunk(code: string, chunk: any) {
-    if (chunk.fileName.endsWith(".es.js") && !code.includes("use client")) {
-      return '"use client";\n' + code;
-    }
-    return null;
-  },
-});
-
-export default defineConfig(({ mode }) => {
-  const isLib = mode === "lib";
-
-  return {
-    publicDir: isLib ? false : "public",
-    plugins: [
-      react(),
-      tailwindcss(),
-      isLib &&
-        dts({
-          insertTypesEntry: true,
-          include: ["src/lib"],
-          rollupTypes: true,
-        }),
-      isLib && useClientPlugin(),
-      !isLib &&
-        Sitemap({
-          hostname: "https://z-proximity-engine.vercel.app",
-          dynamicRoutes: ["/"],
-        }),
-    ].filter(Boolean),
-
-    esbuild: {
-      drop: isLib ? ["console", "debugger"] : [],
-      legalComments: "none",
-    },
-
-    build: {
-      outDir: "dist",
-      emptyOutDir: true,
-      minify: "terser",
-      cssMinify: 'lightningcss',
-      modulePreload: { polyfill: false },
-      terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_getters: true,
-          dead_code: true,
-          passes: 3,
-          unsafe: true,
-          unsafe_arrows: true,
-          unsafe_comps: true,
-          unsafe_math: true,
-          unsafe_methods: true,
-          unsafe_proto: true,
-          hoist_funs: true,
-          hoist_vars: true,
-          unsafe_undefined: true,
-          inline: 2,
-          comparisons: true,
-          evaluate: true,
-        },
-        mangle: {
-          toplevel: true,
-          safari10: false,
-        },
-        format: {
-          comments: false,
-          wrap_iife: true,
-        },
-      },
-      chunkSizeWarningLimit: 500,
-
-      ...(isLib
-        ? {
-            lib: {
-              entry: resolve(__dirname, "src/lib/index.ts"),
-              name: "ZProximityEngine",
-            },
-            rollupOptions: {
-              external: [
-                "react",
-                "react-dom",
-                "react/jsx-runtime",
-                "@gsap/react",
-                /^gsap(\/.*)?$/,
-              ],
-              treeshake: {
-                  moduleSideEffects: false,
-                  propertyReadSideEffects: false,
-                  tryCatchDeoptimization: false,
-                },
-              output: [
-                {
-                  format: "es",
-                  exports: "named",
-                  preserveModules: true,
-                  preserveModulesRoot: "src/lib",
-                  entryFileNames: "[name].es.js",
-                  compact: true,
-                  minifyInternalExports: true
-                },
-                {
-                  format: "umd",
-                  name: "ZProximityEngine",
-                  exports: "named",
-                  entryFileNames: "index.umd.js",
-                  compact: true,
-                  minifyInternalExports: true,
-                  globals: {
-                    react: "React",
-                    "react-dom": "ReactDOM",
-                    "react/jsx-runtime": "jsxRuntime",
-                    gsap: "gsap",
-                    "gsap/ScrollTrigger": "ScrollTrigger",
-                    "@gsap/react": "gsapReact",
-                  },
-                },
-              ],
-            },
-          }
-        : {
-            cssCodeSplit: true,
-          }),
-    },
-  };
-});
-</file>
-
 <file path="index.html">
 <!doctype html>
 <html lang="en" class="dark">
@@ -4561,6 +4426,148 @@ export default defineConfig(({ mode }) => {
     <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
+</file>
+
+<file path="vite.config.ts">
+// vite.config.ts
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import dts from "vite-plugin-dts";
+import { resolve } from "path";
+import Sitemap from "vite-plugin-sitemap";
+
+const useClientPlugin = () => ({
+  name: "add-use-client-directive",
+  renderChunk(code: string, chunk: any) {
+    if (chunk.fileName.endsWith(".es.js") && !code.includes("use client")) {
+      return '"use client";\n' + code;
+    }
+    return null;
+  },
+});
+
+export default defineConfig(({ mode }) => {
+  const isLib = mode === "lib";
+
+  return {
+    publicDir: isLib ? false : "public",
+    plugins: [
+      react(),
+      tailwindcss(),
+      isLib &&
+        dts({
+          insertTypesEntry: true,
+          include: ["src/lib"],
+          rollupTypes: true,
+        }),
+      isLib && useClientPlugin(),
+      !isLib &&
+        Sitemap({
+          hostname: "https://z-proximity-engine.vercel.app",
+          dynamicRoutes: ["/"],
+        }),
+    ].filter(Boolean),
+
+    esbuild: {
+      drop: isLib ? ["console", "debugger"] : [],
+      legalComments: "none",
+    },
+
+    build: {
+      outDir: "dist",
+      emptyOutDir: true,
+      minify: "terser",
+      cssMinify: 'lightningcss',
+      modulePreload: { polyfill: false },
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_getters: true,
+          dead_code: true,
+          passes: 3,
+          unsafe: true,
+          unsafe_arrows: true,
+          unsafe_comps: true,
+          unsafe_math: true,
+          unsafe_methods: true,
+          unsafe_proto: true,
+          hoist_funs: true,
+          hoist_vars: true,
+          unsafe_undefined: true,
+          inline: 2,
+          comparisons: true,
+          evaluate: true,
+        },
+        mangle: {
+          toplevel: true,
+          safari10: false,
+          properties: {
+            regex: /^_quickTos$|^_isProxVisible$|^_willChangeCount$|^_scrollState$|^_lastCipherUpdate$/,
+          }
+        },
+        format: {
+          comments: false,
+          wrap_iife: true,
+        },
+      },
+      chunkSizeWarningLimit: 500,
+
+      ...(isLib
+        ? {
+            lib: {
+              entry: resolve(__dirname, "src/lib/index.ts"),
+              name: "ZProximityEngine",
+            },
+            rollupOptions: {
+              external: [
+                "react",
+                "react-dom",
+                "react/jsx-runtime",
+                "@gsap/react",
+                /^gsap(\/.*)?$/,
+              ],
+              treeshake: {
+                  moduleSideEffects: false,
+                  propertyReadSideEffects: false,
+                  tryCatchDeoptimization: false,
+                },
+              output: [
+                {
+                  format: "es",
+                  exports: "named",
+                  preserveModules: true,
+                  preserveModulesRoot: "src/lib",
+                  entryFileNames: "[name].es.js",
+                  compact: true,
+                  minifyInternalExports: true
+                },
+                {
+                  format: "umd",
+                  name: "ZProximityEngine",
+                  exports: "named",
+                  entryFileNames: "index.umd.js",
+                  compact: true,
+                  minifyInternalExports: true,
+                  globals: {
+                    react: "React",
+                    "react-dom": "ReactDOM",
+                    "react/jsx-runtime": "jsxRuntime",
+                    gsap: "gsap",
+                    "gsap/ScrollTrigger": "ScrollTrigger",
+                    "@gsap/react": "gsapReact",
+                  },
+                },
+              ],
+            },
+          }
+        : {
+            cssCodeSplit: true,
+          }),
+    },
+  };
+});
 </file>
 
 <file path="src/lib/ProximityText.tsx">
