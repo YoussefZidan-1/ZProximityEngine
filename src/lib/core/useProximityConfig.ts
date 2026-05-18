@@ -1,4 +1,3 @@
-// src/lib/core/useProximityConfig.ts
 import { useMemo } from "react";
 import { useDeepMemo } from "../hooks";
 import { FILTER_PRESETS, EASE_MAP } from "../constants";
@@ -7,7 +6,7 @@ import { ProximityProps, ProximityScrollConfig } from "../types";
 export function useProximityConfig(props: ProximityProps) {
   const {
     children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "",
-    reach = 2, falloff = 2.4, duration = 0.2, resetDuration = 0.4, global = false, explicit = false,
+    reach = 1, falloff = 2.4, duration = 0.2, resetDuration = 0.4, global = false, explicit = false,
     mode = "pointer", scrollerRef, scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top",
     lockAxis, precision = 0.002, maxTravel, onCalculate, onReset, ease, resetEase, disableOnMobile,
     waitForAnimationEnd, waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur, rotate, weight, skew,

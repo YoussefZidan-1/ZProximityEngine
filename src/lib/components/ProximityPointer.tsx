@@ -16,20 +16,27 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
   const lastPointer = useRef({ x: -1, y: -1 });
 
   useGSAP(() => {
-    if (!containerRef.current) return;
-    const engine = new ProximityEngine(containerRef.current, config);
-    engine.setup();
-
-    const maxDistance = config.activeReach * 200;
-
-    const onTick = (): void => {
+      if (!containerRef.current) return;
+      const engine = new ProximityEngine(containerRef.current, config);
+      engine.setup();
+  
+      let cipherInterval: ReturnType<typeof setInterval>;
       const hasCipher = config.allPresetsStr.includes("cipher");
       if (hasCipher && !engine.skipAllAnimations) {
-        for (let i = 0; i < engine.items.length; i++) {
-          const item = engine.items[i];
-          if (item.proxCipher! > 0.01) cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
-        }
+        cipherInterval = setInterval(() => {
+          for (let i = 0; i < engine.items.length; i++) {
+            const item = engine.items[i];
+            if (item.proxCipher! > 0.01) {
+              cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
+            }
+          }
+        }, 60);
       }
+  
+      const maxDistance = config.activeReach * 200;
+      let isTickerActive = false;
+
+      const onTick = (): void => {
 
       if (pointer.current.x === lastPointer.current.x && pointer.current.y === lastPointer.current.y) return;
       lastPointer.current.x = pointer.current.x;
@@ -51,8 +58,8 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
       if (config.activeGlobal) {
         engine.items.forEach((_, i) => toCheck.add(i));
       } else {
-        const CELL = 150;
-        const cellRadius = Math.ceil(maxDistance / CELL);
+              const CELL = Math.max(50, maxDistance / 2);
+              const cellRadius = Math.ceil(maxDistance / CELL);
         const cx = Math.floor(localX / CELL);
         const cy = Math.floor(localY / CELL);
         for (let ox = -cellRadius; ox <= cellRadius; ox++) {
@@ -159,8 +166,8 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
         const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate
           ? { custom: config.activeOnCalculate(intensity, d, dx, dy, isNearest) }
           : calculatePresetValues(cp, config.allPresetsStr, intensity, config.mergedBounds, dx, dy,
-            engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis,
-            config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets);
+                      engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis,
+                      config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets, engine.cachedValues[i]);
 
         const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
         for (const k of keys) {
@@ -179,58 +186,77 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
       }
     };
 
-    if (!engine.skipAllAnimations) {
-      gsap.ticker.add(onTick);
-      const target = config.activeGlobal ? window : engine.container;
-      const upd = (px: number, py: number, tgt: EventTarget | null) => { pointer.current = { x: px, y: py, target: tgt, active: true }; };
-      const onMove = (e: PointerEvent) => upd(e.clientX, e.clientY, e.target);
-      const onTMove = (e: TouchEvent) => { if (e.touches[0]) upd(e.touches[0].clientX, e.touches[0].clientY, e.target); };
-      const onFocusIn = (e: FocusEvent) => {
-        const targetNode = e.target as HTMLElement;
-        const index = engine.items.indexOf(targetNode as ProxHTMLElement);
-        if (index !== -1 && engine.centers[index]) {
-          const b = engine.centers[index];
-          const cRect = engine.container.getBoundingClientRect();
-          upd(b.x + cRect.left, b.y + cRect.top, e.target);
-        }
-      };
-
-      const handleReset = (): void => {
-        pointer.current.active = false;
-        engine.items.forEach((item, i) => {
-          const gr = engine.resetProps[i] ?? {};
-          gsap.to(item, {
-            "--prox-intensity": 0, duration: config.activeResetDuration, delay: config.activeResetDelay, ease: config.targetResetEase, overwrite: "auto",
-            onComplete: () => { if (engine.states[i].isOutside) removeWillChange(item); },
-          });
-          const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-          for (const k of keys) {
-            if (!gr[k]) continue;
-            engine.applyVars(item, k, gr[k], config.activeResetDuration, config.activeResetDelay, config.targetResetEase);
+      if (!engine.skipAllAnimations) {
+            const startTicker = () => {
+              if (!isTickerActive && !engine.skipAllAnimations) {
+                gsap.ticker.add(onTick);
+                isTickerActive = true;
+              }
+            };
+            
+            const stopTicker = () => {
+              if (isTickerActive) {
+                gsap.ticker.remove(onTick);
+                isTickerActive = false;
+              }
+            };
+      
+            const target = config.activeGlobal ? window : engine.container;
+            const upd = (px: number, py: number, tgt: EventTarget | null) => { 
+              pointer.current = { x: px, y: py, target: tgt, active: true }; 
+              startTicker(); // Wake up!
+            };
+            
+            const onMove = (e: PointerEvent) => upd(e.clientX, e.clientY, e.target);
+            const onTMove = (e: TouchEvent) => { if (e.touches[0]) upd(e.touches[0].clientX, e.touches[0].clientY, e.target); };
+            const onFocusIn = (e: FocusEvent) => {
+              const targetNode = e.target as HTMLElement;
+              const index = engine.items.indexOf(targetNode as ProxHTMLElement);
+              if (index !== -1 && engine.centers[index]) {
+                const b = engine.centers[index];
+                const cRect = engine.container.getBoundingClientRect();
+                upd(b.x + cRect.left, b.y + cRect.top, e.target);
+              }
+            };
+      
+            const handleReset = (): void => {
+              pointer.current.active = false;
+              stopTicker();
+              engine.items.forEach((item, i) => {
+                const gr = engine.resetProps[i] ?? {};
+                gsap.to(item, {
+                  "--prox-intensity": 0, duration: config.activeResetDuration, delay: config.activeResetDelay, ease: config.targetResetEase, overwrite: "auto",
+                  onComplete: () => { if (engine.states[i].isOutside) removeWillChange(item); },
+                });
+                const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+                for (const k of keys) {
+                  if (!gr[k]) continue;
+                  engine.applyVars(item, k, gr[k], config.activeResetDuration, config.activeResetDelay, config.targetResetEase);
+                }
+              });
+              engine.states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; });
+            };
+      
+            target.addEventListener("pointermove", onMove as EventListener);
+            target.addEventListener("pointerleave", handleReset as EventListener);
+            target.addEventListener("touchmove", onTMove as EventListener, { passive: true });
+            target.addEventListener("touchend", handleReset as EventListener);
+            target.addEventListener("focusin", onFocusIn as EventListener);
+            target.addEventListener("focusout", handleReset as EventListener);
+      
+            return () => {
+              if (cipherInterval) clearInterval(cipherInterval);
+              engine.destroy();
+              gsap.ticker.remove(onTick);
+              stopTicker();
+              target.removeEventListener("pointermove", onMove as EventListener);
+              target.removeEventListener("pointerleave", handleReset as EventListener);
+              target.removeEventListener("touchmove", onTMove as EventListener, { passive: true } as unknown as EventListenerOptions);
+              target.removeEventListener("touchend", handleReset as EventListener);
+              target.removeEventListener("focusin", onFocusIn as EventListener);
+              target.removeEventListener("focusout", handleReset as EventListener);
+            };
           }
-        });
-        engine.states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; });
-      };
-
-      target.addEventListener("pointermove", onMove as EventListener);
-      target.addEventListener("pointerleave", handleReset as EventListener);
-      target.addEventListener("touchmove", onTMove as EventListener, { passive: true });
-      target.addEventListener("touchend", handleReset as EventListener);
-      target.addEventListener("focusin", onFocusIn as EventListener);
-      target.addEventListener("focusout", handleReset as EventListener);
-
-      return () => {
-        engine.destroy();
-        gsap.ticker.remove(onTick);
-        target.removeEventListener("pointermove", onMove as EventListener);
-        target.removeEventListener("pointerleave", handleReset as EventListener);
-        target.removeEventListener("touchmove", onTMove as EventListener);
-        target.removeEventListener("touchmove", onTMove as EventListener, { passive: true } as unknown as EventListenerOptions);
-        target.removeEventListener("touchend", handleReset as EventListener);
-        target.removeEventListener("focusin", onFocusIn as EventListener);
-        target.removeEventListener("focusout", handleReset as EventListener);
-      };
-    }
 
     return () => engine.destroy();
   }, { dependencies: config.deps, scope: containerRef });

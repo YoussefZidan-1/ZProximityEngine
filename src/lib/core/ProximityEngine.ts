@@ -15,8 +15,8 @@ export class ProximityEngine {
   containerBounds: ContainerBounds | null = null;
   resetProps: Record<string, gsap.TweenVars>[] = [];
   spatialGrid: Map<string, number[]> = new Map();
-
-  // 🚀 ZERO-GC POOLS: Pre-allocated memory for 120FPS loop
+  cachedValues: Record<string, gsap.TweenVars>[] = [];
+  lastCipherUpdate: number = 0;
   toCheckSet: Set<number> = new Set();
   dArray: Float32Array = new Float32Array(0);
   dxArray: Float32Array = new Float32Array(0);
@@ -62,15 +62,23 @@ export class ProximityEngine {
     });
 
     this.resizeObserver = new ResizeObserver(() => {
-      clearTimeout(this.resizeTimeout);
-      this.resizeTimeout = setTimeout(this.updateCenters, 150);
-    });
-
-    this.mutationObserver.observe(this.container, { childList: true, subtree: true });
-    this.resizeObserver.observe(this.container);
-    this.resizeObserver.observe(document.body);
-
-    if (document.fonts) document.fonts.ready.then(() => this.initItems()); else this.initItems();
+          clearTimeout(this.resizeTimeout);
+          this.resizeTimeout = setTimeout(this.updateCenters, 150);
+        });
+    
+        this.mutationObserver.observe(this.container, { childList: true, subtree: true });
+        this.resizeObserver.observe(this.container); 
+    
+        if (document.fonts) {
+          document.fonts.ready.then(() => {
+            this.initItems();
+            if (this.config.splitBy === "line") {
+              setTimeout(this.updateCenters, 100);
+            }
+          });
+        } else {
+          this.initItems();
+        }
   }
 
   updateCenters = (): void => {
@@ -87,27 +95,32 @@ export class ProximityEngine {
       };
       
       const hasFlexScale = this.config.allPresetsStr.includes("flexScale");
-      const saved = this.items.map((item) => {
-        const s: any = { tf: item.style.transform };
+      
+      // LOOP 1: READ ONLY (Save styles safely)
+      const saved = this.items.map((item) => ({
+        tf: item.style.transform,
+        ml: item.style.marginLeft, mr: item.style.marginRight,
+        mt: item.style.marginTop, mb: item.style.marginBottom
+      }));
+  
+      // LOOP 2: WRITE ONLY (Clear transforms)
+      this.items.forEach((item) => {
         item.style.transform = "";
-        if (hasFlexScale) {
-          s.ml = item.style.marginLeft; s.mr = item.style.marginRight;
-          s.mt = item.style.marginTop; s.mb = item.style.marginBottom;
-          item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = "";
-        }
-        return s;
+        if (hasFlexScale) item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = "";
       });
   
+      // LOOP 3: READ ONLY (Measure without thrashing)
       const measurements = this.items.map((item) => {
         const rect = item.getBoundingClientRect();
-        const comp = window.getComputedStyle(item);
+        const comp = hasFlexScale ? window.getComputedStyle(item) : null;
         return {
           rect,
-          ml: parseFloat(comp.marginLeft) || 0, mr: parseFloat(comp.marginRight) || 0,
-          mt: parseFloat(comp.marginTop) || 0, mb: parseFloat(comp.marginBottom) || 0
+          ml: comp ? parseFloat(comp.marginLeft) || 0 : 0, mr: comp ? parseFloat(comp.marginRight) || 0 : 0,
+          mt: comp ? parseFloat(comp.marginTop) || 0 : 0, mb: comp ? parseFloat(comp.marginBottom) || 0 : 0
         };
       });
   
+      // LOOP 4: WRITE ONLY (Restore styles and build centers)
       this.centers = this.items.map((item, i) => {
         const s = saved[i];
         item.style.transform = s.tf;
@@ -124,9 +137,12 @@ export class ProximityEngine {
         };
       });
   
+      const maxDistance = this.config.activeReach * 200;
+      const CELL = Math.max(50, maxDistance / 2); // Dynamic grid sizing
+  
       this.spatialGrid.clear();
       this.centers.forEach((c, i) => {
-        const key = `${Math.floor(c.x / 150)},${Math.floor(c.y / 150)}`;
+        const key = `${Math.floor(c.x / CELL)},${Math.floor(c.y / CELL)}`;
         if (!this.spatialGrid.has(key)) this.spatialGrid.set(key,[]);
         this.spatialGrid.get(key)!.push(i);
       });
@@ -135,11 +151,21 @@ export class ProximityEngine {
   initItems = (): void => {
     if (this.items.length > 0) gsap.killTweensOf(this.items);
 
-    const sel = this.config.excludeElements?.trim()
-      ? this.config.selector.split(",").map((s: string) => `${s.trim()}:not(${this.config.excludeElements})`).join(", ")
-      : this.config.selector;
-
-    const allMatches = Array.from(this.container.querySelectorAll(sel)) as ProxHTMLElement[];
+    let allMatches: ProxHTMLElement[] = [];
+    try {
+      const sel = this.config.excludeElements?.trim()
+        ? this.config.selector.split(",").map((s: string) => `${s.trim()}:not(${this.config.excludeElements})`).join(", ")
+        : this.config.selector;
+      allMatches = Array.from(this.container.querySelectorAll(sel)) as ProxHTMLElement[];
+    } catch (e) {
+      const baseMatches = Array.from(this.container.querySelectorAll(this.config.selector)) as ProxHTMLElement[];
+      if (this.config.excludeElements) {
+        const excluded = new Set(Array.from(this.container.querySelectorAll(this.config.excludeElements)));
+        allMatches = baseMatches.filter(el => !excluded.has(el));
+      } else {
+        allMatches = baseMatches;
+      }
+    }
     this.items = allMatches.filter(item => item.closest('.proximity-container') === this.container);
 
     this.targetMap.clear();
@@ -168,9 +194,12 @@ export class ProximityEngine {
           item.style.backgroundClip = "text";
         }
       }
-      
-      item._quickTos = {};
-            item._scrollState = "resting";
+            if (item._quickTos) {
+              gsap.killTweensOf(item);
+              item._quickTos = undefined;
+            }
+            item._quickTos = {};
+                  item._scrollState = "resting";
             const isScrubMode = this.config.activeMode === "scroll" && this.config.activeScrollConfig?.scrub !== false;
             const dur = isScrubMode ? 0.05 : (lc?.duration ?? this.config.activeDuration);
             const ez = isScrubMode ? "none" : (EASE_MAP[lc?.ease as string] ?? lc?.ease ?? this.config.targetEase);
@@ -187,8 +216,9 @@ export class ProximityEngine {
     }));
 
     this.dArray = new Float32Array(this.items.length);
-    this.dxArray = new Float32Array(this.items.length);
-    this.dyArray = new Float32Array(this.items.length);
+        this.dxArray = new Float32Array(this.items.length);
+        this.dyArray = new Float32Array(this.items.length);
+        this.cachedValues = this.items.map(() => ({}));
 
     this.updateCenters();
 

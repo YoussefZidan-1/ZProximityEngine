@@ -112,13 +112,14 @@ export default function App() {
   });
 
   useEffect(() => {
-    function update(time: number) {
-      lenisRef.current?.lenis?.raf(time * 1000);
-    }
-    gsap.ticker.add(update);
-    gsap.ticker.lagSmoothing(0);
-    return () => gsap.ticker.remove(update);
-  },[]);
+      function update(time: number) {
+        lenisRef.current?.lenis?.raf(time * 1000);
+      }
+      gsap.ticker.add(update);
+      gsap.ticker.lagSmoothing(500, 33);
+      gsap.ticker.fps(120);
+      return () => gsap.ticker.remove(update);
+    },[]);
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();

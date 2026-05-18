@@ -35,9 +35,9 @@
     transition-duration: 300ms;
   }
 
-  .prox-part {
-    transition: none !important;
-  }
+  .prox-item, .prox-part {
+      transition: none !important;
+    }
 }
 
 .mono-grid {

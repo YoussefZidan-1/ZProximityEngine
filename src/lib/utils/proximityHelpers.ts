@@ -29,7 +29,6 @@ export const addWillChange = (item: ProxHTMLElement): void => {
 };
 
 export const removeWillChange = (item: ProxHTMLElement): void => {
-  if ((item._willChangeCount ?? 0) > 0) item._willChangeCount!--;
-  if (item._willChangeCount === 0)
-    gsap.set(item, { willChange: "auto" });
+  item._willChangeCount = 0;
+  gsap.set(item, { willChange: "auto" });
 };

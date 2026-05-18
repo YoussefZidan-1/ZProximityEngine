@@ -15,8 +15,6 @@ export function deepEqual(a: any, b: any): boolean {
   return true;
 }
 
-const CALC_RESULT: Record<string, gsap.TweenVars> = {};
-
 export const calculatePresetValues = (
   activePresetString: string,
   allPresetsString: string,
@@ -32,10 +30,14 @@ export const calculatePresetValues = (
   endStyles?: gsap.TweenVars,
   skipAll = false,
   disabledPresets: Set<string> = new Set(),
+  targetCache: Record<string, gsap.TweenVars> = {}
 ): Record<string, gsap.TweenVars> => {
   if (skipAll) return {};
-
-  for (const k in CALC_RESULT) delete CALC_RESULT[k];
+  for (const k in targetCache) {
+    for (const prop in targetCache[k]) {
+      targetCache[k][prop] = undefined as any;
+    }
+  }
 
   const activeProps = new Set(activePresetString.split("-").filter(Boolean));
   const allPropsArray = allPresetsString.split("-").filter(Boolean);
@@ -80,8 +82,8 @@ export const calculatePresetValues = (
     if (prop === "contrast") { filterChunks.push(`contrast(${curValue})`); continue; }
     if (prop === "grayScale") { filterChunks.push(`grayscale(${curValue})`); continue; }
 
-    if (!CALC_RESULT[prop]) CALC_RESULT[prop] = {};
-    const res = CALC_RESULT[prop];
+    if (!targetCache[prop]) targetCache[prop] = {};
+    const res = targetCache[prop];
 
     switch (prop) {
       case "weight":
@@ -192,12 +194,12 @@ export const calculatePresetValues = (
     }
   }
 
-  if (!CALC_RESULT["_filters"]) CALC_RESULT["_filters"] = {};
-  CALC_RESULT["_filters"].filter = filterChunks.length > 0 ? filterChunks.join(" ") : "none";
+  if (!targetCache["_filters"]) targetCache["_filters"] = {};
+  targetCache["_filters"].filter = filterChunks.length > 0 ? filterChunks.join(" ") : "none";
 
   if (startStyles || endStyles) {
-    if (!CALC_RESULT["customStartEnd"]) CALC_RESULT["customStartEnd"] = {};
-    const custom = CALC_RESULT["customStartEnd"];
+    if (!targetCache["customStartEnd"]) targetCache["customStartEnd"] = {};
+    const custom = targetCache["customStartEnd"];
     for (const k in custom) delete custom[k];
 
     const keys = new Set([...Object.keys(startStyles ?? {}), ...Object.keys(endStyles ?? {})]);
@@ -214,7 +216,7 @@ export const calculatePresetValues = (
     });
   }
 
-  return CALC_RESULT;
+  return targetCache;
 };
 
 export function cipherUpdate(this: gsap.core.Tween) {
