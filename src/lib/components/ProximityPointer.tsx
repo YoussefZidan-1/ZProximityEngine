@@ -36,7 +36,6 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
       lastPointer.current.y = pointer.current.y;
 
       if (!pointer.current.active || engine.skipAllAnimations) return;
-      
       const cRect = engine.container.getBoundingClientRect();
       const localX = pointer.current.x - cRect.left;
       const localY = pointer.current.y - cRect.top;
@@ -46,8 +45,9 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
         const cb = engine.containerBounds;
         if ((localX < cb.left - maxDistance || localX > cb.right + maxDistance || localY < cb.top - maxDistance || localY > cb.bottom + maxDistance || isBlocked) && engine.states.every((s) => s.isOutside)) return;
       }
+      const toCheck = engine.toCheckSet;
+      toCheck.clear();
 
-      const toCheck = new Set<number>();
       if (config.activeGlobal) {
         engine.items.forEach((_, i) => toCheck.add(i));
       } else {
@@ -58,35 +58,62 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
         for (let ox = -cellRadius; ox <= cellRadius; ox++) {
           for (let oy = -cellRadius; oy <= cellRadius; oy++) {
             const cells = engine.spatialGrid.get(`${cx + ox},${cy + oy}`);
-            if (cells) for (const idx of cells) toCheck.add(idx);
+            if (cells) {
+              for (let j = 0; j < cells.length; j++) toCheck.add(cells[j]);
+            }
           }
         }
       }
 
       engine.states.forEach((s, i) => { if (!s.isOutside) toCheck.add(i); });
 
-      const dData: { d: number; dx: number; dy: number }[] = engine.items.map(() => ({ d: Infinity, dx: 0, dy: 0 }));
+      const maxDistanceSq = maxDistance * maxDistance;
       let nearestIndex = -1;
-      let minDist = Infinity;
+      let minDistSq = Infinity;
+
+      for (const i of toCheck) {
+        engine.dArray[i] = Infinity;
+      }
 
       for (const i of toCheck) {
         const b = engine.centers[i];
         if (!b) continue;
+        
         const dx = localX - b.x;
         const dy = localY - b.y;
+        engine.dxArray[i] = dx;
+        engine.dyArray[i] = dy;
+
         const distX = Math.max(0, Math.abs(dx) - b.w / 2);
         const distY = Math.max(0, Math.abs(dy) - b.h / 2);
-        const dBox = Math.sqrt(distX * distX + distY * distY);
+        
+        const dBoxSq = distX * distX + distY * distY;
+        
         const inside = localX >= b.left && localX <= b.right && localY >= b.top && localY <= b.bottom;
         const offScreen = (engine.items[i] as ProxHTMLElement)._isProxVisible === false;
-        const d = isBlocked || (config.activeExplicit && !inside) || offScreen ? Infinity : dBox;          
-        if (d < minDist) { minDist = d; nearestIndex = i; }
-        dData[i] = { d, dx, dy }; 
+        
+        if (isBlocked || (config.activeExplicit && !inside) || offScreen) continue; 
+        
+        if (dBoxSq > maxDistanceSq) {
+          continue; 
+        }
+        
+        engine.dArray[i] = Math.sqrt(dBoxSq); 
+        
+        if (dBoxSq < minDistSq) { 
+          minDistSq = dBoxSq; 
+          nearestIndex = i; 
+        }
       }
+
+      const falloff = Math.max(0.01, config.activeFalloff);
+      const expDenominator = 1 - Math.exp(-falloff);
 
       for (const i of toCheck) {
         const item = engine.items[i];
-        const { d, dx, dy } = dData[i];
+        const d = engine.dArray[i];
+        const dx = engine.dxArray[i];
+        const dy = engine.dyArray[i];
         const isNearest = i === nearestIndex && d <= maxDistance;
         const lc = engine.targetMap.get(item);
 
@@ -109,7 +136,10 @@ export const ProximityPointer: React.FC<ProximityProps> = (props) => {
           continue;
         }
 
-        const intensity = Math.pow(Math.max(0, 1 - (d / maxDistance)), config.activeFalloff);
+        const x = d / maxDistance;
+        let intensity = (Math.exp(-falloff * x) - Math.exp(-falloff)) / expDenominator;
+        intensity = Math.max(0, Math.min(1, intensity));
+
         const hasMoved = Math.abs(intensity - engine.states[i].lastIntensity) >= config.activePrecision || Math.abs(dx - engine.states[i].lastDx) >= 1.0;
 
         if (!hasMoved) continue;

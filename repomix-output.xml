@@ -1202,93 +1202,6 @@ export default function PresetsSection() {
 }
 </file>
 
-<file path="src/index.css">
-@import "tailwindcss";
-
-@theme {
-  --font-arabic: "Cairo";
-  --font-sans: "Bricolage Grotesque", "Cairo", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-serif: "Source Serif 4", serif;
-}
-
-@layer base {
-  :root {
-    --bg-color: #ffffff;
-    --text-color: #0c0c0c;
-    --border-color: #0c0c0c;
-    --grid-dot: #d1d5db; /* Darkened dots for visibility */
-  }
-
-  .dark {
-    --bg-color: #000000;
-    --text-color: #f8fafc;
-    --border-color: #f8fafc;
-    --grid-dot: #1f2937;
-  }
-
-  body {
-    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-  }
-
-  * {
-    @apply border-[var(--border-color)];
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
-  }
-
-  .prox-part {
-    transition: none !important;
-  }
-}
-
-.mono-grid {
-  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 0.5px, transparent 0);
-  background-size: 24px 24px;
-}
-
-@layer utilities {
-  .smooth-strike {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-strike::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 0;
-    height: 1.5px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-strike:hover::after {
-    width: 100%;
-  }
-
-  .smooth-underline {
-    position: relative;
-    display: inline-block;
-  }
-  .smooth-underline::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background-color: var(--text-color);
-    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-  }
-  .smooth-underline:hover::after {
-    width: 100%;
-  }
-}
-</file>
-
 <file path="src/lib/constants.ts">
 export const PRESET_DEFAULTS: Record<string, [number, number] | [string, string]> = {
   scale: [1, 1.5],
@@ -1435,6 +1348,93 @@ jobs:
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+</file>
+
+<file path="src/index.css">
+@import "tailwindcss";
+
+@theme {
+  --font-arabic: "Cairo";
+  --font-sans: "Bricolage Grotesque", "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Source Serif 4", serif;
+}
+
+@layer base {
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #0c0c0c;
+    --border-color: #0c0c0c;
+    --grid-dot: #d1d5db;
+  }
+
+  .dark {
+    --bg-color: #000000;
+    --text-color: #f8fafc;
+    --border-color: #f8fafc;
+    --grid-dot: #1f2937;
+  }
+
+  body {
+    @apply antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  * {
+    @apply border-[var(--border-color)];
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  .prox-part {
+    transition: none !important;
+  }
+}
+
+.mono-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 2px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@layer utilities {
+  .smooth-strike {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-strike::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-strike:hover::after {
+    width: 100%;
+  }
+
+  .smooth-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .smooth-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--text-color);
+    transition: width 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+  .smooth-underline:hover::after {
+    width: 100%;
+  }
+}
 </file>
 
 <file path="src/lib/components/ProximityPointer.tsx">
@@ -2292,265 +2292,6 @@ export const ProximityScroll: React.FC<ProximityProps> = (props) => {
     </div>
   );
 };
-</file>
-
-<file path="README.md">
-<div align="center">
-  <img src="public/og-image.jpg" alt="ZProximity Engine" width="100%" style="border-radius: 8px; margin-bottom: 20px;" />
-
-  # 🚀 ZProximity Engine
-  **The Physics of Attraction for the Modern Web.**
-  
-  [![NPM Downloads](https://img.shields.io/npm/dt/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
-  [![NPM Version](https://img.shields.io/npm/v/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
-  [![Bundle Size](https://img.shields.io/bundlephobia/minzip/z-proximity-engine?color=black&label=Core%20Weight&style=for-the-badge)](https://bundlephobia.com/package/z-proximity-engine)
-  [![License](https://img.shields.io/npm/l/z-proximity-engine?color=black&style=for-the-badge)](#license)
-
-> A high-performance React animation library for creating proximity-based interactions, magnetic cursor effects, and scroll-driven animations with GSAP. Perfect alternative to Framer Motion and React Spring for spatial interactions.
-
-[**✨ Live Demo**](https://z-proximity-engine.vercel.app/) • [**📦 NPM**](https://www.npmjs.com/package/z-proximity-engine) • [**📖 Documentation**](https://z-proximity-engine.vercel.app/#implementation) • [**🎮 Interactive Playground**](https://z-proximity-engine.vercel.app/#gamebox)
-</div>
-
-
-
-
----
-
-## 🎯 Why ZProximity Engine?
-
-### Performance First
-- ⚡ **120+ FPS**: Runs at native refresh rates
-- 📦 **8.7KB Core**: Minimal bundle impact
-- 🚀 **GSAP Powered**: Industry-standard animation engine
-- 🎭 **Zero Re-renders**: Animations bypass React's render cycle
-
-### Developer Experience
-- 💪 **TypeScript**: Full type safety
-- 🎨 **30+ Presets**: Scale, magnetic, blur, cipher, and more
-- 🔗 **Chainable**: Combine unlimited effects with dash syntax
-- 📱 **Mobile Optimized**: Smart performance on touch devices
-
-### Use Cases
-- 🎯 Magnetic dock interfaces (macOS-style)
-- ✨ Interactive landing pages
-- 📜 Scroll-driven storytelling
-- 🎮 Game-like UI interactions
-- 🔮 Futuristic dashboard effects
-
----
-
-## 📦 Installation
-
-```bash
-npm install z-proximity-engine gsap @gsap/react
-```
-
-### Peer Dependencies
-```bash
-npm install react@^18.0.0 react-dom@^18.0.0 gsap@^3.15.0 @gsap/react@^2.1.2
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. Basic Hover Effect (3 lines)
-
-```tsx
-import { Proximity } from 'z-proximity-engine';
-
-export const HoverCards = () => (
-  <Proximity preset="scale-blur" reach={2}>
-    <div className="prox-item">Card 1</div>
-    <div className="prox-item">Card 2</div>
-    <div className="prox-item">Card 3</div>
-  </Proximity>
-);
-```
-
-### 2. Text Animations
-
-```tsx
-import { ProximityText } from 'z-proximity-engine';
-
-export const Hero = () => (
-  <ProximityText 
-    text="HOVER ME"
-    preset="scale-opacity-cipher"
-    splitBy="letter"
-    reach={1.5}
-  />
-);
-```
-
-### 3. Scroll Reveal
-
-```tsx
-export const Features = () => (
-  <Proximity
-    mode="scroll"
-    preset="reveal-opacity"
-    config={{
-      scroll: { start: "top 90%", once: true },
-      stagger: 0.2
-    }}
-  >
-    <div className="prox-item">Feature 1</div>
-    <div className="prox-item">Feature 2</div>
-  </Proximity>
-);
-```
-
----
-
-## 🎨 Animation Presets
-
-### Transform
-`scale` | `flexScale` | `x` | `y` | `rotate` | `skew`
-
-### Appearance
-`opacity` | `blur` | `reveal` | `glow` | `brightness`
-
-### Physics
-`magnetic` | `repel` | `tilt` | `tiltCard`
-
-### Typography
-`weight` | `cipher` | `letterSpacing` | `color`
-
-### Combine with Dash Syntax
-```tsx
-preset="scale-blur-magnetic-opacity"
-```
-
----
-
-## 🏗️ Real-World Examples
-
-### macOS Dock Effect
-```tsx
-<Proximity 
-  nearestPreset="scale-magnetic" // Closest icon grows & pulls
-  neighborPreset="repel"         // Others push away
-  config={{ reach: 2.5, lockAxis: 'x' }}
->
-  {icons.map(icon => (
-    <div key={icon} className="prox-item dock-icon">
-      {icon}
-    </div>
-  ))}
-</Proximity>
-```
-
-### Cipher Decryption
-```tsx
-<ProximityText 
-  text="CLASSIFIED"
-  preset="cipher-scale"
-  config={{ 
-    cipher: [0, 1],  // Scrambled → Clear
-    reach: 2 
-  }}
-/>
-```
-
-### Magnetic Button
-```tsx
-<Proximity preset="magnetic-scale" reach={1.5}>
-  <button className="prox-item">Click Me</button>
-</Proximity>
-```
-
----
-
-## 📊 Performance Benchmarks
-
-| Metric | Value |
-|--------|-------|
-| Core Bundle Size | 8KB (gzipped) |
-| First Contentful Paint | < 1s |
-| Time to Interactive | < 1.5s |
-| Animation FPS | 120+ |
-| Supported Elements | 100+ simultaneous |
-
----
-
-## 🔧 API Reference
-
-### Core Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `preset` | `string` | - | Chain effects with dashes |
-| `reach` | `number` | `2` | Influence radius |
-| `falloff` | `number` | `2.4` | Curve steepness |
-| `duration` | `number` | `0.2` | Animation speed |
-| `ease` | `string` | `"power1.out"` | GSAP easing |
-| `mode` | `"pointer" \| "scroll"` | `"pointer"` | Trigger type |
-
-[**📖 Full API Documentation**](https://z-proximity-engine.vercel.app/#api-reference)
-
----
-
-## 🌐 Browser Support
-
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
-- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/amazing-preset`)
-3. Commit your changes (`git commit -m 'Add amazing preset'`)
-4. Push to the branch (`git push origin feature/amazing-preset`)
-5. Open a Pull Request
-
----
-
-## 📝 License
-
-MIT © [Youssef Zidan](https://github.com/YoussefZidan-1)
-
----
-
-## 🔗 Links
-
-- [🌐 Official Website](https://z-proximity-engine.vercel.app/)
-- [📦 NPM Package](https://www.npmjs.com/package/z-proximity-engine)
-- [💬 GitHub Discussions](https://github.com/YoussefZidan-1/ZProximityEngine/discussions)
-- [🐛 Issue Tracker](https://github.com/YoussefZidan-1/ZProximityEngine/issues)
-- [👨‍💻 Author Portfolio](https://yzportfolio.vercel.app)
-- [💼 LinkedIn](https://www.linkedin.com/in/yousef-zedan-6a275a400/)
-
----
-
-## 🏆 Alternatives Comparison
-
-| Feature | ZProximity | Framer Motion | React Spring |
-|---------|-----------|---------------|--------------|
-| Proximity Detection | ✅ Built-in | ❌ Manual | ❌ Manual |
-| Bundle Size | 8.7KB | ~50KB | ~15KB |
-| GSAP Integration | ✅ Native | ⚠️ Possible | ❌ No |
-| Scroll Animations | ✅ Built-in | ✅ Built-in | ⚠️ External |
-| TypeScript | ✅ Full | ✅ Full | ✅ Full |
-| Learning Curve | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-
----
-
-**Made with ⚡ by [Youssef Zidan](https://github.com/YoussefZidan-1)**
-
-*If this library helped you, please ⭐ star the repo!*
-
----
-
-### Keywords
-`react animation`, `proximity detection`, `magnetic cursor`, `hover effects`, `scroll animations`, `gsap react`, `motion design`, `interactive ui`, `spatial interactions`, `cursor effects`, `animation library`, `react gsap`, `framer motion alternative`, `react spring alternative`, `proximity-based animations`, `distance-based effects`
 </file>
 
 <file path="src/Documentation.tsx">
@@ -4346,228 +4087,263 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 }
 </file>
 
-<file path="index.html">
-<!doctype html>
-<html lang="en" class="dark">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="theme-color" content="#000000" /> 
-    
-        <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "ZProximity Engine",
-          "alternateName": ["ZProximity", "Z-Proximity"],
-          "url": "https://z-proximity-engine.vercel.app/"
-        }
-        </script>
-    
-        <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "name": "ZProximity Engine",
-          "applicationCategory": "DeveloperApplication",
-          "operatingSystem": "Web",
-          "description": "High-performance React library for proximity-based animations. GSAP-powered engine with 8.7KB bundle size.",
-          "url": "https://z-proximity-engine.vercel.app/",
-          "downloadUrl": "https://www.npmjs.com/package/z-proximity-engine",
-          "softwareVersion": "2.4.4",
-          "author": {
-            "@type": "Person",
-            "name": "Youssef Zidan",
-            "url": "https://github.com/YoussefZidan-1"
-          },
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          },
-          "featureList": [
-            "Proximity-based animations",
-            "Magnetic cursor effects",
-            "Scroll-driven interactions",
-            "120+ FPS performance",
-            "8.7KB core bundle size"
-          ]
-        }
-        </script>
-    
-        <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48" />
-        <link rel="icon" type="image/png" href="/favicon-144.png" sizes="144x144" />
-        <link rel="apple-touch-icon" href="/favicon-144.png">
-        
-        <title>ZProximity Engine - React Proximity Animation Library | GSAP Powered</title>
-        <meta name="title" content="ZProximity Engine - React Proximity Animation Library | GSAP Powered" />
-        <meta name="description" content="High-performance React library for proximity-based animations. Create magnetic effects, hover animations, and scroll interactions with 8.7KB core. 120+ FPS performance." />
-        
-        <meta name="keywords" content="react animation library, proximity animation, gsap react, hover effects react, magnetic cursor, scroll animations, react motion design, proximity detection, interactive ui react, animation framework, react gsap library, cursor effects, spatial interactions, framer motion alternative, react spring alternative" />
-    
-        <link rel="canonical" href="https://z-proximity-engine.vercel.app/" />
-        <meta name="google-site-verification" content="kpZpGxomYOeqOMitjEl4EDhlANP33SaBq9WfbGmvdCU" />
-    
-        <!-- Open Graph / Facebook -->
-        <meta property="og:site_name" content="ZProximity Engine" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
-        <meta property="og:title" content="ZProximity Engine - React Proximity Animation Library" />
-        <meta property="og:description" content="High-performance React library for proximity-based animations. 120+ FPS performance." />
-        <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
-    
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cairo:wght@200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,200..900&display=swap" rel="stylesheet">
-    </head>
-<body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-</body>
-</html>
-</file>
+<file path="README.md">
+<div align="center">
+  <img src="public/og-image.jpg" alt="ZProximity Engine" width="100%" style="border-radius: 8px; margin-bottom: 20px;" />
 
-<file path="vite.config.ts">
-// vite.config.ts
-import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import dts from "vite-plugin-dts";
-import { resolve } from "path";
-import Sitemap from "vite-plugin-sitemap";
+  # 🚀 ZProximity Engine
+  **The Physics of Attraction for the Modern Web.**
+  
+  [![NPM Downloads](https://img.shields.io/npm/dt/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
+  [![NPM Version](https://img.shields.io/npm/v/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
+  [![Bundle Size](https://img.shields.io/bundlephobia/minzip/z-proximity-engine?color=black&label=Core%20Weight&style=for-the-badge)](https://bundlephobia.com/package/z-proximity-engine)
+  [![License](https://img.shields.io/npm/l/z-proximity-engine?color=black&style=for-the-badge)](#license)
 
-const useClientPlugin = () => ({
-  name: "add-use-client-directive",
-  renderChunk(code: string, chunk: any) {
-    if (chunk.fileName.endsWith(".es.js") && !code.includes("use client")) {
-      return '"use client";\n' + code;
-    }
-    return null;
-  },
-});
+> A high-performance React animation library for creating proximity-based interactions, magnetic cursor effects, and scroll-driven animations with GSAP. Perfect alternative to Framer Motion and React Spring for spatial interactions.
 
-export default defineConfig(({ mode }) => {
-  const isLib = mode === "lib";
+[**✨ Live Demo**](https://z-proximity-engine.vercel.app/) • [**📦 NPM**](https://www.npmjs.com/package/z-proximity-engine) • [**📖 Documentation**](https://z-proximity-engine.vercel.app/#implementation) • [**🎮 Interactive Playground**](https://z-proximity-engine.vercel.app/#gamebox)
+</div>
 
-  return {
-    publicDir: isLib ? false : "public",
-    plugins: [
-      react(),
-      tailwindcss(),
-      isLib &&
-        dts({
-          insertTypesEntry: true,
-          include: ["src/lib"],
-          rollupTypes: true,
-        }),
-      isLib && useClientPlugin(),
-      !isLib &&
-        Sitemap({
-          hostname: "https://z-proximity-engine.vercel.app",
-          dynamicRoutes: ["/"],
-        }),
-    ].filter(Boolean),
 
-    esbuild: {
-      drop: isLib ? ["console", "debugger"] : [],
-      legalComments: "none",
-    },
 
-    build: {
-      outDir: "dist",
-      emptyOutDir: true,
-      minify: "terser",
-      cssMinify: 'lightningcss',
-      modulePreload: { polyfill: false },
-      terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_getters: true,
-          dead_code: true,
-          passes: 3,
-          unsafe: true,
-          unsafe_arrows: true,
-          unsafe_comps: true,
-          unsafe_math: true,
-          unsafe_methods: true,
-          unsafe_proto: true,
-          hoist_funs: true,
-          hoist_vars: true,
-          unsafe_undefined: true,
-          inline: 2,
-          comparisons: true,
-          evaluate: true,
-        },
-        mangle: {
-          toplevel: true,
-          safari10: false,
-          properties: {
-            regex: /^_quickTos$|^_isProxVisible$|^_willChangeCount$|^_scrollState$|^_lastCipherUpdate$/,
-          }
-        },
-        format: {
-          comments: false,
-          wrap_iife: true,
-        },
-      },
-      chunkSizeWarningLimit: 500,
 
-      ...(isLib
-        ? {
-            lib: {
-              entry: resolve(__dirname, "src/lib/index.ts"),
-              name: "ZProximityEngine",
-            },
-            rollupOptions: {
-              external: [
-                "react",
-                "react-dom",
-                "react/jsx-runtime",
-                "@gsap/react",
-                /^gsap(\/.*)?$/,
-              ],
-              treeshake: {
-                  moduleSideEffects: false,
-                  propertyReadSideEffects: false,
-                  tryCatchDeoptimization: false,
-                },
-              output: [
-                {
-                  format: "es",
-                  exports: "named",
-                  preserveModules: true,
-                  preserveModulesRoot: "src/lib",
-                  entryFileNames: "[name].es.js",
-                  compact: true,
-                  minifyInternalExports: true
-                },
-                {
-                  format: "umd",
-                  name: "ZProximityEngine",
-                  exports: "named",
-                  entryFileNames: "index.umd.js",
-                  compact: true,
-                  minifyInternalExports: true,
-                  globals: {
-                    react: "React",
-                    "react-dom": "ReactDOM",
-                    "react/jsx-runtime": "jsxRuntime",
-                    gsap: "gsap",
-                    "gsap/ScrollTrigger": "ScrollTrigger",
-                    "@gsap/react": "gsapReact",
-                  },
-                },
-              ],
-            },
-          }
-        : {
-            cssCodeSplit: true,
-          }),
-    },
-  };
-});
+---
+
+## 🎯 Why ZProximity Engine?
+
+### Performance First
+- ⚡ **120+ FPS**: Runs at native refresh rates
+- 📦 **10.7KB Core**: Minimal bundle impact
+- 🚀 **GSAP Powered**: Industry-standard animation engine
+- 🎭 **Zero Re-renders**: Animations bypass React's render cycle
+
+### Developer Experience
+- 💪 **TypeScript**: Full type safety
+- 🎨 **30+ Presets**: Scale, magnetic, blur, cipher, and more
+- 🔗 **Chainable**: Combine unlimited effects with dash syntax
+- 📱 **Mobile Optimized**: Smart performance on touch devices
+
+### Use Cases
+- 🎯 Magnetic dock interfaces (macOS-style)
+- ✨ Interactive landing pages
+- 📜 Scroll-driven storytelling
+- 🎮 Game-like UI interactions
+- 🔮 Futuristic dashboard effects
+
+---
+
+## 📦 Installation
+
+```bash
+npm install z-proximity-engine gsap @gsap/react
+```
+
+### Peer Dependencies
+```bash
+npm install react@^18.0.0 react-dom@^18.0.0 gsap@^3.15.0 @gsap/react@^2.1.2
+```
+
+---
+
+## 🚀 Quick Start
+
+### 1. Basic Hover Effect (3 lines)
+
+```tsx
+import { Proximity } from 'z-proximity-engine';
+
+export const HoverCards = () => (
+  <Proximity preset="scale-blur" reach={2}>
+    <div className="prox-item">Card 1</div>
+    <div className="prox-item">Card 2</div>
+    <div className="prox-item">Card 3</div>
+  </Proximity>
+);
+```
+
+### 2. Text Animations
+
+```tsx
+import { ProximityText } from 'z-proximity-engine';
+
+export const Hero = () => (
+  <ProximityText 
+    text="HOVER ME"
+    preset="scale-opacity-cipher"
+    splitBy="letter"
+    reach={1.5}
+  />
+);
+```
+
+### 3. Scroll Reveal
+
+```tsx
+export const Features = () => (
+  <Proximity
+    mode="scroll"
+    preset="reveal-opacity"
+    config={{
+      scroll: { start: "top 90%", once: true },
+      stagger: 0.2
+    }}
+  >
+    <div className="prox-item">Feature 1</div>
+    <div className="prox-item">Feature 2</div>
+  </Proximity>
+);
+```
+
+---
+
+## 🎨 Animation Presets
+
+### Transform
+`scale` | `flexScale` | `x` | `y` | `rotate` | `skew`
+
+### Appearance
+`opacity` | `blur` | `reveal` | `glow` | `brightness`
+
+### Physics
+`magnetic` | `repel` | `tilt` | `tiltCard`
+
+### Typography
+`weight` | `cipher` | `letterSpacing` | `color`
+
+### Combine with Dash Syntax
+```tsx
+preset="scale-blur-magnetic-opacity"
+```
+
+---
+
+## 🏗️ Real-World Examples
+
+### macOS Dock Effect
+```tsx
+<Proximity 
+  nearestPreset="scale-magnetic" // Closest icon grows & pulls
+  neighborPreset="repel"         // Others push away
+  config={{ reach: 2.5, lockAxis: 'x' }}
+>
+  {icons.map(icon => (
+    <div key={icon} className="prox-item dock-icon">
+      {icon}
+    </div>
+  ))}
+</Proximity>
+```
+
+### Cipher Decryption
+```tsx
+<ProximityText 
+  text="CLASSIFIED"
+  preset="cipher-scale"
+  config={{ 
+    cipher: [0, 1],  // Scrambled → Clear
+    reach: 2 
+  }}
+/>
+```
+
+### Magnetic Button
+```tsx
+<Proximity preset="magnetic-scale" reach={1.5}>
+  <button className="prox-item">Click Me</button>
+</Proximity>
+```
+
+---
+
+## 📊 Performance Benchmarks
+
+| Metric | Value |
+|--------|-------|
+| Core Bundle Size | 10KB (gzipped) |
+| First Contentful Paint | < 1s |
+| Time to Interactive | < 1.5s |
+| Animation FPS | 120+ |
+| Supported Elements | 100+ simultaneous |
+
+---
+
+## 🔧 API Reference
+
+### Core Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `preset` | `string` | - | Chain effects with dashes |
+| `reach` | `number` | `2` | Influence radius |
+| `falloff` | `number` | `2.4` | Curve steepness |
+| `duration` | `number` | `0.2` | Animation speed |
+| `ease` | `string` | `"power1.out"` | GSAP easing |
+| `mode` | `"pointer" \| "scroll"` | `"pointer"` | Trigger type |
+
+[**📖 Full API Documentation**](https://z-proximity-engine.vercel.app/#api-reference)
+
+---
+
+## 🌐 Browser Support
+
+- ✅ Chrome 90+
+- ✅ Firefox 88+
+- ✅ Safari 14+
+- ✅ Edge 90+
+- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
+
+1. Fork the repo
+2. Create your feature branch (`git checkout -b feature/amazing-preset`)
+3. Commit your changes (`git commit -m 'Add amazing preset'`)
+4. Push to the branch (`git push origin feature/amazing-preset`)
+5. Open a Pull Request
+
+---
+
+## 📝 License
+
+MIT © [Youssef Zidan](https://github.com/YoussefZidan-1)
+
+---
+
+## 🔗 Links
+
+- [🌐 Official Website](https://z-proximity-engine.vercel.app/)
+- [📦 NPM Package](https://www.npmjs.com/package/z-proximity-engine)
+- [💬 GitHub Discussions](https://github.com/YoussefZidan-1/ZProximityEngine/discussions)
+- [🐛 Issue Tracker](https://github.com/YoussefZidan-1/ZProximityEngine/issues)
+- [👨‍💻 Author Portfolio](https://yzportfolio.vercel.app)
+- [💼 LinkedIn](https://www.linkedin.com/in/yousef-zedan-6a275a400/)
+
+---
+
+## 🏆 Alternatives Comparison
+
+| Feature | ZProximity | Framer Motion | React Spring |
+|---------|-----------|---------------|--------------|
+| Proximity Detection | ✅ Built-in | ❌ Manual | ❌ Manual |
+| Bundle Size | 10.7KB | ~50KB | ~15KB |
+| GSAP Integration | ✅ Native | ⚠️ Possible | ❌ No |
+| Scroll Animations | ✅ Built-in | ✅ Built-in | ⚠️ External |
+| TypeScript | ✅ Full | ✅ Full | ✅ Full |
+| Learning Curve | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+
+---
+
+**Made with ⚡ by [Youssef Zidan](https://github.com/YoussefZidan-1)**
+
+*If this library helped you, please ⭐ star the repo!*
+
+---
+
+### Keywords
+`react animation`, `proximity detection`, `magnetic cursor`, `hover effects`, `scroll animations`, `gsap react`, `motion design`, `interactive ui`, `spatial interactions`, `cursor effects`, `animation library`, `react gsap`, `framer motion alternative`, `react spring alternative`, `proximity-based animations`, `distance-based effects`
 </file>
 
 <file path="src/lib/ProximityText.tsx">
@@ -4813,21 +4589,228 @@ export const ProximityText: React.FC<ProximityTextProps> = ({
 };
 </file>
 
-<file path="src/lib/Proximity.tsx">
-import React from "react";
-import { ProximityProps } from "./types";
-import { ProximityPointer } from "./components/ProximityPointer";
-import { ProximityScroll } from "./components/ProximityScroll";
+<file path="index.html">
+<!doctype html>
+<html lang="en" class="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#000000" /> 
+    
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "ZProximity Engine",
+          "alternateName": ["ZProximity", "Z-Proximity"],
+          "url": "https://z-proximity-engine.vercel.app/"
+        }
+        </script>
+    
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "ZProximity Engine",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Web",
+          "description": "High-performance React library for proximity-based animations. GSAP-powered engine with 8.7KB bundle size.",
+          "url": "https://z-proximity-engine.vercel.app/",
+          "downloadUrl": "https://www.npmjs.com/package/z-proximity-engine",
+          "softwareVersion": "2.4.4",
+          "author": {
+            "@type": "Person",
+            "name": "Youssef Zidan",
+            "url": "https://github.com/YoussefZidan-1"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Proximity-based animations",
+            "Magnetic cursor effects",
+            "Scroll-driven interactions",
+            "120+ FPS performance",
+            "8.7KB core bundle size"
+          ]
+        }
+        </script>
+    
+        <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48" />
+        <link rel="icon" type="image/png" href="/favicon-144.png" sizes="144x144" />
+        <link rel="apple-touch-icon" href="/favicon-144.png">
+        
+        <title>ZProximity Engine - React Proximity Animation Library | GSAP Powered</title>
+        <meta name="title" content="ZProximity Engine - React Proximity Animation Library | GSAP Powered" />
+        <meta name="description" content="High-performance React library for proximity-based animations. Create magnetic effects, hover animations, and scroll interactions with 8.7KB core. 120+ FPS performance." />
+        
+        <meta name="keywords" content="react animation library, proximity animation, gsap react, hover effects react, magnetic cursor, scroll animations, react motion design, proximity detection, interactive ui react, animation framework, react gsap library, cursor effects, spatial interactions, framer motion alternative, react spring alternative" />
+    
+        <link rel="canonical" href="https://z-proximity-engine.vercel.app/" />
+        <meta name="google-site-verification" content="kpZpGxomYOeqOMitjEl4EDhlANP33SaBq9WfbGmvdCU" />
+    
+        <!-- Open Graph / Facebook -->
+        <meta property="og:site_name" content="ZProximity Engine" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://z-proximity-engine.vercel.app/" />
+        <meta property="og:title" content="ZProximity Engine - React Proximity Animation Library" />
+        <meta property="og:description" content="High-performance React library for proximity-based animations. 120+ FPS performance." />
+        <meta property="og:image" content="https://z-proximity-engine.vercel.app/og-image.jpg" />
+    
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cairo:wght@200..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,200..900&display=swap" rel="stylesheet">
+    </head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
+</file>
 
-export const Proximity: React.FC<ProximityProps> = (props) => {
-  const activeMode = props.config?.mode ?? props.mode ?? "pointer";
-  
-  if (activeMode === "scroll") {
-    return <ProximityScroll {...props} />;
-  }
-  
-  return <ProximityPointer {...props} />;
-};
+<file path="vite.config.ts">
+// vite.config.ts
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import dts from "vite-plugin-dts";
+import { resolve } from "path";
+import Sitemap from "vite-plugin-sitemap";
+
+const useClientPlugin = () => ({
+  name: "add-use-client-directive",
+  renderChunk(code: string, chunk: any) {
+    if (chunk.fileName.endsWith(".es.js") && !code.includes("use client")) {
+      return '"use client";\n' + code;
+    }
+    return null;
+  },
+});
+
+export default defineConfig(({ mode }) => {
+  const isLib = mode === "lib";
+
+  return {
+    publicDir: isLib ? false : "public",
+    plugins: [
+      react(),
+      tailwindcss(),
+      isLib &&
+        dts({
+          insertTypesEntry: true,
+          include: ["src/lib"],
+          rollupTypes: true,
+        }),
+      isLib && useClientPlugin(),
+      !isLib &&
+        Sitemap({
+          hostname: "https://z-proximity-engine.vercel.app",
+          dynamicRoutes: ["/"],
+        }),
+    ].filter(Boolean),
+
+    esbuild: {
+      drop: isLib ? ["console", "debugger"] : [],
+      legalComments: "none",
+    },
+
+    build: {
+      outDir: "dist",
+      emptyOutDir: true,
+      minify: "terser",
+      cssMinify: 'lightningcss',
+      modulePreload: { polyfill: false },
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_getters: true,
+          dead_code: true,
+          passes: 3,
+          unsafe: true,
+          unsafe_arrows: true,
+          unsafe_comps: true,
+          unsafe_math: true,
+          unsafe_methods: true,
+          unsafe_proto: true,
+          hoist_funs: true,
+          hoist_vars: true,
+          unsafe_undefined: true,
+          inline: 2,
+          comparisons: true,
+          evaluate: true,
+        },
+        mangle: {
+          toplevel: true,
+          safari10: false,
+          properties: {
+            regex: /^_quickTos$|^_isProxVisible$|^_willChangeCount$|^_scrollState$|^_lastCipherUpdate$/,
+          }
+        },
+        format: {
+          comments: false,
+          wrap_iife: true,
+        },
+      },
+      chunkSizeWarningLimit: 500,
+
+      ...(isLib
+        ? {
+            lib: {
+              entry: resolve(__dirname, "src/lib/index.ts"),
+              name: "ZProximityEngine",
+            },
+            rollupOptions: {
+              external: [
+                "react",
+                "react-dom",
+                "react/jsx-runtime",
+                "@gsap/react",
+                /^gsap(\/.*)?$/,
+              ],
+              treeshake: {
+                  moduleSideEffects: false,
+                  propertyReadSideEffects: false,
+                  tryCatchDeoptimization: false,
+                },
+              output: [
+                {
+                  format: "es",
+                  exports: "named",
+                  preserveModules: true,
+                  preserveModulesRoot: "src/lib",
+                  entryFileNames: "[name].es.js",
+                  compact: true,
+                  minifyInternalExports: true
+                },
+                {
+                  format: "umd",
+                  name: "ZProximityEngine",
+                  exports: "named",
+                  entryFileNames: "index.umd.js",
+                  compact: true,
+                  minifyInternalExports: true,
+                  globals: {
+                    react: "React",
+                    "react-dom": "ReactDOM",
+                    "react/jsx-runtime": "jsxRuntime",
+                    gsap: "gsap",
+                    "gsap/ScrollTrigger": "ScrollTrigger",
+                    "@gsap/react": "gsapReact",
+                  },
+                },
+              ],
+            },
+          }
+        : {
+            cssCodeSplit: true,
+          }),
+    },
+  };
+});
 </file>
 
 <file path="package.json">
@@ -4937,6 +4920,23 @@ export const Proximity: React.FC<ProximityProps> = (props) => {
     "vite-plugin-sitemap": "^0.8.2"
   }
 }
+</file>
+
+<file path="src/lib/Proximity.tsx">
+import React from "react";
+import { ProximityProps } from "./types";
+import { ProximityPointer } from "./components/ProximityPointer";
+import { ProximityScroll } from "./components/ProximityScroll";
+
+export const Proximity: React.FC<ProximityProps> = (props) => {
+  const activeMode = props.config?.mode ?? props.mode ?? "pointer";
+  
+  if (activeMode === "scroll") {
+    return <ProximityScroll {...props} />;
+  }
+  
+  return <ProximityPointer {...props} />;
+};
 </file>
 
 <file path="src/App.tsx">
@@ -5096,7 +5096,7 @@ export default function App() {
                   <Moon size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-100 dark:opacity-0" />
                   <Sun size={18} className="absolute inset-0 m-auto transition-opacity duration-500 opacity-0 dark:opacity-100" />
                 </button>
-                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.5.6 — STABLE</span>
+                <span className="reveal-item text-[10px] font-mono opacity-50 hidden sm:block">v2.5.6 — BETA</span>
                 <div className="reveal-item px-5 py-2.5 bg-[var(--text-color)] text-[var(--bg-color)] text-[11px] font-mono flex items-center gap-2">
                   <Terminal size={12} />
                   npm i z-proximity-engine
@@ -5139,7 +5139,7 @@ export default function App() {
                   <div className="flex justify-between items-end text-right">
                     <Badge>Core Engine Weight</Badge>
                     <RevealGroup delay={0.6} duration={0.8}>
-                      <span className="reveal-item text-3xl font-black tabular-nums">8.16KB</span>
+                      <span className="reveal-item text-3xl font-black tabular-nums">10.16KB</span>
                     </RevealGroup>
                   </div>
                   <div className="flex justify-between items-end text-right">

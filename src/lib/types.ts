@@ -150,6 +150,7 @@ export interface ItemSetters {
 
 export interface ContainerBounds {
   left: number; right: number; top: number; bottom: number;
+  globalLeft: number; globalTop: number;
 }
 
 export interface ProximityTextProps extends ProximityProps {

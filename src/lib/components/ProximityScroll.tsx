@@ -124,43 +124,50 @@ export const ProximityScroll: React.FC<ProximityProps> = (props) => {
           onEnterBack: () => guarded(runEnter, config.activeWaitForLeaveAnimationEnd ?? false, false, i),
           onLeaveBack: () => guarded(runLeave, false, config.activeWaitForEnterAnimationEnd ?? false, i),
           onUpdate: isTriggerMode ? undefined : (self) => {
-            let nd = 0; const env = config.activeScrollConfig.envelope;
-            if (env) {
-              const [inEnd, outStart] = env;
-              if (self.progress <= inEnd) nd = inEnd === 0 ? 1 : self.progress / inEnd;
-              else if (self.progress >= outStart) nd = outStart === 1 ? 1 : 1 - ((self.progress - outStart) / (1 - outStart));
-              else nd = 1;
-            } else {
-              if (focusPoint === 0) nd = 1 - self.progress; else if (focusPoint === 1) nd = self.progress;
-              else nd = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
-            }
-            const intens = Math.pow(nd, config.activeFalloff);
-            const vel = self.getVelocity();
-            const simDy = Math.min(Math.max(vel * 0.05, -100), 100);
-
-            const clampedVel = gsap.utils.clamp(-3000, 3000, vel);
-            const normalizedVel = clampedVel / 3000;
-            if (config.activePresetKeys.includes('velocitySkew')) item._quickTos?.skewY?.(normalizedVel * ((config.mergedBounds.velocitySkew ?? PRESET_DEFAULTS.velocitySkew)[1] as number));
-            if (config.activePresetKeys.includes('velocityScale')) {
-              const maxScale = (config.mergedBounds.velocityScale ?? PRESET_DEFAULTS.velocityScale)[1] as number;
-              item._quickTos?.scaleY?.(1 + Math.abs(normalizedVel * (maxScale - 1)));
-              item._quickTos?.scaleX?.(1 - Math.abs(normalizedVel * (maxScale - 1) * 0.5));
-            }
-            if (config.activePresetKeys.includes('parallax')) item._quickTos?.y?.(gsap.utils.interpolate(((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), -((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), self.progress));
-
-            if (Math.abs(intens - engine.states[i].lastIntensity) < config.activePrecision && Math.abs(simDy - engine.states[i].lastDy) < 1.0) return;
-
-            engine.states[i].lastIntensity = intens; engine.states[i].lastDy = simDy;
-
-            const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate ? { custom: config.activeOnCalculate(intens, 0, 0, simDy, true) } : calculatePresetValues(localPreset, config.allPresetsStr, intens, config.mergedBounds, 0, simDy, engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis, config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets);
-            const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-            for (const key of keys) {
-              const vars = gp[key]; if (!vars) continue;
-              const tl = config.activeTimeline?.[key] ?? {};
-              engine.applyVars(item, key, vars, tl.duration ?? 0.1, tl.delay ?? 0, EASE_MAP[tl.ease as string] ?? tl.ease ?? "none");
-            }
-            engine.setters[i].intensity(intens.toFixed(3));
-          },
+                      let nd = 0; 
+                      const env = config.activeScrollConfig.envelope;
+                      
+                      if (env) {
+                        const [inEnd, outStart] = env;
+                        if (self.progress <= inEnd) nd = inEnd === 0 ? 1 : self.progress / inEnd;
+                        else if (self.progress >= outStart) nd = outStart === 1 ? 1 : 1 - ((self.progress - outStart) / (1 - outStart));
+                        else nd = 1;
+                      } else {
+                        if (focusPoint === 0) nd = 1 - self.progress; else if (focusPoint === 1) nd = self.progress;
+                        else nd = self.progress < focusPoint ? self.progress / focusPoint : (1 - self.progress) / (1 - focusPoint);
+                      }
+                      
+                      const falloff = Math.max(0.01, config.activeFalloff);
+                      const expDenominator = 1 - Math.exp(-falloff);
+                      let intens = (Math.exp(-falloff * (1 - nd)) - Math.exp(-falloff)) / expDenominator;
+                      intens = Math.max(0, Math.min(1, intens));
+          
+                      const vel = self.getVelocity();
+                      const simDy = Math.min(Math.max(vel * 0.05, -100), 100);
+          
+                      const clampedVel = gsap.utils.clamp(-3000, 3000, vel);
+                      const normalizedVel = clampedVel / 3000;
+                      if (config.activePresetKeys.includes('velocitySkew')) item._quickTos?.skewY?.(normalizedVel * ((config.mergedBounds.velocitySkew ?? PRESET_DEFAULTS.velocitySkew)[1] as number));
+                      if (config.activePresetKeys.includes('velocityScale')) {
+                        const maxScale = (config.mergedBounds.velocityScale ?? PRESET_DEFAULTS.velocityScale)[1] as number;
+                        item._quickTos?.scaleY?.(1 + Math.abs(normalizedVel * (maxScale - 1)));
+                        item._quickTos?.scaleX?.(1 - Math.abs(normalizedVel * (maxScale - 1) * 0.5));
+                      }
+                      if (config.activePresetKeys.includes('parallax')) item._quickTos?.y?.(gsap.utils.interpolate(((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), -((config.mergedBounds.parallax ?? PRESET_DEFAULTS.parallax)[1] as number) * parseFloat(item.dataset.speed || "1"), self.progress));
+          
+                      if (Math.abs(intens - engine.states[i].lastIntensity) < config.activePrecision && Math.abs(simDy - engine.states[i].lastDy) < 1.0) return;
+          
+                      engine.states[i].lastIntensity = intens; engine.states[i].lastDy = simDy;
+          
+                      const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate ? { custom: config.activeOnCalculate(intens, 0, 0, simDy, true) } : calculatePresetValues(localPreset, config.allPresetsStr, intens, config.mergedBounds, 0, simDy, engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis, config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets);
+                      const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+                      
+                      for (const key of keys) {
+                        const vars = gp[key]; if (!vars) continue;
+                        engine.applyVars(item, key, vars, 0, 0, "none");
+                      }
+                      engine.setters[i].intensity(intens.toFixed(3));
+                    },
         }));
       });
     };

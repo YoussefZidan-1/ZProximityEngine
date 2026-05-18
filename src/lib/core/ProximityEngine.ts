@@ -16,6 +16,12 @@ export class ProximityEngine {
   resetProps: Record<string, gsap.TweenVars>[] = [];
   spatialGrid: Map<string, number[]> = new Map();
 
+  // 🚀 ZERO-GC POOLS: Pre-allocated memory for 120FPS loop
+  toCheckSet: Set<number> = new Set();
+  dArray: Float32Array = new Float32Array(0);
+  dxArray: Float32Array = new Float32Array(0);
+  dyArray: Float32Array = new Float32Array(0);
+
   skipAllAnimations: boolean = false;
   isReducedMotion: boolean = false;
   disabledPresets: Set<string> = new Set();
@@ -68,55 +74,63 @@ export class ProximityEngine {
   }
 
   updateCenters = (): void => {
-    if (!this.container) return;
-    const cRect = this.container.getBoundingClientRect();
-    this.containerBounds = { left: 0, right: cRect.width, top: 0, bottom: cRect.height };
-    
-    const hasFlexScale = this.config.allPresetsStr.includes("flexScale");
-    const saved = this.items.map((item) => {
-      const s: any = { tf: item.style.transform };
-      item.style.transform = "";
-      if (hasFlexScale) {
-        s.ml = item.style.marginLeft; s.mr = item.style.marginRight;
-        s.mt = item.style.marginTop; s.mb = item.style.marginBottom;
-        item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = "";
-      }
-      return s;
-    });
-
-    const measurements = this.items.map((item) => {
-      const rect = item.getBoundingClientRect();
-      const comp = window.getComputedStyle(item);
-      return {
-        rect,
-        ml: parseFloat(comp.marginLeft) || 0, mr: parseFloat(comp.marginRight) || 0,
-        mt: parseFloat(comp.marginTop) || 0, mb: parseFloat(comp.marginBottom) || 0
+      if (!this.container) return;
+      const cRect = this.container.getBoundingClientRect();
+      
+      this.containerBounds = { 
+        left: 0, 
+        right: cRect.width, 
+        top: 0, 
+        bottom: cRect.height,
+        globalLeft: cRect.left,
+        globalTop: cRect.top
       };
-    });
-
-    this.centers = this.items.map((item, i) => {
-      const s = saved[i];
-      item.style.transform = s.tf;
-      if (hasFlexScale) {
-        item.style.marginLeft = s.ml; item.style.marginRight = s.mr;
-        item.style.marginTop = s.mt; item.style.marginBottom = s.mb;
-      }
-      const { rect, ml, mr, mt, mb } = measurements[i];
-      return {
-        left: rect.left - cRect.left, right: rect.right - cRect.left,
-        top: rect.top - cRect.top, bottom: rect.bottom - cRect.top,
-        x: (rect.left + rect.width / 2) - cRect.left, y: (rect.top + rect.height / 2) - cRect.top,
-        w: rect.width, h: rect.height, ml, mr, mt, mb,
-      };
-    });
-
-    this.spatialGrid.clear();
-    this.centers.forEach((c, i) => {
-      const key = `${Math.floor(c.x / 150)},${Math.floor(c.y / 150)}`;
-      if (!this.spatialGrid.has(key)) this.spatialGrid.set(key,[]);
-      this.spatialGrid.get(key)!.push(i);
-    });
-  };
+      
+      const hasFlexScale = this.config.allPresetsStr.includes("flexScale");
+      const saved = this.items.map((item) => {
+        const s: any = { tf: item.style.transform };
+        item.style.transform = "";
+        if (hasFlexScale) {
+          s.ml = item.style.marginLeft; s.mr = item.style.marginRight;
+          s.mt = item.style.marginTop; s.mb = item.style.marginBottom;
+          item.style.marginLeft = item.style.marginRight = item.style.marginTop = item.style.marginBottom = "";
+        }
+        return s;
+      });
+  
+      const measurements = this.items.map((item) => {
+        const rect = item.getBoundingClientRect();
+        const comp = window.getComputedStyle(item);
+        return {
+          rect,
+          ml: parseFloat(comp.marginLeft) || 0, mr: parseFloat(comp.marginRight) || 0,
+          mt: parseFloat(comp.marginTop) || 0, mb: parseFloat(comp.marginBottom) || 0
+        };
+      });
+  
+      this.centers = this.items.map((item, i) => {
+        const s = saved[i];
+        item.style.transform = s.tf;
+        if (hasFlexScale) {
+          item.style.marginLeft = s.ml; item.style.marginRight = s.mr;
+          item.style.marginTop = s.mt; item.style.marginBottom = s.mb;
+        }
+        const { rect, ml, mr, mt, mb } = measurements[i];
+        return {
+          left: rect.left - cRect.left, right: rect.right - cRect.left,
+          top: rect.top - cRect.top, bottom: rect.bottom - cRect.top,
+          x: (rect.left + rect.width / 2) - cRect.left, y: (rect.top + rect.height / 2) - cRect.top,
+          w: rect.width, h: rect.height, ml, mr, mt, mb,
+        };
+      });
+  
+      this.spatialGrid.clear();
+      this.centers.forEach((c, i) => {
+        const key = `${Math.floor(c.x / 150)},${Math.floor(c.y / 150)}`;
+        if (!this.spatialGrid.has(key)) this.spatialGrid.set(key,[]);
+        this.spatialGrid.get(key)!.push(i);
+      });
+    };
 
   initItems = (): void => {
     if (this.items.length > 0) gsap.killTweensOf(this.items);
@@ -172,6 +186,11 @@ export class ProximityEngine {
       dy: gsap.quickSetter(item, "--prox-dy", "px") as (v: number | string) => void,
     }));
 
+    // 🚀 INITIALIZE TYPED ARRAYS based on items length
+    this.dArray = new Float32Array(this.items.length);
+    this.dxArray = new Float32Array(this.items.length);
+    this.dyArray = new Float32Array(this.items.length);
+
     this.updateCenters();
 
     if (this.io) this.io.disconnect();
@@ -219,65 +238,75 @@ export class ProximityEngine {
   };
 
   applyVars = (item: ProxHTMLElement, key: string, vars: gsap.TweenVars, dur: number, del: number, ez: string): void => {
-    const needsGsapTo = key === "cipher" || key === "reveal" || key === "scroll" || key === "cycle" || key === "cycleSide" || key === "custom" || key === "customStartEnd" || del > 0 || !!this.config.activeTimeline?.[key];
-
-    if (needsGsapTo) {
-      if (key === "scroll" || key === "cycle") {
-        const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
-        const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
-        const currentState = item._scrollState || "resting";
-        
-        if (shouldCycle && currentState !== "hovered") {
-          item._scrollState = "hovered";
-          gsap.killTweensOf(item, "yPercent,clipPath");
-          gsap.to(item, {
-            yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
-            onComplete: () => { gsap.fromTo(item, { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` }, { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
-          });
-        } else if (!shouldCycle && currentState === "hovered") {
-          item._scrollState = "resting";
-          gsap.killTweensOf(item, "yPercent,clipPath");
-          gsap.to(item, {
-            yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
-            onComplete: () => { gsap.fromTo(item, { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` }, { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
-          });
+      const needsGsapTo = key === "cipher" || key === "reveal" || key === "scroll" || key === "cycle" || key === "cycleSide" || key === "custom" || key === "customStartEnd" || del > 0 || !!this.config.activeTimeline?.[key];
+  
+      if (needsGsapTo) {
+        if (key === "scroll" || key === "cycle") {
+          const shouldCycle = key === "scroll" ? vars.proxScroll === 1 : vars.proxCycle === 1;
+          const travel = key === "scroll" ? (vars.proxScrollTravel || 100) : (vars.proxCycleTravel || 100);
+          const currentState = item._scrollState || "resting";
+          
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            gsap.to(item, {
+              yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
+              onComplete: () => { gsap.fromTo(item, { yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)` }, { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "yPercent,clipPath");
+            gsap.to(item, {
+              yPercent: travel, clipPath: `inset(0% 0% ${travel}% 0%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
+              onComplete: () => { gsap.fromTo(item, { yPercent: -travel, clipPath: `inset(${travel}% 0% 0% 0%)` }, { yPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
+            });
+          }
+          return;
         }
-        return;
-      }
-
-      if (key === "cycleSide") {
-        const shouldCycle = vars.proxCycleSide === 1;
-        const travel = vars.proxCycleSideTravel || 100;
-        const currentState = item._scrollState || "resting";
-        if (shouldCycle && currentState !== "hovered") {
-          item._scrollState = "hovered";
-          gsap.killTweensOf(item, "xPercent,clipPath");
-          gsap.to(item, {
-            xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
-            onComplete: () => { gsap.fromTo(item, { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` }, { xPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
-          });
-        } else if (!shouldCycle && currentState === "hovered") {
-          item._scrollState = "resting";
-          gsap.killTweensOf(item, "xPercent,clipPath");
-          gsap.to(item, {
-            xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
-            onComplete: () => { gsap.fromTo(item, { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` }, { xPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
-          });
+  
+        if (key === "cycleSide") {
+          const shouldCycle = vars.proxCycleSide === 1;
+          const travel = vars.proxCycleSideTravel || 100;
+          const currentState = item._scrollState || "resting";
+          if (shouldCycle && currentState !== "hovered") {
+            item._scrollState = "hovered";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            gsap.to(item, {
+              xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
+              onComplete: () => { gsap.fromTo(item, { xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)` }, { xPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
+            });
+          } else if (!shouldCycle && currentState === "hovered") {
+            item._scrollState = "resting";
+            gsap.killTweensOf(item, "xPercent,clipPath");
+            gsap.to(item, {
+              xPercent: travel, clipPath: `inset(0% ${travel}% 0% 0%)`, duration: dur * 0.5, delay: del, ease: ez, overwrite: "auto",
+              onComplete: () => { gsap.fromTo(item, { xPercent: -travel, clipPath: `inset(0% 0% 0% ${travel}%)` }, { xPercent: 0, clipPath: `inset(0% 0% 0% 0%)`, duration: dur * 0.5, ease: ez }); }
+            });
+          }
+          return;
         }
-        return;
+  
+        if (dur <= 0 && del <= 0) {
+          gsap.set(item, { ...vars, onUpdate: key === "cipher" ? cipherUpdate : undefined });
+        } else {
+          gsap.to(item, { ...vars, duration: dur, delay: del, ease: ez, overwrite: "auto", onUpdate: key === "cipher" ? cipherUpdate : undefined });
+        }
+      } else {
+        const nonQuickVars: Record<string, any> = {};
+        let hasNonQuick = false;
+        for (const cssProp in vars) {
+          const qt = item._quickTos?.[cssProp];
+          if (qt) qt(vars[cssProp] as any); else { nonQuickVars[cssProp] = vars[cssProp]; hasNonQuick = true; }
+        }
+        if (hasNonQuick) {
+          if (dur <= 0) {
+            gsap.set(item, nonQuickVars);
+          } else {
+            gsap.to(item, { ...nonQuickVars, duration: dur, ease: ez, overwrite: "auto" });
+          }
+        }
       }
-
-      gsap.to(item, { ...vars, duration: dur, delay: del, ease: ez, overwrite: "auto", onUpdate: key === "cipher" ? cipherUpdate : undefined });
-    } else {
-      const nonQuickVars: Record<string, any> = {};
-      let hasNonQuick = false;
-      for (const cssProp in vars) {
-        const qt = item._quickTos?.[cssProp];
-        if (qt) qt(vars[cssProp] as any); else { nonQuickVars[cssProp] = vars[cssProp]; hasNonQuick = true; }
-      }
-      if (hasNonQuick) gsap.to(item, { ...nonQuickVars, duration: dur, ease: ez, overwrite: "auto" });
-    }
-  };
+    };
 
   destroy() {
     this.mediaQuery?.removeEventListener("change", this.handleMotionChange);
