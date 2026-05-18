@@ -170,13 +170,13 @@ export class ProximityEngine {
       }
       
       item._quickTos = {};
-      item._scrollState = "resting";
-      const dur = lc?.duration ?? this.config.activeDuration;
-      const ez = EASE_MAP[lc?.ease as string] ?? lc?.ease ?? this.config.targetEase;
-
-      QUICK_TO_PROPS.forEach((prop) => {
-        item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
-      });
+            item._scrollState = "resting";
+            const isScrubMode = this.config.activeMode === "scroll" && this.config.activeScrollConfig?.scrub !== false;
+            const dur = isScrubMode ? 0.05 : (lc?.duration ?? this.config.activeDuration);
+            const ez = isScrubMode ? "none" : (EASE_MAP[lc?.ease as string] ?? lc?.ease ?? this.config.targetEase);
+            QUICK_TO_PROPS.forEach((prop) => {
+              item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
+            });
     });
 
     this.states = this.items.map(() => ({ isOutside: true, lastIntensity: 0, lastDx: 0, lastDy: 0 }));
@@ -186,7 +186,6 @@ export class ProximityEngine {
       dy: gsap.quickSetter(item, "--prox-dy", "px") as (v: number | string) => void,
     }));
 
-    // 🚀 INITIALIZE TYPED ARRAYS based on items length
     this.dArray = new Float32Array(this.items.length);
     this.dxArray = new Float32Array(this.items.length);
     this.dyArray = new Float32Array(this.items.length);
@@ -285,12 +284,7 @@ export class ProximityEngine {
           }
           return;
         }
-  
-        if (dur <= 0 && del <= 0) {
-          gsap.set(item, { ...vars, onUpdate: key === "cipher" ? cipherUpdate : undefined });
-        } else {
-          gsap.to(item, { ...vars, duration: dur, delay: del, ease: ez, overwrite: "auto", onUpdate: key === "cipher" ? cipherUpdate : undefined });
-        }
+        gsap.to(item, { ...vars, duration: dur, delay: del, ease: ez, overwrite: "auto", onUpdate: key === "cipher" ? cipherUpdate : undefined });
       } else {
         const nonQuickVars: Record<string, any> = {};
         let hasNonQuick = false;
@@ -298,13 +292,7 @@ export class ProximityEngine {
           const qt = item._quickTos?.[cssProp];
           if (qt) qt(vars[cssProp] as any); else { nonQuickVars[cssProp] = vars[cssProp]; hasNonQuick = true; }
         }
-        if (hasNonQuick) {
-          if (dur <= 0) {
-            gsap.set(item, nonQuickVars);
-          } else {
-            gsap.to(item, { ...nonQuickVars, duration: dur, ease: ez, overwrite: "auto" });
-          }
-        }
+        if (hasNonQuick) gsap.to(item, { ...nonQuickVars, duration: dur, ease: ez, overwrite: "auto" });
       }
     };
 

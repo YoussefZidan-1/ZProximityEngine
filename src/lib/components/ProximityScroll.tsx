@@ -163,9 +163,9 @@ export const ProximityScroll: React.FC<ProximityProps> = (props) => {
                       const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
                       
                       for (const key of keys) {
-                        const vars = gp[key]; if (!vars) continue;
-                        engine.applyVars(item, key, vars, 0, 0, "none");
-                      }
+                           const vars = gp[key]; if (!vars) continue;
+                           engine.applyVars(item, key, vars, 0.05, 0, "none");
+                              }
                       engine.setters[i].intensity(intens.toFixed(3));
                     },
         }));
