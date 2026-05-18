@@ -1,6 +1,6 @@
 {
   "name": "z-proximity-engine",
-  "version": "2.5.6",
+  "version": "2.5.7",
   "sideEffects": false,
   "description": "ِA high-performance proximity-based motion engine by Youssef Zidan for organic proximity-based UI.",
   "type": "module",
