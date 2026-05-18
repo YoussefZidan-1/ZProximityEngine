@@ -244,43 +244,6 @@ export const ProximityProvider: React.FC<ProximityProviderProps> = ({ children, 
 export const useProximityConfig = () => useContext(ProximityContext);
 </file>
 
-<file path="src/lib/utils/proximityHelpers.ts">
-import gsap from "gsap";
-import { ProxHTMLElement } from "../types";
-import { OPTIMIZED_WILL_CHANGE } from "../constants";
-
-export const parseScrollPosition = (pos: string, isStart: boolean): string => {
-  if (pos === "appear") return "top bottom";
-  if (pos === "disappear") return "bottom top";
-  const m: Record<string, string> = { top: "top top", center: "center center", middle: "center center", bottom: "bottom bottom" };
-  return m[pos] ?? pos ?? (isStart ? "top bottom" : "bottom top");
-};
-
-export const getScrollFocusValue = (focus: string | number): number => {
-  if (typeof focus === "number") return focus / 100;
-  switch (focus) {
-    case "appear": return 0;
-    case "top": return 0.25;
-    case "middle":
-    case "center": return 0.5;
-    case "bottom": return 0.75;
-    case "disappear": return 1;
-    default: return 0.5;
-  }
-};
-
-export const addWillChange = (item: ProxHTMLElement): void => {
-  item._willChangeCount = (item._willChangeCount ?? 0) + 1;
-  if (item._willChangeCount === 1)
-    gsap.set(item, { willChange: OPTIMIZED_WILL_CHANGE });
-};
-
-export const removeWillChange = (item: ProxHTMLElement): void => {
-  item._willChangeCount = 0;
-  gsap.set(item, { willChange: "auto" });
-};
-</file>
-
 <file path="src/main.tsx">
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
@@ -364,123 +327,6 @@ createRoot(document.getElementById('root')!).render(
 </urlset>
 </file>
 
-<file path="src/lib/core/useProximityConfig.ts">
-import { useMemo } from "react";
-import { useDeepMemo } from "../hooks";
-import { FILTER_PRESETS, EASE_MAP } from "../constants";
-import { ProximityProps, ProximityScrollConfig } from "../types";
-
-export function useProximityConfig(props: ProximityProps) {
-  const {
-    children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "",
-    reach = 1, falloff = 2.4, duration = 0, resetDuration = 0.7, global = false, explicit = false,
-    mode = "pointer", scrollerRef, scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top",
-    lockAxis, precision = 0.002, maxTravel, onCalculate, onReset, ease, resetEase, disableOnMobile,
-    waitForAnimationEnd, waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
-    magnetic, tilt, tiltCard, repel, cipher, reveal, scroll, color, background, glow, brightness, contrast,
-    borderRadius, letterSpacing, grayScale, parallax, velocitySkew, velocityScale, timeline, delay, resetDelay, scrub, resetScrub,
-    start, end, stagger, resetStagger, targets, ignoreSelectors = [], excludeElements, className = "", style = {}, ...restProps
-  } = props;
-
-  const activeMode = config.mode ?? mode;
-  const activeReach = config.reach ?? reach;
-  const activeFalloff = config.falloff ?? falloff;
-  const activeDuration = config.duration ?? duration;
-  const activeResetDuration = config.resetDuration ?? resetDuration;
-  const activeDelay = config.delay ?? delay ?? 0;
-  const activeResetDelay = config.resetDelay ?? resetDelay ?? 0;
-  const activeGlobal = config.global ?? global;
-  const activeExplicit = config.explicit ?? explicit;
-  const activePreset = config.preset ?? preset;
-  const activeNearestPreset = config.nearestPreset ?? nearestPreset;
-  const activeNeighborPreset = config.neighborPreset ?? neighborPreset;
-  const activeMaxTravel = config.maxTravel ?? maxTravel;
-  const activeLockAxis = config.lockAxis ?? lockAxis;
-  const activePrecision = config.precision ?? precision;
-  const activeOnCalculate = config.onCalculate ?? onCalculate;
-  const activeOnReset = config.onReset ?? onReset;
-  const activeTargets = config.targets ?? targets ?? [];
-  const activeScrollStart = config.scrollStart ?? scrollStart;
-  const activeScrollEnd = config.scrollEnd ?? scrollEnd;
-  const activeScrollFocus = config.scrollFocus ?? scrollFocus;
-  const activeDisableOnMobile = config.disableOnMobile ?? disableOnMobile;
-  const activeWaitForAnimationEnd = config.waitForAnimationEnd ?? waitForAnimationEnd;
-  const activeWaitForEnterAnimationEnd = config.waitForEnterAnimationEnd ?? waitForEnterAnimationEnd;
-  const activeWaitForLeaveAnimationEnd = config.waitForLeaveAnimationEnd ?? waitForLeaveAnimationEnd;
-
-  const safeScrollConfig = (config.scroll && !Array.isArray(config.scroll)) ? (config.scroll as ProximityScrollConfig) : undefined;
-  const safeScrollProp = (scroll && !Array.isArray(scroll)) ? (scroll as ProximityScrollConfig) : undefined;
-
-  const activeStagger = safeScrollConfig?.stagger ?? config.stagger ?? stagger ?? 0.1;
-  const activeResetStagger = safeScrollConfig?.resetStagger ?? config.resetStagger ?? resetStagger ?? 0;
-  const activeScrub = safeScrollConfig?.scrub ?? config.scrub ?? scrub ?? activeDuration ?? true;
-
-  const targetEase = EASE_MAP[config.ease ?? (ease as string)] ?? config.ease ?? ease ?? "power1.out";
-  const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] ?? config.resetEase ?? resetEase ?? "power2.out";
-
-  const mergedBounds = useDeepMemo({
-    scale: config.scale ?? scale, flexScale: config.flexScale ?? flexScale, y: config.y ?? y, x: config.x ?? x,
-    opacity: config.opacity ?? opacity, blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
-    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard,
-    repel: config.repel ?? repel, cipher: config.cipher ?? cipher, reveal: config.reveal ?? reveal,
-    scroll: Array.isArray(config.scroll) ? config.scroll : (Array.isArray(scroll) ? scroll : undefined),
-    parallax: config.parallax ?? parallax, velocitySkew: config.velocitySkew ?? velocitySkew, velocityScale: config.velocityScale ?? velocityScale,
-    color: config.color ?? color, background: config.background ?? background, glow: config.glow ?? glow,
-    brightness: config.brightness ?? brightness, contrast: config.contrast ?? contrast, borderRadius: config.borderRadius ?? borderRadius,
-    letterSpacing: config.letterSpacing ?? letterSpacing, grayScale: config.grayScale ?? grayScale,
-  });
-
-  const activeTimeline = useDeepMemo(config.timeline ?? timeline ?? {});
-  const activeScrollConfig = useDeepMemo(safeScrollConfig ?? safeScrollProp ?? {});
-  const activeStartStyles = useDeepMemo(config.start ?? start ?? {});
-  const activeEndStyles = useDeepMemo(config.end ?? end ?? {});
-  const parsedMaxTravel = useDeepMemo(activeMaxTravel);
-  const parsedTargets = useDeepMemo(activeTargets);
-  const memoizedStagger = useDeepMemo(activeStagger);
-  const memoizedResetStagger = useDeepMemo(activeResetStagger);
-  const memoizedDisableOnMobile = useDeepMemo(activeDisableOnMobile);
-
-  const allPresetsStr = useMemo(() => {
-    const base = [activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap((p) => p.split("-"));
-    const tgt = parsedTargets.flatMap((t) => [t.preset, t.nearestPreset, t.neighborPreset]).filter(Boolean).flatMap((p) => (p as string).split("-"));
-    return Array.from(new Set([...base, ...tgt])).join("-");
-  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
-
-  const activePresetKeys = useMemo(() => {
-    const keys = new Set<string>();
-    allPresetsStr.split("-").forEach((k) => {
-      if (!k) return;
-      if (FILTER_PRESETS.has(k)) keys.add("_filters");
-      else keys.add(k);
-    });
-    if (Object.keys(activeStartStyles).length > 0 || Object.keys(activeEndStyles).length > 0) keys.add("customStartEnd");
-    if (activeOnCalculate) keys.add("custom");
-    return Array.from(keys);
-  }, [allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
-
-  const deps = [
-    selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset,
-    activeReach, activeFalloff, activeDuration, activePrecision, parsedMaxTravel, activeLockAxis,
-    activeResetDuration, activeDelay, activeResetDelay, activeGlobal, activeExplicit,
-    mergedBounds, activeStartStyles, activeEndStyles, parsedTargets, allPresetsStr, activeTimeline, 
-    activeScrollConfig, ignoreSelectors.join(","), targetEase, targetResetEase, activeMode,
-    activeScrollFocus, activeScrollStart, activeScrollEnd, memoizedStagger, memoizedResetStagger,
-    memoizedDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd, activeWaitForLeaveAnimationEnd,
-  ];
-
-  return {
-    selector, excludeElements, ignoreSelectors, className, style, children, scrollerRef, restProps,
-    activeMode, activeReach, activeFalloff, activeDuration, activeResetDuration, activeDelay, activeResetDelay,
-    activeGlobal, activeExplicit, activePreset, activeNearestPreset, activeNeighborPreset, activeMaxTravel,
-    activeLockAxis, activePrecision, activeOnCalculate, activeOnReset, activeTargets, activeScrollStart,
-    activeScrollEnd, activeScrollFocus, activeDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd,
-    activeWaitForLeaveAnimationEnd, activeStagger, activeResetStagger, activeScrub, targetEase, targetResetEase,
-    mergedBounds, activeTimeline, activeScrollConfig, activeStartStyles, activeEndStyles, parsedMaxTravel,
-    parsedTargets, memoizedStagger, memoizedResetStagger, memoizedDisableOnMobile, allPresetsStr, activePresetKeys, deps
-  };
-}
-</file>
-
 <file path="src/lib/index.ts">
 export * from './types';
 export * from './constants';
@@ -491,6 +337,43 @@ export * from './components/ProximityPointer';
 export * from './components/ProximityScroll';
 export * from './ProximityText';
 export * from './ProximityContext';
+</file>
+
+<file path="src/lib/utils/proximityHelpers.ts">
+import gsap from "gsap";
+import { ProxHTMLElement } from "../types";
+import { OPTIMIZED_WILL_CHANGE } from "../constants";
+
+export const parseScrollPosition = (pos: string, isStart: boolean): string => {
+  if (pos === "appear") return "top bottom";
+  if (pos === "disappear") return "bottom top";
+  const m: Record<string, string> = { top: "top top", center: "center center", middle: "center center", bottom: "bottom bottom" };
+  return m[pos] ?? pos ?? (isStart ? "top bottom" : "bottom top");
+};
+
+export const getScrollFocusValue = (focus: string | number): number => {
+  if (typeof focus === "number") return focus / 100;
+  switch (focus) {
+    case "appear": return 0;
+    case "top": return 0.25;
+    case "middle":
+    case "center": return 0.5;
+    case "bottom": return 0.75;
+    case "disappear": return 1;
+    default: return 0.5;
+  }
+};
+
+export const addWillChange = (item: ProxHTMLElement): void => {
+  item._willChangeCount = (item._willChangeCount ?? 0) + 1;
+  if (item._willChangeCount === 1)
+    gsap.set(item, { willChange: OPTIMIZED_WILL_CHANGE });
+};
+
+export const removeWillChange = (item: ProxHTMLElement): void => {
+  item._willChangeCount = 0;
+  gsap.set(item, { willChange: "auto" });
+};
 </file>
 
 <file path=".github/changelog_config.json">
@@ -983,6 +866,194 @@ export const ALEFS = /[\u0622\u0623\u0625\u0627]/;
 export const ZWJ = "\u200D";
 </file>
 
+<file path="src/lib/core/useProximityConfig.ts">
+import { useMemo } from "react";
+import { useDeepMemo } from "../hooks";
+import { FILTER_PRESETS, EASE_MAP } from "../constants";
+import { ProximityProps, ProximityScrollConfig } from "../types";
+
+export function useProximityConfig(props: ProximityProps) {
+  const {
+    children, selector = ".prox-item", config = {}, preset = "", nearestPreset = "", neighborPreset = "",
+    reach = 1, falloff = 2.4, duration = 0.2, resetDuration = 0.4, global = false, explicit = false,
+    mode = "pointer", scrollerRef, scrollFocus = "center", scrollStart = "top bottom", scrollEnd = "bottom top",
+    lockAxis, precision = 0.002, maxTravel, onCalculate, onReset, ease, resetEase, disableOnMobile,
+    waitForAnimationEnd, waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
+    magnetic, tilt, tiltCard, repel, cipher, reveal, scroll, color, background, glow, brightness, contrast,
+    borderRadius, letterSpacing, grayScale, parallax, velocitySkew, velocityScale, timeline, delay, resetDelay, scrub, resetScrub,
+    start, end, stagger, resetStagger, targets, ignoreSelectors = [], excludeElements, className = "", style = {}, ...restProps
+  } = props;
+
+  const activeMode = config.mode ?? mode;
+  const activeReach = config.reach ?? reach;
+  const activeFalloff = config.falloff ?? falloff;
+  const activeDuration = config.duration ?? duration;
+  const activeResetDuration = config.resetDuration ?? resetDuration;
+  const activeDelay = config.delay ?? delay ?? 0;
+  const activeResetDelay = config.resetDelay ?? resetDelay ?? 0;
+  const activeGlobal = config.global ?? global;
+  const activeExplicit = config.explicit ?? explicit;
+  const activePreset = config.preset ?? preset;
+  const activeNearestPreset = config.nearestPreset ?? nearestPreset;
+  const activeNeighborPreset = config.neighborPreset ?? neighborPreset;
+  const activeMaxTravel = config.maxTravel ?? maxTravel;
+  const activeLockAxis = config.lockAxis ?? lockAxis;
+  const activePrecision = config.precision ?? precision;
+  const activeOnCalculate = config.onCalculate ?? onCalculate;
+  const activeOnReset = config.onReset ?? onReset;
+  const activeTargets = config.targets ?? targets ?? [];
+  const activeScrollStart = config.scrollStart ?? scrollStart;
+  const activeScrollEnd = config.scrollEnd ?? scrollEnd;
+  const activeScrollFocus = config.scrollFocus ?? scrollFocus;
+  const activeDisableOnMobile = config.disableOnMobile ?? disableOnMobile;
+  const activeWaitForAnimationEnd = config.waitForAnimationEnd ?? waitForAnimationEnd;
+  const activeWaitForEnterAnimationEnd = config.waitForEnterAnimationEnd ?? waitForEnterAnimationEnd;
+  const activeWaitForLeaveAnimationEnd = config.waitForLeaveAnimationEnd ?? waitForLeaveAnimationEnd;
+
+  const safeScrollConfig = (config.scroll && !Array.isArray(config.scroll)) ? (config.scroll as ProximityScrollConfig) : undefined;
+  const safeScrollProp = (scroll && !Array.isArray(scroll)) ? (scroll as ProximityScrollConfig) : undefined;
+
+  const activeStagger = safeScrollConfig?.stagger ?? config.stagger ?? stagger ?? 0.1;
+  const activeResetStagger = safeScrollConfig?.resetStagger ?? config.resetStagger ?? resetStagger ?? 0;
+  const activeScrub = safeScrollConfig?.scrub ?? config.scrub ?? scrub ?? activeDuration ?? true;
+
+  const targetEase = EASE_MAP[config.ease ?? (ease as string)] ?? config.ease ?? ease ?? "power1.out";
+  const targetResetEase = EASE_MAP[config.resetEase ?? (resetEase as string)] ?? config.resetEase ?? resetEase ?? "power2.out";
+
+  const mergedBounds = useDeepMemo({
+    scale: config.scale ?? scale, flexScale: config.flexScale ?? flexScale, y: config.y ?? y, x: config.x ?? x,
+    opacity: config.opacity ?? opacity, blur: config.blur ?? blur, rotate: config.rotate ?? rotate, weight: config.weight ?? weight,
+    skew: config.skew ?? skew, magnetic: config.magnetic ?? magnetic, tilt: config.tilt ?? tilt, tiltCard: config.tiltCard ?? tiltCard,
+    repel: config.repel ?? repel, cipher: config.cipher ?? cipher, reveal: config.reveal ?? reveal,
+    scroll: Array.isArray(config.scroll) ? config.scroll : (Array.isArray(scroll) ? scroll : undefined),
+    parallax: config.parallax ?? parallax, velocitySkew: config.velocitySkew ?? velocitySkew, velocityScale: config.velocityScale ?? velocityScale,
+    color: config.color ?? color, background: config.background ?? background, glow: config.glow ?? glow,
+    brightness: config.brightness ?? brightness, contrast: config.contrast ?? contrast, borderRadius: config.borderRadius ?? borderRadius,
+    letterSpacing: config.letterSpacing ?? letterSpacing, grayScale: config.grayScale ?? grayScale,
+  });
+
+  const activeTimeline = useDeepMemo(config.timeline ?? timeline ?? {});
+  const activeScrollConfig = useDeepMemo(safeScrollConfig ?? safeScrollProp ?? {});
+  const activeStartStyles = useDeepMemo(config.start ?? start ?? {});
+  const activeEndStyles = useDeepMemo(config.end ?? end ?? {});
+  const parsedMaxTravel = useDeepMemo(activeMaxTravel);
+  const parsedTargets = useDeepMemo(activeTargets);
+  const memoizedStagger = useDeepMemo(activeStagger);
+  const memoizedResetStagger = useDeepMemo(activeResetStagger);
+  const memoizedDisableOnMobile = useDeepMemo(activeDisableOnMobile);
+
+  const allPresetsStr = useMemo(() => {
+    const base = [activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap((p) => p.split("-"));
+    const tgt = parsedTargets.flatMap((t) => [t.preset, t.nearestPreset, t.neighborPreset]).filter(Boolean).flatMap((p) => (p as string).split("-"));
+    return Array.from(new Set([...base, ...tgt])).join("-");
+  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
+
+  const activePresetKeys = useMemo(() => {
+    const keys = new Set<string>();
+    allPresetsStr.split("-").forEach((k) => {
+      if (!k) return;
+      if (FILTER_PRESETS.has(k)) keys.add("_filters");
+      else keys.add(k);
+    });
+    if (Object.keys(activeStartStyles).length > 0 || Object.keys(activeEndStyles).length > 0) keys.add("customStartEnd");
+    if (activeOnCalculate) keys.add("custom");
+    return Array.from(keys);
+  }, [allPresetsStr, activeStartStyles, activeEndStyles, activeOnCalculate]);
+
+  const deps = [
+    selector, excludeElements, activePreset, activeNearestPreset, activeNeighborPreset,
+    activeReach, activeFalloff, activeDuration, activePrecision, parsedMaxTravel, activeLockAxis,
+    activeResetDuration, activeDelay, activeResetDelay, activeGlobal, activeExplicit,
+    mergedBounds, activeStartStyles, activeEndStyles, parsedTargets, allPresetsStr, activeTimeline, 
+    activeScrollConfig, ignoreSelectors.join(","), targetEase, targetResetEase, activeMode,
+    activeScrollFocus, activeScrollStart, activeScrollEnd, memoizedStagger, memoizedResetStagger,
+    memoizedDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd, activeWaitForLeaveAnimationEnd,
+  ];
+
+  return {
+    selector, excludeElements, ignoreSelectors, className, style, children, scrollerRef, restProps,
+    activeMode, activeReach, activeFalloff, activeDuration, activeResetDuration, activeDelay, activeResetDelay,
+    activeGlobal, activeExplicit, activePreset, activeNearestPreset, activeNeighborPreset, activeMaxTravel,
+    activeLockAxis, activePrecision, activeOnCalculate, activeOnReset, activeTargets, activeScrollStart,
+    activeScrollEnd, activeScrollFocus, activeDisableOnMobile, activeWaitForAnimationEnd, activeWaitForEnterAnimationEnd,
+    activeWaitForLeaveAnimationEnd, activeStagger, activeResetStagger, activeScrub, targetEase, targetResetEase,
+    mergedBounds, activeTimeline, activeScrollConfig, activeStartStyles, activeEndStyles, parsedMaxTravel,
+    parsedTargets, memoizedStagger, memoizedResetStagger, memoizedDisableOnMobile, allPresetsStr, activePresetKeys, deps
+  };
+}
+</file>
+
+<file path=".github/workflows/release.yml">
+name: "🚀 Professional CI/CD Release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # IMPORTANT: Gets all history so we can see the commits
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🛠️ Build Library
+        run: npm run build:lib
+
+      - name: 📦 Create NPM Package Asset (.tgz)
+        run: npm pack
+
+      # NEW: This step builds the changelog by looking at your commit prefixes
+      - name: 📝 Build Categorized Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        with:
+          configuration: ".github/changelog_config.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Use the changelog generated in the step above
+          body: |
+            ## 🌟 Official Release ${{ github.ref_name }}
+            
+            This version was automatically built and published by **ZED Studios** CI/CD pipeline.
+            
+            ${{ steps.build_changelog.outputs.changelog }}
+            
+            ---
+            **Maintained by [Youssef Zidan](https://yzportfolio.vercel.app)**
+          files: |
+            *.tgz
+          generate_release_notes: false # We are using our own builder now
+          name: "ZProximity Engine ${{ github.ref_name }} ⚡"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚀 Publish to NPM
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+</file>
+
 <file path="src/lib/core/ProximityEngine.ts">
 import gsap from "gsap";
 import { calculatePresetValues, cipherUpdate } from "../utils";
@@ -1324,77 +1395,6 @@ export class ProximityEngine {
 }
 </file>
 
-<file path=".github/workflows/release.yml">
-name: "🚀 Professional CI/CD Release"
-
-on:
-  push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
-  id-token: write
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # IMPORTANT: Gets all history so we can see the commits
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: 📦 Install Dependencies
-        run: npm install
-
-      - name: 🛠️ Build Library
-        run: npm run build:lib
-
-      - name: 📦 Create NPM Package Asset (.tgz)
-        run: npm pack
-
-      # NEW: This step builds the changelog by looking at your commit prefixes
-      - name: 📝 Build Categorized Changelog
-        id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v5
-        with:
-          configuration: ".github/changelog_config.json"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📝 Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          # Use the changelog generated in the step above
-          body: |
-            ## 🌟 Official Release ${{ github.ref_name }}
-            
-            This version was automatically built and published by **ZED Studios** CI/CD pipeline.
-            
-            ${{ steps.build_changelog.outputs.changelog }}
-            
-            ---
-            **Maintained by [Youssef Zidan](https://yzportfolio.vercel.app)**
-          files: |
-            *.tgz
-          generate_release_notes: false # We are using our own builder now
-          name: "ZProximity Engine ${{ github.ref_name }} ⚡"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🚀 Publish to NPM
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-</file>
-
 <file path="src/index.css">
 @import "tailwindcss";
 
@@ -1479,6 +1479,178 @@ jobs:
   .smooth-underline:hover::after {
     width: 100%;
   }
+}
+</file>
+
+<file path="src/lib/types.ts">
+import { CSSProperties } from "react";
+
+export type EasePreset =
+  | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic"
+  | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost"
+  | "expo" | "circus" | "glitch" | "slowmo" | "spring" | "heavySpring"
+  | "anticipate" | "launch" | "drift" | "whiplash" | (string & {});
+
+export type ProximityPreset =
+  | "scale" | "flexScale" | "y" | "x" | "opacity" | "blur" | "rotate"
+  | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
+  | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
+  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "cycle" | "cycleSide"
+  | "fill" | "fillText" | "scroll" | "parallax" | "velocitySkew" | "velocityScale" | (string & {});
+
+export type ProximityMode = "pointer" | "scroll";
+export type AxisLock = "x" | "y" | "both" | "none";
+
+export interface ProximityScrollConfig {
+  start?: "appear" | "top" | "center" | "middle" | "bottom" | (string & {});
+  end?: "top" | "center" | "middle" | "bottom" | "disappear" | (string & {});
+  focus?: "appear" | "top" | "center" | "middle" | "bottom" | "disappear" | number;
+  scroller?: string | Element | Window;
+  scrub?: boolean | number;
+  markers?: boolean;
+  once?: boolean;
+  stagger?: number | gsap.StaggerVars;
+  resetStagger?: number | gsap.StaggerVars;
+  pin?: boolean | string | Element;
+  pinSpacing?: boolean | string;
+  envelope?: [number, number];
+}
+
+export interface ProximityTimelineConfig {
+  duration?: number;
+  resetDuration?: number;
+  delay?: number;
+  resetDelay?: number;
+  ease?: EasePreset;
+  resetEase?: EasePreset;
+}
+
+export interface ProximityTargetOverride extends ProximityConfig {
+  selector: string;
+}
+
+export interface ProximityConfig {
+  mode?: ProximityMode;
+  scroll?: ProximityScrollConfig | [number, number];
+  scrollFocus?: "top" | "center" | "middle" | "bottom" | number;
+  scrollStart?: string;
+  scrollEnd?: string;
+  reach?: number;
+  falloff?: number;
+  duration?: number;
+  resetDuration?: number;
+  delay?: number;
+  resetDelay?: number;
+  stagger?: number | gsap.StaggerVars;
+  resetStagger?: number | gsap.StaggerVars;
+  scrub?: boolean | number;
+  resetScrub?: boolean | number;
+  start?: gsap.TweenVars;
+  end?: gsap.TweenVars;
+  global?: boolean;
+  explicit?: boolean;
+  preset?: ProximityPreset;
+  nearestPreset?: ProximityPreset;
+  neighborPreset?: ProximityPreset;
+  ease?: EasePreset;
+  resetEase?: EasePreset;
+  maxTravel?: number | [number, number] | { x: number; y: number };
+  lockAxis?: AxisLock;
+  splitBy?: "letter" | "word" | "line";
+  targets?: ProximityTargetOverride[];
+  timeline?: Record<string, ProximityTimelineConfig>;
+  precision?: number;
+  scale?: [number, number];
+  flexScale?: [number, number];
+  y?: [number, number];
+  x?: [number, number];
+  opacity?: [number, number];
+  blur?: [number, number];
+  rotate?: [number, number];
+  weight?: [number, number];
+  skew?: [number, number];
+  magnetic?: [number, number];
+  tilt?: [number, number];
+  tiltCard?: [number, number];
+  repel?: [number, number];
+  cipher?: [number, number];
+  reveal?: [number, number];
+  glow?: [number, number];
+  brightness?: [number, number];
+  contrast?: [number, number];
+  borderRadius?: [number, number];
+  letterSpacing?: [number, number];
+  grayScale?: [number, number];
+  color?: [string, string];
+  background?: [string, string];
+  parallax?: [number, number];
+  velocitySkew?: [number, number];
+  velocityScale?: [number, number];
+  onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
+  onReset?: () => gsap.TweenVars;
+  disableOnMobile?: boolean | string | string[];
+  waitForAnimationEnd?: boolean;
+  waitForEnterAnimationEnd?: boolean;
+  waitForLeaveAnimationEnd?: boolean;
+}
+
+export interface ProximityProps extends ProximityConfig {
+  children?: React.ReactNode;
+  selector?: string;
+  config?: ProximityConfig;
+  ignoreSelectors?: string[];
+  excludeElements?: string;
+  className?: string;
+  style?: CSSProperties;
+  scrollerRef?: React.RefObject<HTMLElement | null>;
+}
+
+export interface ProxHTMLElement extends HTMLElement {
+  proxCipher?: number;
+  _lastCipherUpdate?: number;
+  _quickTos?: Record<string, gsap.QuickToFunc>;
+  _isProxVisible?: boolean;
+  _willChangeCount?: number;
+  _scrollState?: "resting" | "hovered";
+}
+
+export interface ItemCenter {
+  left: number; right: number; top: number; bottom: number;
+  x: number; y: number; w: number; h: number;
+  ml: number; mr: number; mt: number; mb: number;
+}
+
+export interface ItemState {
+  isOutside: boolean;
+  lastIntensity: number;
+  lastDx: number;
+  lastDy: number;
+}
+
+export interface ItemSetters {
+  intensity: (val: number | string) => void;
+  dx: (val: number | string) => void;
+  dy: (val: number | string) => void;
+}
+
+export interface ContainerBounds {
+  left: number; right: number; top: number; bottom: number;
+  globalLeft: number; globalTop: number;
+}
+
+export interface ProximityTextProps extends ProximityProps {
+  text: string;
+  splitBy?: "letter" | "word" | "line";
+  textClassName?: string;
+  fontFamily?: string;
+  lineHeight?: number;
+  textLetterSpacing?: number;
+  wordSpacing?: number;
+  clipFix?: string;
+  ignoreText?: (string | RegExp)[];
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
+  dir?: 'ltr' | 'rtl' | 'auto';
 }
 </file>
 
@@ -1765,448 +1937,263 @@ export const doesSegmentConnectLeft = (seg: string) => {
 };
 </file>
 
-<file path="src/lib/components/ProximityPointer.tsx">
-import React, { useRef } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { useProximityConfig } from "../core/useProximityConfig";
-import { ProximityEngine } from "../core/ProximityEngine";
-import { calculatePresetValues, cipherUpdate } from "../utils";
-import { addWillChange, removeWillChange } from "../utils/proximityHelpers";
-import { EASE_MAP } from "../constants";
-import { ProximityProps, ProxHTMLElement } from "../types";
+<file path="README.md">
+<div align="center">
+  <img src="public/og-image.jpg" alt="ZProximity Engine" width="100%" style="border-radius: 8px; margin-bottom: 20px;" />
 
-export const ProximityPointer: React.FC<ProximityProps> = (props) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const config = useProximityConfig(props);
+  # 🚀 ZProximity Engine
+  **The Physics of Attraction for the Modern Web.**
   
-  const pointer = useRef({ x: -1, y: -1, target: null as EventTarget | null, active: false });
-  const lastPointer = useRef({ x: -1, y: -1 });
+  [![NPM Downloads](https://img.shields.io/npm/dt/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
+  [![NPM Version](https://img.shields.io/npm/v/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
+  [![Bundle Size](https://img.shields.io/bundlephobia/minzip/z-proximity-engine?color=black&label=Core%20Weight&style=for-the-badge)](https://bundlephobia.com/package/z-proximity-engine)
+  [![License](https://img.shields.io/npm/l/z-proximity-engine?color=black&style=for-the-badge)](#license)
 
-  useGSAP(() => {
-      if (!containerRef.current) return;
-      const engine = new ProximityEngine(containerRef.current, config);
-      engine.setup();
-  
-      let cipherInterval: ReturnType<typeof setInterval>;
-      const hasCipher = config.allPresetsStr.includes("cipher");
-      if (hasCipher && !engine.skipAllAnimations) {
-        cipherInterval = setInterval(() => {
-          for (let i = 0; i < engine.items.length; i++) {
-            const item = engine.items[i];
-            if (item.proxCipher! > 0.01) {
-              cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
-            }
-          }
-        }, 60);
-      }
-  
-      const maxDistance = config.activeReach * 200;
-      let isTickerActive = false;
+> A high-performance React animation library for creating proximity-based interactions, magnetic cursor effects, and scroll-driven animations with GSAP. Perfect alternative to Framer Motion and React Spring for spatial interactions.
 
-      const onTick = (): void => {
+[**✨ Live Demo**](https://z-proximity-engine.vercel.app/) • [**📦 NPM**](https://www.npmjs.com/package/z-proximity-engine) • [**📖 Documentation**](https://z-proximity-engine.vercel.app/#implementation) • [**🎮 Interactive Playground**](https://z-proximity-engine.vercel.app/#gamebox)
+</div>
 
-      if (pointer.current.x === lastPointer.current.x && pointer.current.y === lastPointer.current.y) return;
-      lastPointer.current.x = pointer.current.x;
-      lastPointer.current.y = pointer.current.y;
 
-      if (!pointer.current.active || engine.skipAllAnimations) return;
-      const cRect = engine.container.getBoundingClientRect();
-      const localX = pointer.current.x - cRect.left;
-      const localY = pointer.current.y - cRect.top;
-      const isBlocked = config.ignoreSelectors.some((sel) => (pointer.current.target as HTMLElement)?.closest?.(sel));
 
-      if (engine.containerBounds && !config.activeGlobal) {
-        const cb = engine.containerBounds;
-        if ((localX < cb.left - maxDistance || localX > cb.right + maxDistance || localY < cb.top - maxDistance || localY > cb.bottom + maxDistance || isBlocked) && engine.states.every((s) => s.isOutside)) return;
-      }
-      const toCheck = engine.toCheckSet;
-      toCheck.clear();
 
-      if (config.activeGlobal) {
-        engine.items.forEach((_, i) => toCheck.add(i));
-      } else {
-              const CELL = Math.max(50, maxDistance / 2);
-              const cellRadius = Math.ceil(maxDistance / CELL);
-        const cx = Math.floor(localX / CELL);
-        const cy = Math.floor(localY / CELL);
-        for (let ox = -cellRadius; ox <= cellRadius; ox++) {
-          for (let oy = -cellRadius; oy <= cellRadius; oy++) {
-            const cells = engine.spatialGrid.get(`${cx + ox},${cy + oy}`);
-            if (cells) {
-              for (let j = 0; j < cells.length; j++) toCheck.add(cells[j]);
-            }
-          }
-        }
-      }
+---
 
-      engine.states.forEach((s, i) => { if (!s.isOutside) toCheck.add(i); });
+## 🎯 Why ZProximity Engine?
 
-      const maxDistanceSq = maxDistance * maxDistance;
-      let nearestIndex = -1;
-      let minDistSq = Infinity;
+### Performance First
+- ⚡ **120+ FPS**: Runs at native refresh rates
+- 📦 **10.7KB Core**: Minimal bundle impact
+- 🚀 **GSAP Powered**: Industry-standard animation engine
+- 🎭 **Zero Re-renders**: Animations bypass React's render cycle
 
-      for (const i of toCheck) {
-        engine.dArray[i] = Infinity;
-      }
+### Developer Experience
+- 💪 **TypeScript**: Full type safety
+- 🎨 **30+ Presets**: Scale, magnetic, blur, cipher, and more
+- 🔗 **Chainable**: Combine unlimited effects with dash syntax
+- 📱 **Mobile Optimized**: Smart performance on touch devices
 
-      for (const i of toCheck) {
-        const b = engine.centers[i];
-        if (!b) continue;
-        
-        const dx = localX - b.x;
-        const dy = localY - b.y;
-        engine.dxArray[i] = dx;
-        engine.dyArray[i] = dy;
+### Use Cases
+- 🎯 Magnetic dock interfaces (macOS-style)
+- ✨ Interactive landing pages
+- 📜 Scroll-driven storytelling
+- 🎮 Game-like UI interactions
+- 🔮 Futuristic dashboard effects
 
-        const distX = Math.max(0, Math.abs(dx) - b.w / 2);
-        const distY = Math.max(0, Math.abs(dy) - b.h / 2);
-        
-        const dBoxSq = distX * distX + distY * distY;
-        
-        const inside = localX >= b.left && localX <= b.right && localY >= b.top && localY <= b.bottom;
-        const offScreen = (engine.items[i] as ProxHTMLElement)._isProxVisible === false;
-        
-        if (isBlocked || (config.activeExplicit && !inside) || offScreen) continue; 
-        
-        if (dBoxSq > maxDistanceSq) {
-          continue; 
-        }
-        
-        engine.dArray[i] = Math.sqrt(dBoxSq); 
-        
-        if (dBoxSq < minDistSq) { 
-          minDistSq = dBoxSq; 
-          nearestIndex = i; 
-        }
-      }
+---
 
-      const falloff = Math.max(0.01, config.activeFalloff);
-      const expDenominator = 1 - Math.exp(-falloff);
+## 📦 Installation
 
-      for (const i of toCheck) {
-        const item = engine.items[i];
-        const d = engine.dArray[i];
-        const dx = engine.dxArray[i];
-        const dy = engine.dyArray[i];
-        const isNearest = i === nearestIndex && d <= maxDistance;
-        const lc = engine.targetMap.get(item);
+```bash
+npm install z-proximity-engine gsap @gsap/react
+```
 
-        if (d > maxDistance) {
-          if (!engine.states[i].isOutside) {
-            const gr = engine.resetProps[i] ?? {};
-            gsap.to(item, {
-              "--prox-intensity": 0, duration: config.activeResetDuration, delay: config.activeResetDelay, ease: config.targetResetEase, overwrite: "auto",
-              onComplete: () => { if (engine.states[i].isOutside) removeWillChange(item); },
-            });
-            const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-            for (const k of keys) {
-              if (!gr[k]) continue;
-              const tl = config.activeTimeline?.[k] ?? {};
-              engine.applyVars(item, k, gr[k], tl.resetDuration ?? config.activeResetDuration, tl.resetDelay ?? config.activeResetDelay, EASE_MAP[tl.resetEase as string] ?? tl.resetEase ?? config.targetResetEase);
-            }
-            engine.states[i].isOutside = true;
-            engine.states[i].lastIntensity = 0;
-          }
-          continue;
-        }
+### Peer Dependencies
+```bash
+npm install react@^18.0.0 react-dom@^18.0.0 gsap@^3.15.0 @gsap/react@^2.1.2
+```
 
-        const x = d / maxDistance;
-        let intensity = (Math.exp(-falloff * x) - Math.exp(-falloff)) / expDenominator;
-        intensity = Math.max(0, Math.min(1, intensity));
+---
 
-        const hasMoved = Math.abs(intensity - engine.states[i].lastIntensity) >= config.activePrecision || Math.abs(dx - engine.states[i].lastDx) >= 1.0;
+## 🚀 Quick Start
 
-        if (!hasMoved) continue;
+### 1. Basic Hover Effect (3 lines)
 
-        if (engine.states[i].isOutside && !engine.skipAllAnimations) addWillChange(item);
+```tsx
+import { Proximity } from 'z-proximity-engine';
 
-        engine.setters[i].intensity(intensity.toFixed(3));
-        engine.setters[i].dx(dx);
-        engine.setters[i].dy(dy);
+export const HoverCards = () => (
+  <Proximity preset="scale-blur" reach={2}>
+    <div className="prox-item">Card 1</div>
+    <div className="prox-item">Card 2</div>
+    <div className="prox-item">Card 3</div>
+  </Proximity>
+);
+```
 
-        let cp = lc?.preset ?? config.activePreset ?? "";
-        const nearestP = lc?.nearestPreset ?? config.activeNearestPreset;
-        const neighborP = lc?.neighborPreset ?? config.activeNeighborPreset;
-        if (isNearest && nearestP) cp = cp ? `${cp}-${nearestP}` : nearestP;
-        else if (!isNearest && neighborP) cp = cp ? `${cp}-${neighborP}` : neighborP;
+### 2. Text Animations
 
-        const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate
-          ? { custom: config.activeOnCalculate(intensity, d, dx, dy, isNearest) }
-          : calculatePresetValues(cp, config.allPresetsStr, intensity, config.mergedBounds, dx, dy,
-                      engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis,
-                      config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets, engine.cachedValues[i]);
+```tsx
+import { ProximityText } from 'z-proximity-engine';
 
-        const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-        for (const k of keys) {
-          const vars = gp[k]; if (!vars) continue;
-          const tl = config.activeTimeline?.[k] ?? {};
-          const dur = tl.duration ?? (lc?.duration ?? config.activeDuration);
-          const del = tl.delay ?? config.activeDelay;
-          const ez = EASE_MAP[tl.ease as string] ?? tl.ease ?? (lc?.ease ?? config.targetEase);
-          engine.applyVars(item, k, vars, dur, del, ez);
-        }
+export const Hero = () => (
+  <ProximityText 
+    text="HOVER ME"
+    preset="scale-opacity-cipher"
+    splitBy="letter"
+    reach={1.5}
+  />
+);
+```
 
-        engine.states[i].lastIntensity = intensity;
-        engine.states[i].lastDx = dx;
-        engine.states[i].lastDy = dy;
-        engine.states[i].isOutside = false;
-      }
-    };
+### 3. Scroll Reveal
 
-      if (!engine.skipAllAnimations) {
-            const startTicker = () => {
-              if (!isTickerActive && !engine.skipAllAnimations) {
-                gsap.ticker.add(onTick);
-                isTickerActive = true;
-              }
-            };
-            
-            const stopTicker = () => {
-              if (isTickerActive) {
-                gsap.ticker.remove(onTick);
-                isTickerActive = false;
-              }
-            };
-      
-            const target = config.activeGlobal ? window : engine.container;
-            const upd = (px: number, py: number, tgt: EventTarget | null) => { 
-              pointer.current = { x: px, y: py, target: tgt, active: true }; 
-              startTicker(); // Wake up!
-            };
-            
-            const onMove = (e: PointerEvent) => upd(e.clientX, e.clientY, e.target);
-            const onTMove = (e: TouchEvent) => { if (e.touches[0]) upd(e.touches[0].clientX, e.touches[0].clientY, e.target); };
-            const onFocusIn = (e: FocusEvent) => {
-              const targetNode = e.target as HTMLElement;
-              const index = engine.items.indexOf(targetNode as ProxHTMLElement);
-              if (index !== -1 && engine.centers[index]) {
-                const b = engine.centers[index];
-                const cRect = engine.container.getBoundingClientRect();
-                upd(b.x + cRect.left, b.y + cRect.top, e.target);
-              }
-            };
-      
-            const handleReset = (): void => {
-              pointer.current.active = false;
-              stopTicker();
-              engine.items.forEach((item, i) => {
-                const gr = engine.resetProps[i] ?? {};
-                gsap.to(item, {
-                  "--prox-intensity": 0, duration: config.activeResetDuration, delay: config.activeResetDelay, ease: config.targetResetEase, overwrite: "auto",
-                  onComplete: () => { if (engine.states[i].isOutside) removeWillChange(item); },
-                });
-                const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
-                for (const k of keys) {
-                  if (!gr[k]) continue;
-                  engine.applyVars(item, k, gr[k], config.activeResetDuration, config.activeResetDelay, config.targetResetEase);
-                }
-              });
-              engine.states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; });
-            };
-      
-            target.addEventListener("pointermove", onMove as EventListener);
-            target.addEventListener("pointerleave", handleReset as EventListener);
-            target.addEventListener("touchmove", onTMove as EventListener, { passive: true });
-            target.addEventListener("touchend", handleReset as EventListener);
-            target.addEventListener("focusin", onFocusIn as EventListener);
-            target.addEventListener("focusout", handleReset as EventListener);
-      
-            return () => {
-              if (cipherInterval) clearInterval(cipherInterval);
-              engine.destroy();
-              gsap.ticker.remove(onTick);
-              stopTicker();
-              target.removeEventListener("pointermove", onMove as EventListener);
-              target.removeEventListener("pointerleave", handleReset as EventListener);
-              target.removeEventListener("touchmove", onTMove as EventListener, { passive: true } as unknown as EventListenerOptions);
-              target.removeEventListener("touchend", handleReset as EventListener);
-              target.removeEventListener("focusin", onFocusIn as EventListener);
-              target.removeEventListener("focusout", handleReset as EventListener);
-            };
-          }
+```tsx
+export const Features = () => (
+  <Proximity
+    mode="scroll"
+    preset="reveal-opacity"
+    config={{
+      scroll: { start: "top 90%", once: true },
+      stagger: 0.2
+    }}
+  >
+    <div className="prox-item">Feature 1</div>
+    <div className="prox-item">Feature 2</div>
+  </Proximity>
+);
+```
 
-    return () => engine.destroy();
-  }, { dependencies: config.deps, scope: containerRef });
+---
 
-  return (
-    <div ref={containerRef} className={`proximity-container ${config.className}`.trim()} style={{ position: "relative", touchAction: "pan-y", ...config.style }} {...config.restProps}>
-      {config.children}
+## 🎨 Animation Presets
+
+### Transform
+`scale` | `flexScale` | `x` | `y` | `rotate` | `skew`
+
+### Appearance
+`opacity` | `blur` | `reveal` | `glow` | `brightness`
+
+### Physics
+`magnetic` | `repel` | `tilt` | `tiltCard`
+
+### Typography
+`weight` | `cipher` | `letterSpacing` | `color`
+
+### Combine with Dash Syntax
+```tsx
+preset="scale-blur-magnetic-opacity"
+```
+
+---
+
+## 🏗️ Real-World Examples
+
+### macOS Dock Effect
+```tsx
+<Proximity 
+  nearestPreset="scale-magnetic" // Closest icon grows & pulls
+  neighborPreset="repel"         // Others push away
+  config={{ reach: 2.5, lockAxis: 'x' }}
+>
+  {icons.map(icon => (
+    <div key={icon} className="prox-item dock-icon">
+      {icon}
     </div>
-  );
-};
-</file>
+  ))}
+</Proximity>
+```
 
-<file path="src/lib/types.ts">
-import { CSSProperties } from "react";
+### Cipher Decryption
+```tsx
+<ProximityText 
+  text="CLASSIFIED"
+  preset="cipher-scale"
+  config={{ 
+    cipher: [0, 1],  // Scrambled → Clear
+    reach: 2 
+  }}
+/>
+```
 
-export type EasePreset =
-  | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic"
-  | "jello" | "bounce" | "swing" | "vibrate" | "robot" | "ghost"
-  | "expo" | "circus" | "glitch" | "slowmo" | "spring" | "heavySpring"
-  | "anticipate" | "launch" | "drift" | "whiplash" | (string & {});
+### Magnetic Button
+```tsx
+<Proximity preset="magnetic-scale" reach={1.5}>
+  <button className="prox-item">Click Me</button>
+</Proximity>
+```
 
-export type ProximityPreset =
-  | "scale" | "flexScale" | "y" | "x" | "opacity" | "blur" | "rotate"
-  | "weight" | "skew" | "magnetic" | "tilt" | "tiltCard" | "repel"
-  | "cipher" | "reveal" | "color" | "background" | "glow" | "brightness"
-  | "contrast" | "borderRadius" | "letterSpacing" | "grayScale" | "cycle" | "cycleSide"
-  | "fill" | "fillText" | "scroll" | "parallax" | "velocitySkew" | "velocityScale" | (string & {});
+---
 
-export type ProximityMode = "pointer" | "scroll";
-export type AxisLock = "x" | "y" | "both" | "none";
+## 📊 Performance Benchmarks
 
-export interface ProximityScrollConfig {
-  start?: "appear" | "top" | "center" | "middle" | "bottom" | (string & {});
-  end?: "top" | "center" | "middle" | "bottom" | "disappear" | (string & {});
-  focus?: "appear" | "top" | "center" | "middle" | "bottom" | "disappear" | number;
-  scroller?: string | Element | Window;
-  scrub?: boolean | number;
-  markers?: boolean;
-  once?: boolean;
-  stagger?: number | gsap.StaggerVars;
-  resetStagger?: number | gsap.StaggerVars;
-  pin?: boolean | string | Element;
-  pinSpacing?: boolean | string;
-  envelope?: [number, number];
-}
+| Metric | Value |
+|--------|-------|
+| Core Bundle Size | 10KB (gzipped) |
+| First Contentful Paint | < 1s |
+| Time to Interactive | < 1.5s |
+| Animation FPS | 120+ |
+| Supported Elements | 100+ simultaneous |
 
-export interface ProximityTimelineConfig {
-  duration?: number;
-  resetDuration?: number;
-  delay?: number;
-  resetDelay?: number;
-  ease?: EasePreset;
-  resetEase?: EasePreset;
-}
+---
 
-export interface ProximityTargetOverride extends ProximityConfig {
-  selector: string;
-}
+## 🔧 API Reference
 
-export interface ProximityConfig {
-  mode?: ProximityMode;
-  scroll?: ProximityScrollConfig | [number, number];
-  scrollFocus?: "top" | "center" | "middle" | "bottom" | number;
-  scrollStart?: string;
-  scrollEnd?: string;
-  reach?: number;
-  falloff?: number;
-  duration?: number;
-  resetDuration?: number;
-  delay?: number;
-  resetDelay?: number;
-  stagger?: number | gsap.StaggerVars;
-  resetStagger?: number | gsap.StaggerVars;
-  scrub?: boolean | number;
-  resetScrub?: boolean | number;
-  start?: gsap.TweenVars;
-  end?: gsap.TweenVars;
-  global?: boolean;
-  explicit?: boolean;
-  preset?: ProximityPreset;
-  nearestPreset?: ProximityPreset;
-  neighborPreset?: ProximityPreset;
-  ease?: EasePreset;
-  resetEase?: EasePreset;
-  maxTravel?: number | [number, number] | { x: number; y: number };
-  lockAxis?: AxisLock;
-  splitBy?: "letter" | "word" | "line";
-  targets?: ProximityTargetOverride[];
-  timeline?: Record<string, ProximityTimelineConfig>;
-  precision?: number;
-  scale?: [number, number];
-  flexScale?: [number, number];
-  y?: [number, number];
-  x?: [number, number];
-  opacity?: [number, number];
-  blur?: [number, number];
-  rotate?: [number, number];
-  weight?: [number, number];
-  skew?: [number, number];
-  magnetic?: [number, number];
-  tilt?: [number, number];
-  tiltCard?: [number, number];
-  repel?: [number, number];
-  cipher?: [number, number];
-  reveal?: [number, number];
-  glow?: [number, number];
-  brightness?: [number, number];
-  contrast?: [number, number];
-  borderRadius?: [number, number];
-  letterSpacing?: [number, number];
-  grayScale?: [number, number];
-  color?: [string, string];
-  background?: [string, string];
-  parallax?: [number, number];
-  velocitySkew?: [number, number];
-  velocityScale?: [number, number];
-  onCalculate?: (intensity: number, distance: number, dx: number, dy: number, isNearest: boolean) => gsap.TweenVars;
-  onReset?: () => gsap.TweenVars;
-  disableOnMobile?: boolean | string | string[];
-  waitForAnimationEnd?: boolean;
-  waitForEnterAnimationEnd?: boolean;
-  waitForLeaveAnimationEnd?: boolean;
-}
+### Core Props
 
-export interface ProximityProps extends ProximityConfig {
-  children?: React.ReactNode;
-  selector?: string;
-  config?: ProximityConfig;
-  ignoreSelectors?: string[];
-  excludeElements?: string;
-  className?: string;
-  style?: CSSProperties;
-  scrollerRef?: React.RefObject<HTMLElement | null>;
-}
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `preset` | `string` | - | Chain effects with dashes |
+| `reach` | `number` | `2` | Influence radius |
+| `falloff` | `number` | `2.4` | Curve steepness |
+| `duration` | `number` | `0.2` | Animation speed |
+| `ease` | `string` | `"power1.out"` | GSAP easing |
+| `mode` | `"pointer" \| "scroll"` | `"pointer"` | Trigger type |
 
-export interface ProxHTMLElement extends HTMLElement {
-  proxCipher?: number;
-  _lastCipherUpdate?: number;
-  _quickTos?: Record<string, gsap.QuickToFunc>;
-  _isProxVisible?: boolean;
-  _willChangeCount?: number;
-  _scrollState?: "resting" | "hovered";
-}
+[**📖 Full API Documentation**](https://z-proximity-engine.vercel.app/#api-reference)
 
-export interface ItemCenter {
-  left: number; right: number; top: number; bottom: number;
-  x: number; y: number; w: number; h: number;
-  ml: number; mr: number; mt: number; mb: number;
-}
+---
 
-export interface ItemState {
-  isOutside: boolean;
-  lastIntensity: number;
-  lastDx: number;
-  lastDy: number;
-}
+## 🌐 Browser Support
 
-export interface ItemSetters {
-  intensity: (val: number | string) => void;
-  dx: (val: number | string) => void;
-  dy: (val: number | string) => void;
-}
+- ✅ Chrome 90+
+- ✅ Firefox 88+
+- ✅ Safari 14+
+- ✅ Edge 90+
+- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
 
-export interface ContainerBounds {
-  left: number; right: number; top: number; bottom: number;
-  globalLeft: number; globalTop: number;
-}
+---
 
-export interface ProximityTextProps extends ProximityProps {
-  text: string;
-  splitBy?: "letter" | "word" | "line";
-  textClassName?: string;
-  fontFamily?: string;
-  lineHeight?: number;
-  textLetterSpacing?: number;
-  wordSpacing?: number;
-  clipFix?: string;
-  ignoreText?: (string | RegExp)[];
-  textAlign?: 'left' | 'center' | 'right' | 'justify';
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
-  dir?: 'ltr' | 'rtl' | 'auto';
-}
+## 🤝 Contributing
+
+Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
+
+1. Fork the repo
+2. Create your feature branch (`git checkout -b feature/amazing-preset`)
+3. Commit your changes (`git commit -m 'Add amazing preset'`)
+4. Push to the branch (`git push origin feature/amazing-preset`)
+5. Open a Pull Request
+
+---
+
+## 📝 License
+
+MIT © [Youssef Zidan](https://github.com/YoussefZidan-1)
+
+---
+
+## 🔗 Links
+
+- [🌐 Official Website](https://z-proximity-engine.vercel.app/)
+- [📦 NPM Package](https://www.npmjs.com/package/z-proximity-engine)
+- [💬 GitHub Discussions](https://github.com/YoussefZidan-1/ZProximityEngine/discussions)
+- [🐛 Issue Tracker](https://github.com/YoussefZidan-1/ZProximityEngine/issues)
+- [👨‍💻 Author Portfolio](https://yzportfolio.vercel.app)
+- [💼 LinkedIn](https://www.linkedin.com/in/yousef-zedan-6a275a400/)
+
+---
+
+## 🏆 Alternatives Comparison
+
+| Feature | ZProximity | Framer Motion | React Spring |
+|---------|-----------|---------------|--------------|
+| Proximity Detection | ✅ Built-in | ❌ Manual | ❌ Manual |
+| Bundle Size | 10.7KB | ~50KB | ~15KB |
+| GSAP Integration | ✅ Native | ⚠️ Possible | ❌ No |
+| Scroll Animations | ✅ Built-in | ✅ Built-in | ⚠️ External |
+| TypeScript | ✅ Full | ✅ Full | ✅ Full |
+| Learning Curve | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+
+---
+
+**Made with ⚡ by [Youssef Zidan](https://github.com/YoussefZidan-1)**
+
+*If this library helped you, please ⭐ star the repo!*
+
+---
+
+### Keywords
+`react animation`, `proximity detection`, `magnetic cursor`, `hover effects`, `scroll animations`, `gsap react`, `motion design`, `interactive ui`, `spatial interactions`, `cursor effects`, `animation library`, `react gsap`, `framer motion alternative`, `react spring alternative`, `proximity-based animations`, `distance-based effects`
 </file>
 
 <file path="src/Documentation.tsx">
@@ -4002,263 +3989,276 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
 }
 </file>
 
-<file path="README.md">
-<div align="center">
-  <img src="public/og-image.jpg" alt="ZProximity Engine" width="100%" style="border-radius: 8px; margin-bottom: 20px;" />
+<file path="src/lib/components/ProximityPointer.tsx">
+import React, { useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { useProximityConfig } from "../core/useProximityConfig";
+import { ProximityEngine } from "../core/ProximityEngine";
+import { calculatePresetValues, cipherUpdate } from "../utils";
+import { addWillChange, removeWillChange } from "../utils/proximityHelpers";
+import { EASE_MAP } from "../constants";
+import { ProximityProps, ProxHTMLElement } from "../types";
 
-  # 🚀 ZProximity Engine
-  **The Physics of Attraction for the Modern Web.**
+export const ProximityPointer: React.FC<ProximityProps> = (props) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const config = useProximityConfig(props);
   
-  [![NPM Downloads](https://img.shields.io/npm/dt/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
-  [![NPM Version](https://img.shields.io/npm/v/z-proximity-engine?color=black&style=for-the-badge)](https://www.npmjs.com/package/z-proximity-engine)
-  [![Bundle Size](https://img.shields.io/bundlephobia/minzip/z-proximity-engine?color=black&label=Core%20Weight&style=for-the-badge)](https://bundlephobia.com/package/z-proximity-engine)
-  [![License](https://img.shields.io/npm/l/z-proximity-engine?color=black&style=for-the-badge)](#license)
+  const pointer = useRef({ x: -1, y: -1, target: null as EventTarget | null, active: false });
+  const lastPointer = useRef({ x: -1, y: -1 });
 
-> A high-performance React animation library for creating proximity-based interactions, magnetic cursor effects, and scroll-driven animations with GSAP. Perfect alternative to Framer Motion and React Spring for spatial interactions.
+  useGSAP(() => {
+      if (!containerRef.current) return;
+      const engine = new ProximityEngine(containerRef.current, config);
+      engine.setup();
+  
+      let cipherInterval: ReturnType<typeof setInterval>;
+      const hasCipher = config.allPresetsStr.includes("cipher");
+      if (hasCipher && !engine.skipAllAnimations) {
+        cipherInterval = setInterval(() => {
+          for (let i = 0; i < engine.items.length; i++) {
+            const item = engine.items[i];
+            if (item.proxCipher! > 0.01) {
+              cipherUpdate.call({ targets: () => [item] } as unknown as gsap.core.Tween);
+            }
+          }
+        }, 60);
+      }
+  
+      const maxDistance = config.activeReach * 200;
+      let isTickerActive = false;
 
-[**✨ Live Demo**](https://z-proximity-engine.vercel.app/) • [**📦 NPM**](https://www.npmjs.com/package/z-proximity-engine) • [**📖 Documentation**](https://z-proximity-engine.vercel.app/#implementation) • [**🎮 Interactive Playground**](https://z-proximity-engine.vercel.app/#gamebox)
-</div>
+      const onTick = (): void => {
 
+      if (pointer.current.x === lastPointer.current.x && pointer.current.y === lastPointer.current.y) return;
+      lastPointer.current.x = pointer.current.x;
+      lastPointer.current.y = pointer.current.y;
 
+      if (!pointer.current.active || engine.skipAllAnimations) return;
+      const cRect = engine.container.getBoundingClientRect();
+      const localX = pointer.current.x - cRect.left;
+      const localY = pointer.current.y - cRect.top;
+      const isBlocked = config.ignoreSelectors.some((sel) => (pointer.current.target as HTMLElement)?.closest?.(sel));
 
+      if (engine.containerBounds && !config.activeGlobal) {
+        const cb = engine.containerBounds;
+        if ((localX < cb.left - maxDistance || localX > cb.right + maxDistance || localY < cb.top - maxDistance || localY > cb.bottom + maxDistance || isBlocked) && engine.states.every((s) => s.isOutside)) return;
+      }
+      const toCheck = engine.toCheckSet;
+      toCheck.clear();
 
----
+      if (config.activeGlobal) {
+        engine.items.forEach((_, i) => toCheck.add(i));
+      } else {
+              const CELL = Math.max(50, maxDistance / 2);
+              const cellRadius = Math.ceil(maxDistance / CELL);
+        const cx = Math.floor(localX / CELL);
+        const cy = Math.floor(localY / CELL);
+        for (let ox = -cellRadius; ox <= cellRadius; ox++) {
+          for (let oy = -cellRadius; oy <= cellRadius; oy++) {
+            const cells = engine.spatialGrid.get(`${cx + ox},${cy + oy}`);
+            if (cells) {
+              for (let j = 0; j < cells.length; j++) toCheck.add(cells[j]);
+            }
+          }
+        }
+      }
 
-## 🎯 Why ZProximity Engine?
+      engine.states.forEach((s, i) => { if (!s.isOutside) toCheck.add(i); });
 
-### Performance First
-- ⚡ **120+ FPS**: Runs at native refresh rates
-- 📦 **10.7KB Core**: Minimal bundle impact
-- 🚀 **GSAP Powered**: Industry-standard animation engine
-- 🎭 **Zero Re-renders**: Animations bypass React's render cycle
+      const maxDistanceSq = maxDistance * maxDistance;
+      let nearestIndex = -1;
+      let minDistSq = Infinity;
 
-### Developer Experience
-- 💪 **TypeScript**: Full type safety
-- 🎨 **30+ Presets**: Scale, magnetic, blur, cipher, and more
-- 🔗 **Chainable**: Combine unlimited effects with dash syntax
-- 📱 **Mobile Optimized**: Smart performance on touch devices
+      for (const i of toCheck) {
+        engine.dArray[i] = Infinity;
+      }
 
-### Use Cases
-- 🎯 Magnetic dock interfaces (macOS-style)
-- ✨ Interactive landing pages
-- 📜 Scroll-driven storytelling
-- 🎮 Game-like UI interactions
-- 🔮 Futuristic dashboard effects
+      for (const i of toCheck) {
+        const b = engine.centers[i];
+        if (!b) continue;
+        
+        const dx = localX - b.x;
+        const dy = localY - b.y;
+        engine.dxArray[i] = dx;
+        engine.dyArray[i] = dy;
 
----
+        const distX = Math.max(0, Math.abs(dx) - b.w / 2);
+        const distY = Math.max(0, Math.abs(dy) - b.h / 2);
+        
+        const dBoxSq = distX * distX + distY * distY;
+        
+        const inside = localX >= b.left && localX <= b.right && localY >= b.top && localY <= b.bottom;
+        const offScreen = (engine.items[i] as ProxHTMLElement)._isProxVisible === false;
+        
+        if (isBlocked || (config.activeExplicit && !inside) || offScreen) continue; 
+        
+        if (dBoxSq > maxDistanceSq) {
+          continue; 
+        }
+        
+        engine.dArray[i] = Math.sqrt(dBoxSq); 
+        
+        if (dBoxSq < minDistSq) { 
+          minDistSq = dBoxSq; 
+          nearestIndex = i; 
+        }
+      }
 
-## 📦 Installation
+      const falloff = Math.max(0.01, config.activeFalloff);
+      const expDenominator = 1 - Math.exp(-falloff);
 
-```bash
-npm install z-proximity-engine gsap @gsap/react
-```
+      for (const i of toCheck) {
+        const item = engine.items[i];
+        const d = engine.dArray[i];
+        const dx = engine.dxArray[i];
+        const dy = engine.dyArray[i];
+        const isNearest = i === nearestIndex && d <= maxDistance;
+        const lc = engine.targetMap.get(item);
 
-### Peer Dependencies
-```bash
-npm install react@^18.0.0 react-dom@^18.0.0 gsap@^3.15.0 @gsap/react@^2.1.2
-```
+        if (d > maxDistance) {
+          if (!engine.states[i].isOutside) {
+            const gr = engine.resetProps[i] ?? {};
+            gsap.to(item, {
+              "--prox-intensity": 0, duration: config.activeResetDuration, delay: config.activeResetDelay, ease: config.targetResetEase, overwrite: "auto",
+              onComplete: () => { if (engine.states[i].isOutside) removeWillChange(item); },
+            });
+            const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+            for (const k of keys) {
+              if (!gr[k]) continue;
+              const tl = config.activeTimeline?.[k] ?? {};
+              engine.applyVars(item, k, gr[k], tl.resetDuration ?? config.activeResetDuration, tl.resetDelay ?? config.activeResetDelay, EASE_MAP[tl.resetEase as string] ?? tl.resetEase ?? config.targetResetEase);
+            }
+            engine.states[i].isOutside = true;
+            engine.states[i].lastIntensity = 0;
+          }
+          continue;
+        }
 
----
+        const x = d / maxDistance;
+        let intensity = (Math.exp(-falloff * x) - Math.exp(-falloff)) / expDenominator;
+        intensity = Math.max(0, Math.min(1, intensity));
 
-## 🚀 Quick Start
+        const hasMoved = Math.abs(intensity - engine.states[i].lastIntensity) >= config.activePrecision || Math.abs(dx - engine.states[i].lastDx) >= 1.0;
 
-### 1. Basic Hover Effect (3 lines)
+        if (!hasMoved) continue;
 
-```tsx
-import { Proximity } from 'z-proximity-engine';
+        if (engine.states[i].isOutside && !engine.skipAllAnimations) addWillChange(item);
 
-export const HoverCards = () => (
-  <Proximity preset="scale-blur" reach={2}>
-    <div className="prox-item">Card 1</div>
-    <div className="prox-item">Card 2</div>
-    <div className="prox-item">Card 3</div>
-  </Proximity>
-);
-```
+        engine.setters[i].intensity(intensity.toFixed(3));
+        engine.setters[i].dx(dx);
+        engine.setters[i].dy(dy);
 
-### 2. Text Animations
+        let cp = lc?.preset ?? config.activePreset ?? "";
+        const nearestP = lc?.nearestPreset ?? config.activeNearestPreset;
+        const neighborP = lc?.neighborPreset ?? config.activeNeighborPreset;
+        if (isNearest && nearestP) cp = cp ? `${cp}-${nearestP}` : nearestP;
+        else if (!isNearest && neighborP) cp = cp ? `${cp}-${neighborP}` : neighborP;
 
-```tsx
-import { ProximityText } from 'z-proximity-engine';
+        const gp = engine.skipAllAnimations ? {} : config.activeOnCalculate
+          ? { custom: config.activeOnCalculate(intensity, d, dx, dy, isNearest) }
+          : calculatePresetValues(cp, config.allPresetsStr, intensity, config.mergedBounds, dx, dy,
+                      engine.centers[i], false, config.parsedMaxTravel, config.activeLockAxis,
+                      config.activeStartStyles, config.activeEndStyles, engine.skipAllAnimations, engine.disabledPresets, engine.cachedValues[i]);
 
-export const Hero = () => (
-  <ProximityText 
-    text="HOVER ME"
-    preset="scale-opacity-cipher"
-    splitBy="letter"
-    reach={1.5}
-  />
-);
-```
+        const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+        for (const k of keys) {
+          const vars = gp[k]; if (!vars) continue;
+          const tl = config.activeTimeline?.[k] ?? {};
+          const dur = tl.duration ?? (lc?.duration ?? config.activeDuration);
+          const del = tl.delay ?? config.activeDelay;
+          const ez = EASE_MAP[tl.ease as string] ?? tl.ease ?? (lc?.ease ?? config.targetEase);
+          engine.applyVars(item, k, vars, dur, del, ez);
+        }
 
-### 3. Scroll Reveal
+        engine.states[i].lastIntensity = intensity;
+        engine.states[i].lastDx = dx;
+        engine.states[i].lastDy = dy;
+        engine.states[i].isOutside = false;
+      }
+    };
 
-```tsx
-export const Features = () => (
-  <Proximity
-    mode="scroll"
-    preset="reveal-opacity"
-    config={{
-      scroll: { start: "top 90%", once: true },
-      stagger: 0.2
-    }}
-  >
-    <div className="prox-item">Feature 1</div>
-    <div className="prox-item">Feature 2</div>
-  </Proximity>
-);
-```
+      if (!engine.skipAllAnimations) {
+            const startTicker = () => {
+              if (!isTickerActive && !engine.skipAllAnimations) {
+                gsap.ticker.add(onTick);
+                isTickerActive = true;
+              }
+            };
+            
+            const stopTicker = () => {
+              if (isTickerActive) {
+                gsap.ticker.remove(onTick);
+                isTickerActive = false;
+              }
+            };
+      
+            const target = config.activeGlobal ? window : engine.container;
+            const upd = (px: number, py: number, tgt: EventTarget | null) => { 
+              pointer.current = { x: px, y: py, target: tgt, active: true }; 
+              startTicker(); // Wake up!
+            };
+            
+            const onMove = (e: PointerEvent) => upd(e.clientX, e.clientY, e.target);
+            const onTMove = (e: TouchEvent) => { if (e.touches[0]) upd(e.touches[0].clientX, e.touches[0].clientY, e.target); };
+            const onFocusIn = (e: FocusEvent) => {
+              const targetNode = e.target as HTMLElement;
+              const index = engine.items.indexOf(targetNode as ProxHTMLElement);
+              if (index !== -1 && engine.centers[index]) {
+                const b = engine.centers[index];
+                const cRect = engine.container.getBoundingClientRect();
+                upd(b.x + cRect.left, b.y + cRect.top, e.target);
+              }
+            };
+      
+            const handleReset = (): void => {
+              pointer.current.active = false;
+              stopTicker();
+              engine.items.forEach((item, i) => {
+                const gr = engine.resetProps[i] ?? {};
+                gsap.to(item, {
+                  "--prox-intensity": 0, duration: config.activeResetDuration, delay: config.activeResetDelay, ease: config.targetResetEase, overwrite: "auto",
+                  onComplete: () => { if (engine.states[i].isOutside) removeWillChange(item); },
+                });
+                const keys = config.activeOnCalculate ? ["custom"] : config.activePresetKeys;
+                for (const k of keys) {
+                  if (!gr[k]) continue;
+                  engine.applyVars(item, k, gr[k], config.activeResetDuration, config.activeResetDelay, config.targetResetEase);
+                }
+              });
+              engine.states.forEach((s) => { s.isOutside = true; s.lastIntensity = 0; });
+            };
+      
+            target.addEventListener("pointermove", onMove as EventListener);
+            target.addEventListener("pointerleave", handleReset as EventListener);
+            target.addEventListener("touchmove", onTMove as EventListener, { passive: true });
+            target.addEventListener("touchend", handleReset as EventListener);
+            target.addEventListener("focusin", onFocusIn as EventListener);
+            target.addEventListener("focusout", handleReset as EventListener);
+      
+            return () => {
+              if (cipherInterval) clearInterval(cipherInterval);
+              engine.destroy();
+              gsap.ticker.remove(onTick);
+              stopTicker();
+              target.removeEventListener("pointermove", onMove as EventListener);
+              target.removeEventListener("pointerleave", handleReset as EventListener);
+              target.removeEventListener("touchmove", onTMove as EventListener, { passive: true } as unknown as EventListenerOptions);
+              target.removeEventListener("touchend", handleReset as EventListener);
+              target.removeEventListener("focusin", onFocusIn as EventListener);
+              target.removeEventListener("focusout", handleReset as EventListener);
+            };
+          }
 
----
+    return () => engine.destroy();
+  }, { dependencies: config.deps, scope: containerRef });
 
-## 🎨 Animation Presets
-
-### Transform
-`scale` | `flexScale` | `x` | `y` | `rotate` | `skew`
-
-### Appearance
-`opacity` | `blur` | `reveal` | `glow` | `brightness`
-
-### Physics
-`magnetic` | `repel` | `tilt` | `tiltCard`
-
-### Typography
-`weight` | `cipher` | `letterSpacing` | `color`
-
-### Combine with Dash Syntax
-```tsx
-preset="scale-blur-magnetic-opacity"
-```
-
----
-
-## 🏗️ Real-World Examples
-
-### macOS Dock Effect
-```tsx
-<Proximity 
-  nearestPreset="scale-magnetic" // Closest icon grows & pulls
-  neighborPreset="repel"         // Others push away
-  config={{ reach: 2.5, lockAxis: 'x' }}
->
-  {icons.map(icon => (
-    <div key={icon} className="prox-item dock-icon">
-      {icon}
+  return (
+    <div ref={containerRef} className={`proximity-container ${config.className}`.trim()} style={{ position: "relative", touchAction: "pan-y", ...config.style }} {...config.restProps}>
+      {config.children}
     </div>
-  ))}
-</Proximity>
-```
-
-### Cipher Decryption
-```tsx
-<ProximityText 
-  text="CLASSIFIED"
-  preset="cipher-scale"
-  config={{ 
-    cipher: [0, 1],  // Scrambled → Clear
-    reach: 2 
-  }}
-/>
-```
-
-### Magnetic Button
-```tsx
-<Proximity preset="magnetic-scale" reach={1.5}>
-  <button className="prox-item">Click Me</button>
-</Proximity>
-```
-
----
-
-## 📊 Performance Benchmarks
-
-| Metric | Value |
-|--------|-------|
-| Core Bundle Size | 10KB (gzipped) |
-| First Contentful Paint | < 1s |
-| Time to Interactive | < 1.5s |
-| Animation FPS | 120+ |
-| Supported Elements | 100+ simultaneous |
-
----
-
-## 🔧 API Reference
-
-### Core Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `preset` | `string` | - | Chain effects with dashes |
-| `reach` | `number` | `2` | Influence radius |
-| `falloff` | `number` | `2.4` | Curve steepness |
-| `duration` | `number` | `0.2` | Animation speed |
-| `ease` | `string` | `"power1.out"` | GSAP easing |
-| `mode` | `"pointer" \| "scroll"` | `"pointer"` | Trigger type |
-
-[**📖 Full API Documentation**](https://z-proximity-engine.vercel.app/#api-reference)
-
----
-
-## 🌐 Browser Support
-
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
-- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/amazing-preset`)
-3. Commit your changes (`git commit -m 'Add amazing preset'`)
-4. Push to the branch (`git push origin feature/amazing-preset`)
-5. Open a Pull Request
-
----
-
-## 📝 License
-
-MIT © [Youssef Zidan](https://github.com/YoussefZidan-1)
-
----
-
-## 🔗 Links
-
-- [🌐 Official Website](https://z-proximity-engine.vercel.app/)
-- [📦 NPM Package](https://www.npmjs.com/package/z-proximity-engine)
-- [💬 GitHub Discussions](https://github.com/YoussefZidan-1/ZProximityEngine/discussions)
-- [🐛 Issue Tracker](https://github.com/YoussefZidan-1/ZProximityEngine/issues)
-- [👨‍💻 Author Portfolio](https://yzportfolio.vercel.app)
-- [💼 LinkedIn](https://www.linkedin.com/in/yousef-zedan-6a275a400/)
-
----
-
-## 🏆 Alternatives Comparison
-
-| Feature | ZProximity | Framer Motion | React Spring |
-|---------|-----------|---------------|--------------|
-| Proximity Detection | ✅ Built-in | ❌ Manual | ❌ Manual |
-| Bundle Size | 10.7KB | ~50KB | ~15KB |
-| GSAP Integration | ✅ Native | ⚠️ Possible | ❌ No |
-| Scroll Animations | ✅ Built-in | ✅ Built-in | ⚠️ External |
-| TypeScript | ✅ Full | ✅ Full | ✅ Full |
-| Learning Curve | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-
----
-
-**Made with ⚡ by [Youssef Zidan](https://github.com/YoussefZidan-1)**
-
-*If this library helped you, please ⭐ star the repo!*
-
----
-
-### Keywords
-`react animation`, `proximity detection`, `magnetic cursor`, `hover effects`, `scroll animations`, `gsap react`, `motion design`, `interactive ui`, `spatial interactions`, `cursor effects`, `animation library`, `react gsap`, `framer motion alternative`, `react spring alternative`, `proximity-based animations`, `distance-based effects`
+  );
+};
 </file>
 
 <file path="src/lib/components/ProximityScroll.tsx">
