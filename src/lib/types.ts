@@ -1,4 +1,4 @@
-import { CSSProperties } from "react";
+import { CSSProperties, HTMLAttributes  } from "react";
 
 export type EasePreset =
   | "smooth" | "heavy" | "sharp" | "fluid" | "bouncy" | "elastic"
@@ -29,6 +29,16 @@ export interface ProximityScrollConfig {
   pin?: boolean | string | Element;
   pinSpacing?: boolean | string;
   envelope?: [number, number];
+  mode?: "lens" | "progress" | (string & {});
+  lensCenter?: [number, number];
+  lensRadius?: number;
+  triggerMode?: "individual" | "group";
+  trigger?: string | Element;
+  horizontal?: boolean;
+  onScrollDown?: Partial<ProximityConfig>;
+  onScrollUp?: Partial<ProximityConfig>;
+  velocityDriven?: boolean;
+  velocityMap?: Record<string, [number, number]>;
 }
 
 export interface ProximityTimelineConfig {
@@ -107,15 +117,23 @@ export interface ProximityConfig {
   waitForAnimationEnd?: boolean;
   waitForEnterAnimationEnd?: boolean;
   waitForLeaveAnimationEnd?: boolean;
+  horizontal?: boolean;
+  lensCenter?: [number, number];
+  lensRadius?: number;
+  triggerMode?: "individual" | "group";
+  onScrollDown?: Partial<ProximityConfig>;
+  onScrollUp?: Partial<ProximityConfig>;
+  velocityMap?: Record<string, [number, number]>;
 }
 
-export interface ProximityProps extends ProximityConfig {
+export interface ProximityProps extends ProximityConfig, Omit<HTMLAttributes<HTMLDivElement>, "color" | "onReset"> {
   children?: React.ReactNode;
   selector?: string;
   config?: ProximityConfig;
   ignoreSelectors?: string[];
   excludeElements?: string;
   className?: string;
+  id?: string;
   style?: CSSProperties;
   scrollerRef?: React.RefObject<HTMLElement | null>;
 }

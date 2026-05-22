@@ -32,6 +32,8 @@ export class ProximityEngine {
   io: IntersectionObserver | null = null;
   resizeTimeout: any;
 
+  onItemsChanged?: () => void;
+
   constructor(container: HTMLDivElement, config: any) {
     this.container = container;
     this.config = config;
@@ -62,23 +64,25 @@ export class ProximityEngine {
     });
 
     this.resizeObserver = new ResizeObserver(() => {
-          clearTimeout(this.resizeTimeout);
-          this.resizeTimeout = setTimeout(this.updateCenters, 150);
-        });
-    
-        this.mutationObserver.observe(this.container, { childList: true, subtree: true });
-        this.resizeObserver.observe(this.container); 
-    
-        if (document.fonts) {
-          document.fonts.ready.then(() => {
-            this.initItems();
-            if (this.config.splitBy === "line") {
-              setTimeout(this.updateCenters, 100);
-            }
-          });
-        } else {
-          this.initItems();
+      // CRITICAL FIX: Handled by ScrollTrigger's refresh in Scroll Mode to avoid layout-thrashing races
+      if (this.config.activeMode === "scroll") return; 
+      clearTimeout(this.resizeTimeout);
+      this.resizeTimeout = setTimeout(this.updateCenters, 150);
+    });
+
+    this.mutationObserver.observe(this.container, { childList: true, subtree: true });
+    this.resizeObserver.observe(this.container); 
+
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        this.initItems();
+        if (this.config.splitBy === "line") {
+          setTimeout(this.updateCenters, 100);
         }
+      });
+    } else {
+      this.initItems();
+    }
   }
 
   updateCenters = (): void => {
@@ -203,7 +207,12 @@ export class ProximityEngine {
             const isScrubMode = this.config.activeMode === "scroll" && this.config.activeScrollConfig?.scrub !== false;
             const dur = isScrubMode ? 0.05 : (lc?.duration ?? this.config.activeDuration);
             const ez = isScrubMode ? "none" : (EASE_MAP[lc?.ease as string] ?? lc?.ease ?? this.config.targetEase);
-            QUICK_TO_PROPS.forEach((prop) => {
+            
+            // Collect standard and dynamic velocity map properties to build GPU accelerated quickTo channels
+            const customVelocityProps = Object.keys(this.config.activeScrollConfig?.velocityMap ?? {});
+            const allPropsToBuild = Array.from(new Set([...QUICK_TO_PROPS, ...customVelocityProps]));
+
+            allPropsToBuild.forEach((prop) => {
               item._quickTos![prop] = gsap.quickTo(item, prop, { duration: dur, ease: ez });
             });
     });
@@ -232,11 +241,15 @@ export class ProximityEngine {
       this.io!.observe(item);
     });
 
-    this.resetProps = this.items.map((_, i) => {
+    this.resetProps = this.items.map((item, i) => {
       if (this.skipAllAnimations) return {};
       if (this.config.activeOnReset) return { custom: this.config.activeOnReset() };
       if (this.config.activeOnCalculate) return { custom: this.config.activeOnCalculate(0, Infinity, 0, 0, false) };
-      const res = calculatePresetValues("", this.config.allPresetsStr, 0, this.config.mergedBounds, 0, 0,
+      
+      const lc = this.targetMap.get(item);
+      const itemBounds = { ...this.config.mergedBounds, ...(lc || {}) };
+
+      const res = calculatePresetValues("", this.config.allPresetsStr, 0, itemBounds, 0, 0,
         this.centers[i], true, this.config.parsedMaxTravel, this.config.activeLockAxis,
         this.config.activeStartStyles, this.config.activeEndStyles, this.skipAllAnimations, this.disabledPresets);
       const clone: Record<string, gsap.TweenVars> = {};
@@ -249,6 +262,8 @@ export class ProximityEngine {
       if (this.resetProps[0]) Object.values(this.resetProps[0]).forEach((v) => Object.assign(flatProps, v));
       gsap.set(this.items, flatProps);
     }
+    
+    if (this.onItemsChanged) this.onItemsChanged();
   };
 
   handleMotionChange = (e: MediaQueryListEvent): void => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Proximity, ProximityText } from './lib';
+import { Proximity, ProximityText, ProximityConfig  } from './lib';
 import {
   X, RotateCcw, Check, Terminal, Play, BookOpen, Copy, Eye,
   Zap, MousePointer, Layers, Cpu, Sparkles, AlertTriangle, Heart
@@ -711,30 +711,63 @@ const EASES = [
 const ScrollDemo = () => (
   <div className="my-8 py-20 px-4 bg-zinc-900 dark:bg-zinc-900 border border-[var(--border-color)] overflow-hidden shadow-2xl" style={{ perspective: 1200 }}>
     <p className="text-center text-[11px] uppercase font-bold tracking-widest text-zinc-400 mb-12">
-      ↓ Scroll up and down fast to feel velocity effects
+      ↓ Scroll up and down fast to see independent scroll behaviors
     </p>
     <Proximity
       mode="scroll"
-      preset="tiltCard-y-opacity-scale-velocitySkew-velocityScale-parallax"
       config={{
-        scroll: { start: 'top 95%', end: 'center 30%', scrub: true, once: false },
-        y: [120, 0],
-        opacity: [0, 1],
-        scale: [0.8, 1],
-        tiltCard: [0, 25],
-        velocitySkew: [-20, 20],
-        velocityScale: [0.8, 1.2],
-        parallax: [0, 150],
-        stagger: 0.1,
+        scroll: { 
+          start: 'top 95%', 
+          end: 'bottom 10%', 
+          scrub: 1.2, 
+          once: false,
+          envelope: [0.25, 0.75],
+          velocityMap: {
+            blur: [0, 8]
+          }
+        },
+        targets: [
+          {
+            selector: ".item-reveal",
+            preset: "y-opacity",
+            y: [100, 0],
+            opacity: [0, 1]
+          },
+          {
+            selector: ".item-tilt",
+            preset: "tiltCard-velocitySkew",
+            tiltCard: [0, 25],
+            velocitySkew: [-15, 15],
+            opacity: [0.3, 1]
+          },
+          {
+            selector: ".item-parallax",
+            preset: "scale-parallax",
+            scale: [0.8, 1.15],
+            parallax: [0, 120],
+            opacity: [0.3, 1]
+          }
+        ]
       }}
       className="flex flex-col md:flex-row gap-6 justify-center items-center"
     >
-      {['SPEED', 'VELOCITY', 'PARALLAX'].map((word, i) => (
-        <div key={word} data-speed={1 + i * 0.5} className="prox-item w-full md:w-44 h-52 bg-white/5 border border-white/10 text-white p-6 flex flex-col justify-between shadow-2xl">
-          <span className="text-[10px] font-mono text-white/60 uppercase tracking-widest">Speed {1 + i * 0.5}x</span>
-          <span className="text-3xl font-black italic tracking-tighter">{word}</span>
-        </div>
-      ))}
+      {/* Box 1: Vertically slides and fades in */}
+      <div className="prox-item item-reveal w-full md:w-44 h-52 bg-white/5 border border-white/10 text-white p-6 flex flex-col justify-between shadow-2xl">
+        <span className="text-[10px] font-mono text-white/60 uppercase tracking-widest">Card 1 / Reveal</span>
+        <span className="text-3xl font-black italic tracking-tighter">REVEAL Y</span>
+      </div>
+
+      {/* Box 2: Tilts dynamically based on scroll speed */}
+      <div className="prox-item item-tilt w-full md:w-44 h-52 bg-white/5 border border-white/10 text-white p-6 flex flex-col justify-between shadow-2xl">
+        <span className="text-[10px] font-mono text-white/60 uppercase tracking-widest">Card 2 / Speed Tilt</span>
+        <span className="text-3xl font-black italic tracking-tighter">VELO TILT</span>
+      </div>
+
+      {/* Box 3: Performs a vertical parallax slide */}
+      <div className="prox-item item-parallax w-full md:w-44 h-52 bg-white/5 border border-white/10 text-white p-6 flex flex-col justify-between shadow-2xl" data-speed="1.5">
+        <span className="text-[10px] font-mono text-white/60 uppercase tracking-widest">Card 3 / Speed 1.5x</span>
+        <span className="text-3xl font-black italic tracking-tighter">PARALLAX</span>
+      </div>
     </Proximity>
   </div>
 );
@@ -768,48 +801,69 @@ export default function Documentation() {
   }, []);
 
   useEffect(() => {
-      let ticking = false;
-      const handleScroll = () => {
-        if (!ticking) {
-          window.requestAnimationFrame(() => {
-            setShowFloatingBtn(window.scrollY > 300);
-            ticking = false;
-          });
-          ticking = true;
-        }
-      };
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      handleScroll();
-  
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setShowFloatingBtn(window.scrollY > 300);
+          ticking = false;
         });
-      }, { rootMargin: "-30% 0px -60% 0px" });
-  
-      SECTIONS.forEach(sec => {
-        const el = document.getElementById(sec.id);
-        if (el) observer.observe(el);
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
       });
-  
-      return () => {
-        window.removeEventListener('scroll', handleScroll);
-        observer.disconnect();
-      };
-    },[]);
+    }, { rootMargin: "-30% 0px -60% 0px" });
+
+    SECTIONS.forEach(sec => {
+      const el = document.getElementById(sec.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
+  }, []);
 
   const scrollToSection = useCallback((id: string) => {
     gsap.to(window, { duration: 1.2, scrollTo: { y: `#${id}`, offsetY: 100 }, ease: 'power3.inOut' });
     setIsSidebarOpen(false);
   }, []);
 
+  // Standard Group-Trigger Stagger Props for Documentation blocks
+  const groupRevealConfig: ProximityConfig = {
+    scroll: { triggerMode: "group" as const, start: "top 90%", scrub: false },
+    stagger: 0.1,
+    y: [40, 0],
+    opacity: [0, 1]
+  };
+
   return (
     <div
       ref={containerRef}
       className="flex relative items-start w-full bg-[var(--bg-color)] text-[var(--text-color)] border-t border-[var(--border-color)]"
     >
+      {/* Sticky Scroll Progress tracker on top of documentation wrapper */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-black/5 dark:bg-white/5 z-30">
+        <Proximity
+          mode="scroll"
+          preset="background"
+          config={{
+            scroll: { start: "top top", end: "bottom bottom", scrub: true },
+            background: ["transparent", "var(--text-color)"]
+          }}
+          className="h-full w-full"
+        />
+      </div>
+
       <button
         onClick={() => setIsSidebarOpen(true)}
         className={`fixed bottom-6 right-6 z-50 p-4 bg-[var(--text-color)] text-[var(--bg-color)] rounded-full shadow-2xl transition-all duration-500 lg:hidden ${showFloatingBtn && !isSidebarOpen ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}
@@ -839,22 +893,33 @@ export default function Documentation() {
             <X size={18} />
           </button>
         </div>
-        <nav className="p-4 space-y-0.5">
+        
+        {/* Viewport Center Focal lens tracker directly mapped to sidebar items */}
+        <Proximity
+          mode="scroll"
+          preset="scale-brightness"
+          config={{
+            scroll: { mode: "lens", lensCenter: [0.5, 0.5], lensRadius: 0.4, scrub: 1.2 },
+            scale: [0.9, 1.05],
+            brightness: [0.5, 1.1]
+          }}
+          className="p-4 space-y-0.5 flex flex-col"
+        >
           {SECTIONS.map(sec => (
             <button
               key={sec.id}
               onClick={() => scrollToSection(sec.id)}
-              className={`w-full text-left px-3 py-2.5 text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2 ${
+              className={`prox-item w-full text-left px-3 py-2.5 text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2 rounded-sm ${
                 activeSection === sec.id
-                  ? 'bg-[var(--text-color)] text-[var(--bg-color)]'
-                  : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
+                  ? 'bg-[var(--text-color)] text-[var(--bg-color)] font-black'
+                  : 'hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
               <span>{sec.icon}</span>
               {sec.title}
             </button>
           ))}
-        </nav>
+        </Proximity>
 
         <div className="p-4 mt-4 border-t border-[var(--border-color)]">
           <div className="text-[9px] uppercase font-bold tracking-widest opacity-60 mb-3">Quick Copy</div>
@@ -880,23 +945,37 @@ export default function Documentation() {
 
       <main className="flex-1 min-w-0 w-full px-6 py-10 md:px-10 lg:px-14 pb-40 max-w-4xl mx-auto overflow-hidden">
 
-        <section id="mental-model">
-          <DocH2 id="mental-model">🧠 The Mental Model</DocH2>
-          <p className="text-[10px] uppercase tracking-widest opacity-70 mb-6 font-bold">Before writing a single line of code — understand this</p>
+        {/* ==============================================
+            Immersive Staggered Sections Wrapped in Proximity Group Trigger Mode
+            ============================================== */}
 
-          <DocP>
-            ZProximity Engine does one thing: it <strong>measures the distance between your cursor and every element you care about</strong>,
-            then converts that distance into a 0→1 intensity value. Everything else — scaling, blurring, color, physics — is just
-            a function of that number.
-          </DocP>
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="mental-model"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>🧠 The Mental Model</DocH2>
+            <p className="text-[10px] uppercase tracking-widest opacity-70 mb-6 font-bold">Before writing a single line of code — understand this</p>
+          </div>
 
-          <div className="grid md:grid-cols-3 gap-4 my-8">
+          <div className="prox-item">
+            <DocP>
+              ZProximity Engine does one thing: it <strong>measures the distance between your cursor and every element you care about</strong>,
+              then converts that distance into a 0→1 intensity value. Everything else — scaling, blurring, color, physics — is just
+              a function of that number.
+            </DocP>
+          </div>
+
+          <div className="prox-item grid md:grid-cols-3 gap-4 my-8">
             {[
               { icon: <MousePointer size={20} />, label: 'Cursor → Distance', desc: 'Every frame, we measure how far the cursor is from each .prox-item in pixels.' },
               { icon: <Cpu size={20} />, label: 'Distance → Intensity', desc: 'Distance is converted to 0.0–1.0 intensity using your reach and falloff settings.' },
               { icon: <Zap size={20} />, label: 'Intensity → Preset', desc: 'The intensity drives every visual property — scale, blur, color, position, rotation.' },
             ].map(s => (
-              <div key={s.label} className="border border-[var(--border-color)] p-5 shadow-sm">
+              <div key={s.label} className="border border-[var(--border-color)] p-5 shadow-sm bg-black/5 dark:bg-white/5">
                 <div className="mb-3 opacity-80">{s.icon}</div>
                 <div className="text-[11px] font-black uppercase tracking-wider mb-2">{s.label}</div>
                 <div className="text-[11px] opacity-80 leading-relaxed">{s.desc}</div>
@@ -904,34 +983,50 @@ export default function Documentation() {
             ))}
           </div>
 
-          <DocP>
-            The intensity curve is <strong>exponential</strong>, not linear. This is why the effect feels organic — things don't
-            mechanically slide at a fixed rate, they snap to life the closer you get, exactly like real magnetic fields.
-          </DocP>
+          <div className="prox-item">
+            <DocP>
+              The intensity curve is <strong>exponential</strong>, not linear. This is why the effect feels organic — things don't
+              mechanically slide at a fixed rate, they snap to life the closer you get, exactly like real magnetic fields.
+            </DocP>
+          </div>
 
-          <MentalModelVisualizer />
+          <div className="prox-item">
+            <MentalModelVisualizer />
+          </div>
 
-          <Callout type="tip" icon={<Sparkles size={14} />}>
-            <strong>The "aha" moment:</strong> Every preset — <Mono>scale</Mono>, <Mono>blur</Mono>, <Mono>magnetic</Mono>,
-            <Mono>cipher</Mono> — is just a different formula that takes intensity (0→1) and spits out a CSS/GSAP property.
-            They all run on the same engine. You can chain unlimited presets together.
-          </Callout>
-        </section>
+          <div className="prox-item">
+            <Callout type="tip" icon={<Sparkles size={14} />}>
+              <strong>The "aha" moment:</strong> Every preset — <Mono>scale</Mono>, <Mono>blur</Mono>, <Mono>magnetic</Mono>,
+              <Mono>cipher</Mono> — is just a different formula that takes intensity (0→1) and spits out a CSS/GSAP property.
+              They all run on the same engine. You can chain unlimited presets together.
+            </Callout>
+          </div>
+        </Proximity>
 
-        <section id="installation">
-          <DocH2>📦 Installation</DocH2>
-
-          <CodeBlock code="npm install z-proximity-engine gsap @gsap/react" label="terminal" />
-
-          <Callout type="warn" icon={<AlertTriangle size={14} />}>
-            <strong>Peer dependencies required.</strong> ZProximity Engine uses GSAP as its animation core.
-            You must install both <Mono>gsap</Mono> and <Mono>@gsap/react</Mono> separately — they are not bundled.
-          </Callout>
-
-          <DocH3>Two components, one purpose</DocH3>
-
-          <div className="grid md:grid-cols-2 gap-4 my-6">
-            <div className="border border-[var(--border-color)] p-5 shadow-sm">
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="installation"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>📦 Installation</DocH2>
+          </div>
+          <div className="prox-item">
+            <CodeBlock code="npm install z-proximity-engine gsap @gsap/react" label="terminal" />
+          </div>
+          <div className="prox-item">
+            <Callout type="warn" icon={<AlertTriangle size={14} />}>
+              <strong>Peer dependencies required.</strong> ZProximity Engine uses GSAP as its animation core.
+              You must install both <Mono>gsap</Mono> and <Mono>@gsap/react</Mono> separately — they are not bundled.
+            </Callout>
+          </div>
+          <div className="prox-item">
+            <DocH3>Two components, one purpose</DocH3>
+          </div>
+          <div className="prox-item grid md:grid-cols-2 gap-4 my-6">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm bg-black/5 dark:bg-white/5">
               <div className="text-[10px] uppercase font-bold tracking-widest mb-2 flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--text-color)] rounded-full" />
                 Proximity
@@ -940,15 +1035,9 @@ export default function Documentation() {
                 The core wrapper. Put it around any elements — divs, images, cards, icons.
                 Children with <Mono>.prox-item</Mono> class become reactive.
               </p>
-              <CodeBlock code={`import { Proximity } from 'z-proximity-engine';
-
-<Proximity preset="scale" reach={2}>
-  <div className="prox-item">I react</div>
-  <div>I don't react</div>
-  <div className="prox-item">I react too</div>
-</Proximity>`} />
+              <CodeBlock code={`import { Proximity } from 'z-proximity-engine';\n\n<Proximity preset="scale" reach={2}>\n  <div className="prox-item">I react</div>\n  <div>I don't react</div>\n  <div className="prox-item">I react too</div>\n</Proximity>`} />
             </div>
-            <div className="border border-[var(--border-color)] p-5 shadow-sm">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm bg-black/5 dark:bg-white/5">
               <div className="text-[10px] uppercase font-bold tracking-widest mb-2 flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--text-color)] rounded-full" />
                 ProximityText
@@ -956,68 +1045,62 @@ export default function Documentation() {
               <p className="text-[11px] opacity-80 leading-relaxed mb-4">
                 Automatically splits text into individual letters or words and makes each one reactive. No manual span-wrapping needed.
               </p>
-              <CodeBlock code={`import { ProximityText } from 'z-proximity-engine';
-
-<ProximityText
-  text="Hello World"
-  splitBy="letter"
-  preset="scale-blur"
-/>`} />
+              <CodeBlock code={`import { ProximityText } from 'z-proximity-engine';\n\n<ProximityText\n  text="Hello World"\n  splitBy="letter"\n  preset="scale-blur"\n/>`} />
             </div>
           </div>
-        </section>
+        </Proximity>
 
-        <section id="your-first-effect">
-          <DocH2>⚡ Your First Effect</DocH2>
-          <DocP>
-            The simplest possible setup. Wrap your elements, add the <Mono>prox-item</Mono> class,
-            pick a preset. That's genuinely it.
-          </DocP>
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="your-first-effect"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>⚡ Your First Effect</DocH2>
+            <DocP>
+              The simplest possible setup. Wrap your elements, add the <Mono>prox-item</Mono> class,
+              pick a preset. That's genuinely it.
+            </DocP>
+          </div>
+          <div className="prox-item">
+            <LiveEditor
+              preset="scale"
+              initialConfig={`{\n  preset: "scale",\n  reach: 1.5,\n  duration: 0.3,\n  ease: "bouncy"\n}`}
+              label="Your first effect — edit anything"
+            />
+          </div>
+          <div className="prox-item">
+            <DocH3>How the selector works</DocH3>
+            <DocP>
+              By default, <Mono>Proximity</Mono> looks for children with the class <Mono>.prox-item</Mono>.
+              You can override this with the <Mono>selector</Mono> prop to target any CSS selector inside the container.
+            </DocP>
+          </div>
+          <div className="prox-item">
+            <CodeBlock
+              code={`// Default — use .prox-item class\n<Proximity preset="scale">\n  <div className="prox-item">Reacts</div>\n</Proximity>\n\n// Custom selector\n<Proximity preset="scale" selector=".my-card">\n  <div className="my-card">Also reacts</div>\n</Proximity>\n\n// Multiple selectors\n<Proximity preset="scale" selector=".card, .icon, button">\n  <div className="card">React</div>\n  <button>Also reacts</button>\n</Proximity>`}
+            />
+          </div>
+        </Proximity>
 
-          <LiveEditor
-            preset="scale"
-            initialConfig={`{
-  preset: "scale",
-  reach: 1.5,
-  duration: 0.3,
-  ease: "bouncy"
-}`}
-            label="Your first effect — edit anything"
-          />
-
-          <DocH3>How the selector works</DocH3>
-          <DocP>
-            By default, <Mono>Proximity</Mono> looks for children with the class <Mono>.prox-item</Mono>.
-            You can override this with the <Mono>selector</Mono> prop to target any CSS selector inside the container.
-          </DocP>
-          <CodeBlock
-            code={`// Default — use .prox-item class
-<Proximity preset="scale">
-  <div className="prox-item">Reacts</div>
-</Proximity>
-
-// Custom selector
-<Proximity preset="scale" selector=".my-card">
-  <div className="my-card">Also reacts</div>
-</Proximity>
-
-// Multiple selectors
-<Proximity preset="scale" selector=".card, .icon, button">
-  <div className="card">React</div>
-  <button>Also reacts</button>
-</Proximity>`}
-          />
-        </section>
-
-        <section id="reach-falloff">
-          <DocH2>📡 Reach & Falloff</DocH2>
-          <DocP>
-            These two numbers control the <em>shape</em> of your proximity field. Most devs tune them
-            by feel — the explorer below lets you do exactly that.
-          </DocP>
-
-          <div className="grid md:grid-cols-2 gap-6 my-6">
-            <div className="border border-[var(--border-color)] p-5 shadow-sm">
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="reach-falloff"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>📡 Reach & Falloff</DocH2>
+            <DocP>
+              These two numbers control the <em>shape</em> of your proximity field. Most devs tune them
+              by feel — the explorer below lets you do exactly that.
+            </DocP>
+          </div>
+          <div className="prox-item grid md:grid-cols-2 gap-6 my-6">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm bg-black/5 dark:bg-white/5">
               <div className="text-[11px] font-black uppercase tracking-wider mb-2">reach</div>
               <div className="text-[11px] opacity-80 leading-relaxed">
                 Think of it as the <strong>radius</strong> of an invisible bubble around each element.
@@ -1032,7 +1115,7 @@ export default function Documentation() {
                 ))}
               </div>
             </div>
-            <div className="border border-[var(--border-color)] p-5 shadow-sm">
+            <div className="border border-[var(--border-color)] p-5 shadow-sm bg-black/5 dark:bg-white/5">
               <div className="text-[11px] font-black uppercase tracking-wider mb-2">falloff</div>
               <div className="text-[11px] opacity-80 leading-relaxed">
                 Controls how quickly the intensity drops off with distance. Low values feel <strong>gradual and dreamy</strong>.
@@ -1048,60 +1131,66 @@ export default function Documentation() {
               </div>
             </div>
           </div>
+          <div className="prox-item">
+            <ReachFalloffExplorer />
+          </div>
+        </Proximity>
 
-          <ReachFalloffExplorer />
-        </section>
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="preset-chaining"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>🔗 Preset Chaining</DocH2>
+            <DocP>
+              The most powerful feature. Join any presets with a dash and they all run simultaneously.
+              The engine computes them all in the same animation frame — zero performance penalty for combining.
+            </DocP>
+          </div>
+          <div className="prox-item">
+            <CodeBlock code={`// Single preset\npreset="scale"\n\n// Two combined\npreset="scale-opacity"\n\n// Full cinematic combo\npreset="scale-blur-rotate-magnetic"\n\n// As many as you want — they ALL run in one GSAP tick\npreset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
+          </div>
+          <div className="prox-item">
+            <PresetChainBuilder />
+          </div>
+          <div className="prox-item">
+            <DocH3>Override individual preset ranges</DocH3>
+            <DocP>
+              Each preset has sensible defaults, but you can override the <em>[from, to]</em> range for any of them:
+            </DocP>
+          </div>
+          <div className="prox-item">
+            <CodeBlock code={`<Proximity\n  preset="scale-blur-rotate"\n  scale={[1, 2.5]}       // default was [1, 1.5]\n  blur={[20, 0]}         // heavy blur that clears on hover\n  rotate={[-45, 0]}      // spins in from -45deg\n  reach={2}\n/>`} />
+          </div>
+          <div className="prox-item">
+            <EaseTester />
+          </div>
+        </Proximity>
 
-        <section id="preset-chaining">
-          <DocH2>🔗 Preset Chaining</DocH2>
-          <DocP>
-            The most powerful feature. Join any presets with a dash and they all run simultaneously.
-            The engine computes them all in the same animation frame — zero performance penalty for combining.
-          </DocP>
-
-          <CodeBlock code={`// Single preset
-preset="scale"
-
-// Two combined
-preset="scale-opacity"
-
-// Full cinematic combo
-preset="scale-blur-rotate-magnetic"
-
-// As many as you want — they ALL run in one GSAP tick
-preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
-
-          <PresetChainBuilder />
-
-          <DocH3>Override individual preset ranges</DocH3>
-          <DocP>
-            Each preset has sensible defaults, but you can override the <em>[from, to]</em> range for any of them:
-          </DocP>
-          <CodeBlock code={`<Proximity
-  preset="scale-blur-rotate"
-  scale={[1, 2.5]}       // default was [1, 1.5]
-  blur={[20, 0]}         // heavy blur that clears on hover
-  rotate={[-45, 0]}      // spins in from -45deg
-  reach={2}
-/>`} />
-
-          <EaseTester />
-        </section>
-
-        <section id="styling-aesthetics">
-          <DocH2>✨ Styling & Aesthetics</DocH2>
-          <DocP>
-            Physics aren't just for transforms. You can drive visual aesthetics—colors, shadows, filters, and border radii—directly from spatial proximity.
-          </DocP>
-          
-          <div className="grid md:grid-cols-2 gap-6 my-6">
-            <div className="border border-[var(--border-color)] p-8 flex flex-col items-center justify-center mono-grid min-h-[250px] shadow-xl relative group">
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="styling-aesthetics"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>✨ Styling & Aesthetics</DocH2>
+            <DocP>
+              Physics aren't just for transforms. You can drive visual aesthetics—colors, shadows, filters, and border radii—directly from spatial proximity.
+            </DocP>
+          </div>
+          <div className="prox-item grid md:grid-cols-2 gap-6 my-6">
+            <div className="border border-[var(--border-color)] p-8 flex flex-col items-center justify-center mono-grid min-h-[250px] shadow-xl relative group bg-black/5 dark:bg-white/5">
               <span className="absolute top-4 left-4 text-[9px] uppercase font-bold tracking-widest opacity-60">Glow & Color Shift</span>
               <Proximity preset="glow-color" glow={[0, 40]} color={["var(--text-color)", "#3b82f6"]} reach={2}>
                 <div className="prox-item text-5xl font-black tracking-tighter">NEON</div>
               </Proximity>
             </div>
-            <div className="border border-[var(--border-color)] p-8 flex flex-col items-center justify-center mono-grid min-h-[250px] shadow-xl relative group">
+            <div className="border border-[var(--border-color)] p-8 flex flex-col items-center justify-center mono-grid min-h-[250px] shadow-xl relative group bg-black/5 dark:bg-white/5">
               <span className="absolute top-4 left-4 text-[9px] uppercase font-bold tracking-widest opacity-60">Border Radius & Background</span>
               <Proximity preset="borderRadius-rotate-background-scale" borderRadius={[0, 50]} background={["transparent", "var(--text-color)"]} rotate={[0, 90]} scale={[1, 1.2]} reach={2}>
                 <div className="prox-item w-24 h-24 border-2 border-[var(--text-color)] flex items-center justify-center font-bold text-[var(--bg-color)]">
@@ -1109,232 +1198,92 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
               </Proximity>
             </div>
           </div>
-          
-          <CodeBlock code={`// 1. Color Shift & Drop Shadow Glow
-<Proximity 
-  preset="glow-color" 
-  glow={[0, 30]} 
-  color={["var(--text-color)", "#3b82f6"]}
->
-  <div className="prox-item">NEON</div>
-</Proximity>
+          <div className="prox-item">
+            <CodeBlock code={`// 1. Color Shift & Drop Shadow Glow\n<Proximity \n  preset="glow-color" \n  glow={[0, 30]} \n  color={["var(--text-color)", "#3b82f6"]}\n>\n  <div className="prox-item">NEON</div>\n</Proximity>\n\n// 2. Border Morphing & Background Color\n<Proximity \n  preset="borderRadius-rotate-background" \n  borderRadius={[0, 50]} \n  background={["transparent", "var(--text-color)"]}\n>\n  <div className="prox-item w-24 h-24 border-2"></div>\n</Proximity>`} />
+          </div>
+        </Proximity>
 
-// 2. Border Morphing & Background Color
-<Proximity 
-  preset="borderRadius-rotate-background" 
-  borderRadius={[0, 50]} 
-  background={["transparent", "var(--text-color)"]}
->
-  <div className="prox-item w-24 h-24 border-2"></div>
-</Proximity>`} />
-        </section>
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="common-mistakes"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>⚠️ Common Mistakes</DocH2>
+            <DocP>
+              These are the bugs that waste hours. Read them once, save yourself the pain.
+            </DocP>
+          </div>
+          <div className="prox-item">
+            <MistakeCard
+              title="Forgetting .prox-item"
+              wrong={`// Nothing happens — no .prox-item class!\n<Proximity preset="scale" reach={2}>\n  <div>Why isn't this working?</div>\n  <button>Or this?</button>\n</Proximity>`}
+              right={`// Add .prox-item to every element you want to react\n<Proximity preset="scale" reach={2}>\n  <div className="prox-item">This works</div>\n  <button className="prox-item">This too</button>\n</Proximity>`}
+              explanation="Proximity uses CSS class targeting. Only elements with .prox-item (or your custom selector) are registered. The rest are invisible to the engine."
+            />
+          </div>
+          <div className="prox-item">
+            <MistakeCard
+              title="Using CSS transitions alongside Proximity"
+              wrong={`/* In your CSS */\n.prox-item {\n  transition: transform 0.3s ease; /* CONFLICTS with GSAP */\n}\n\n/* Proximity + CSS transitions fight each other every frame */`}
+              right={`/* Remove the CSS transition entirely */\n.prox-item {\n  /* No transition needed — GSAP handles ALL animation */\n}\n\n/* Control speed via Proximity props instead */\n<Proximity preset="scale" duration={0.3} ease="bouncy" />`}
+              explanation="CSS transitions and GSAP both try to animate the same properties simultaneously, causing jitter. GSAP wins the property but wastes CPU fighting the transition. Remove any CSS transitions on .prox-item elements."
+            />
+          </div>
+        </Proximity>
 
-        <section id="common-mistakes">
-          <DocH2>⚠️ Common Mistakes</DocH2>
-          <DocP>
-            These are the bugs that waste hours. Read them once, save yourself the pain.
-          </DocP>
-
-          <MistakeCard
-            title="Forgetting .prox-item"
-            wrong={`// Nothing happens — no .prox-item class!
-<Proximity preset="scale" reach={2}>
-  <div>Why isn't this working?</div>
-  <button>Or this?</button>
-</Proximity>`}
-            right={`// Add .prox-item to every element you want to react
-<Proximity preset="scale" reach={2}>
-  <div className="prox-item">This works</div>
-  <button className="prox-item">This too</button>
-</Proximity>`}
-            explanation="Proximity uses CSS class targeting. Only elements with .prox-item (or your custom selector) are registered. The rest are invisible to the engine."
-          />
-
-          <MistakeCard
-            title="Using CSS transitions alongside Proximity"
-            wrong={`/* In your CSS */
-.prox-item {
-  transition: transform 0.3s ease; /* CONFLICTS with GSAP */
-}
-
-/* Proximity + CSS transitions fight each other every frame */`}
-            right={`/* Remove the CSS transition entirely */
-.prox-item {
-  /* No transition needed — GSAP handles ALL animation */
-}
-
-/* Control speed via Proximity props instead */
-<Proximity preset="scale" duration={0.3} ease="bouncy" />`}
-            explanation="CSS transitions and GSAP both try to animate the same properties simultaneously, causing jitter. GSAP wins the property but wastes CPU fighting the transition. Remove any CSS transitions on .prox-item elements."
-          />
-
-          <MistakeCard
-            title="Nesting Proximity components wrongly"
-            wrong={`// The inner Proximity steals mouse events from outer
-<Proximity preset="scale" selector=".card">
-  <Proximity preset="blur" selector=".card">
-    <div className="card">Confused</div>
-  </Proximity>
-</Proximity>`}
-            right={`// Use preset chaining instead of nesting
-<Proximity preset="scale-blur" selector=".card">
-  <div className="card">Perfect</div>
-</Proximity>
-
-// OR use targets for per-element config
-<Proximity
-  preset="scale"
-  targets={[{ selector: ".card-inner", preset: "blur" }]}
->
-  <div className="card prox-item">
-    <div className="card-inner">Different physics</div>
-  </div>
-</Proximity>`}
-            explanation="Proximity components track mouse events on their own container. Nesting creates conflicting event zones. Always use preset chaining (scale-blur) for multiple effects on the same elements."
-          />
-
-          <MistakeCard
-            title="Wrong config object parity (props vs config)"
-            wrong={`// Mixing prop-level and config-level settings — config wins!
-<Proximity
-  reach={5}                    // ← this gets IGNORED
-  config={{ reach: 1 }}        // ← this wins, reach is 1
-/>`}
-            right={`// Use either props OR a config object, not both
-// Option A: all props
-<Proximity reach={5} preset="scale" ease="bouncy" />
-
-// Option B: all in config
-<Proximity config={{ reach: 5, preset: "scale", ease: "bouncy" }} />
-
-// If mixing, config values always override direct props`}
-            explanation="When you pass both a config object and direct props, config values always win. This is useful for state-driven configs, but can cause confusion when you expect a prop to take effect."
-          />
-
-          <MistakeCard
-            title="Animating elements that aren't hardware accelerated"
-            wrong={`// Animating width/height causes layout reflow every frame — SLOW
-<Proximity preset="scale" onCalculate={(i) => ({
-  width: 100 + i * 50,   // triggers layout
-  height: 100 + i * 50,  // triggers layout
-})} />`}
-            right={`// Use transform: scale instead — GPU accelerated, no layout
-<Proximity preset="scale" scale={[1, 1.5]} />
-
-// Or with onCalculate, stick to transform/opacity/filter
-<Proximity onCalculate={(i) => ({
-  scaleX: 1 + i * 0.5,   // GPU only
-  scaleY: 1 + i * 0.5,   // GPU only
-  opacity: 0.5 + i * 0.5 // GPU only
-})} />`}
-            explanation="GSAP is fast, but the browser layout pipeline is not. Always animate transform (scale, rotate, x, y) and opacity/filter. Never animate width, height, top, left, padding or margin in the animation loop."
-          />
-        </section>
-
-        <section id="text-magic">
-          <DocH2>✍️ Text Magic</DocH2>
-          <DocP>
-            Manually wrapping every character in a span is one of the most tedious tasks in GSAP work.
-            <Mono>ProximityText</Mono> does it for you — letters, words, or lines — all reactive, all accessible.
-          </DocP>
-
-          <div className="grid md:grid-cols-3 gap-4 my-6">
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="text-magic"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>✍️ Text Magic</DocH2>
+            <DocP>
+              Manually wrapping every character in a span is one of the most tedious tasks in GSAP work.
+              <Mono>ProximityText</Mono> does it for you — letters, words, or lines — all reactive, all accessible.
+            </DocP>
+          </div>
+          <div className="prox-item grid md:grid-cols-3 gap-4 my-6">
             {[
               { split: 'letter', desc: 'Each character is its own reactive target. Best for dramatic headline effects.' },
               { split: 'word',   desc: 'Each word is a reactive target. Great for body text and call-to-actions.' },
               { split: 'line',   desc: 'Each line is a reactive target. Best for scroll reveals with stagger.' },
             ].map(s => (
-              <div key={s.split} className="border border-[var(--border-color)] p-4 shadow-sm">
+              <div key={s.split} className="border border-[var(--border-color)] p-4 shadow-sm bg-black/5 dark:bg-white/5">
                 <Mono>splitBy="{s.split}"</Mono>
                 <p className="text-[11px] opacity-80 mt-2 leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
-
-          <LiveEditor
-            preset="scale-opacity"
-            mode="text"
-            initialConfig={`{
-  preset: "scale-opacity",
-  splitBy: "letter",
-  scale: [1, 1.8],
-  opacity: [0.2, 1],
-  reach: 1.5,
-  ease: "bouncy",
-  duration: 0.3
-}`}
-            label="Letter-level physics — edit preset and splitBy"
-          />
-
-          <LiveEditor
-            preset="y-opacity"
-            mode="text-word"
-            height={250}
-            initialConfig={`{
-  preset: "y-opacity",
-  splitBy: "word",
-  y: [20, 0],
-  opacity: [0.1, 1],
-  reach: 2,
-  ease: "elastic",
-  duration: 0.5
-}`}
-            label="Word-level physics"
-          />
-
-          <DocH3>The cipher preset</DocH3>
-          <DocP>
-            <Mono>cipher</Mono> is text-only. It scrambles characters into random glyphs as your cursor
-            approaches, then deciphers them as intensity peaks. Zero GSAP tricks — pure text manipulation
-            on every frame.
-          </DocP>
-
-          <div className="border border-[var(--border-color)] mono-grid flex items-center justify-center p-16 my-6 shadow-xl">
-            <ProximityText
-              text="CLASSIFIED DATA"
-              splitBy="letter"
-              preset="cipher-scale-color"
-              cipher={[0, 1]}
-              scale={[0.8, 1]}
-              color={["var(--text-color)", "#ef4444"]}
-              reach={2}
-              textClassName="text-3xl font-black tracking-widest"
+          <div className="prox-item">
+            <LiveEditor
+              preset="scale-opacity"
+              mode="text"
+              initialConfig={`{\n  preset: "scale-opacity",\n  splitBy: "letter",\n  scale: [1, 1.8],\n  opacity: [0.2, 1],\n  reach: 1.5,\n  ease: "bouncy",\n  duration: 0.3\n}`}
+              label="Letter-level physics — edit preset and splitBy"
             />
           </div>
-
-          <CodeBlock code={`<ProximityText
-  text="CLASSIFIED DATA"
-  splitBy="letter"
-  preset="cipher-scale-color"
-  cipher={[0, 1]}
-  scale={[0.8, 1]}
-  color={["var(--text-color)", "#ef4444"]}
-  reach={2}
-  textClassName="text-3xl font-black tracking-widest"
-/>`} />
-
-          <DocH3>ignoreText — skip specific characters</DocH3>
-          <CodeBlock code={`// Skip punctuation and special chars from animation
-<ProximityText
-  text="Hello, World!"
-  splitBy="letter"
-  preset="scale"
-  ignoreText={[",", "!", " "]}
-/>
-
-// Use regex for patterns
-<ProximityText
-  text="Email me@domain.com"
-  splitBy="letter"
-  preset="blur"
-  ignoreText={[/@/, /\\./]}
-/>`} />
-
-          <DocH3>Full Arabic & RTL Support</DocH3>
-          <DocP>
-            <Mono>ProximityText</Mono> seamlessly handles Arabic diacritics, ligatures (like Lam-Alef), and continuous cursive connections without breaking the font joining behavior.
-          </DocP>
-          <div className="border border-[var(--border-color)] mono-grid flex items-center justify-center p-10 my-6 shadow-xl">
+          <div className="prox-item">
+            <LiveEditor
+              preset="y-opacity"
+              mode="text-word"
+              height={250}
+              initialConfig={`{\n  preset: "y-opacity",\n  splitBy: "word",\n  y: [20, 0],\n  opacity: [0.1, 1],\n  reach: 2,\n  ease: "elastic",\n  duration: 0.5\n}`}
+              label="Word-level physics"
+            />
+          </div>
+          <div className="prox-item">
+            <DocH3>Full Arabic & RTL Support</DocH3>
+            <DocP>
+              <Mono>ProximityText</Mono> seamlessly handles Arabic diacritics, ligatures (like Lam-Alef), and continuous cursive connections without breaking the font joining behavior.
+            </DocP>
+          </div>
+          <div className="prox-item border border-[var(--border-color)] mono-grid flex items-center justify-center p-10 my-6 shadow-xl bg-black/5 dark:bg-white/5">
             <ProximityText
               text="مرحباً بالعالم"
               splitBy="letter"
@@ -1347,75 +1296,60 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
               dir="rtl"
             />
           </div>
-        </section>
+        </Proximity>
 
-        <section id="neighbor-nearest">
-          <DocH2>🎯 Neighbor vs Nearest</DocH2>
-          <DocP>
-            This is the feature that separates a basic hover effect from something that feels alive.
-            Instead of every element doing the same thing on hover, you split the behavior —
-            the closest element does one thing, everything around it does something else.
-          </DocP>
-
-          <Callout type="tip" icon={<Heart size={14} />}>
-            <strong>The macOS Dock effect</strong> — closest icon scales up (nearestPreset), neighboring icons spread apart (neighborPreset) — is exactly this feature. Two lines of code.
-          </Callout>
-
-          <NeighborNearestDemo />
-
-          <CodeBlock code={`// The full dock pattern
-<Proximity
-  nearestPreset="scale-magnetic-y"   // closest element: grows + pulls to cursor
-  neighborPreset="repel"      // all others: scatter
-  scale={[1, 1.5]}
-  magnetic={[0, 0.4]}
-  repel={[0, 0.4]}
-  blur={[0, 6]}
-  reach={2.5}
->
-  {icons.map(icon => (
-    <div key={icon} className="prox-item w-12 h-12">
-      {icon}
-    </div>
-  ))}
-</Proximity>`} />
-
-          <DocH3>Three layers of targeting</DocH3>
-
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
-            <table className="w-full text-left text-[11px]">
-              <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)] uppercase text-[10px] font-black tracking-widest">
-                <tr>
-                  <th className="p-4">Prop</th>
-                  <th className="p-4">Applies to</th>
-                  <th className="p-4">Use case</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                <tr><td className="p-4 font-mono font-bold">preset</td><td className="p-4">All elements in reach</td><td className="p-4 opacity-80">Uniform glow, opacity change on all elements</td></tr>
-                <tr><td className="p-4 font-mono font-bold">nearestPreset</td><td className="p-4">Only the closest element</td><td className="p-4 opacity-80">Dock icon scale, magnetic pull on hovered item</td></tr>
-                <tr><td className="p-4 font-mono font-bold">neighborPreset</td><td className="p-4">All other elements in reach</td><td className="p-4 opacity-80">Repel, dim, or blur surrounding elements</td></tr>
-              </tbody>
-            </table>
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="neighbor-nearest"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>🎯 Neighbor vs Nearest</DocH2>
+            <DocP>
+              This is the feature that separates a basic hover effect from something that feels alive.
+              Instead of every element doing the same thing on hover, you split the behavior —
+              the closest element does one thing, everything around it does something else.
+            </DocP>
           </div>
-        </section>
+          <div className="prox-item">
+            <Callout type="tip" icon={<Heart size={14} />}>
+              <strong>The macOS Dock effect</strong> — closest icon scales up (nearestPreset), neighboring icons spread apart (neighborPreset) — is exactly this feature. Two lines of code.
+            </Callout>
+          </div>
+          <div className="prox-item">
+            <NeighborNearestDemo />
+          </div>
+          <div className="prox-item">
+            <CodeBlock code={`// The full dock pattern\n<Proximity\n  nearestPreset="scale-magnetic-y"   // closest element: grows + pulls to cursor\n  neighborPreset="repel"      // all others: scatter\n  scale={[1, 1.5]}\n  magnetic={[0, 0.4]}\n  repel={[0, 0.4]}\n  blur={[0, 6]}\n  reach={2.5}\n>\n  {icons.map(icon => (\n    <div key={icon} className="prox-item w-12 h-12">\n      {icon}\n    </div>\n  ))}\n</Proximity>`} />
+          </div>
+        </Proximity>
 
-        <section id="scroll-mode">
-          <DocH2>📜 Scroll Mode</DocH2>
-          <DocP>
-            Switch from cursor tracking to viewport scroll tracking with a single prop.
-            All the same presets, all the same physics — but now driven by how far the
-            user has scrolled rather than where their mouse is.
-          </DocP>
-
-          <CodeBlock code={`// Switch to scroll mode
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="scroll-mode"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>📜 Scroll Mode</DocH2>
+            <DocP>
+              Switch from cursor tracking to viewport scroll tracking with a single prop.
+              All the same presets, all the same physics — but now driven by how far the
+              user has scrolled rather than where their mouse is.
+            </DocP>
+          </div>
+          <div className="prox-item">
+            <CodeBlock code={`// Switch to scroll mode
 <Proximity mode="scroll" preset="y-opacity" config={{
   scroll: {
     start: "top 90%",   // trigger when element top hits 90% down the viewport
-    end: "center 40%",  // complete when element center hits 40% down
-    scrub: true,        // link animation directly to scroll position
-    once: true,         // only animate in, don't reverse on scroll back
-    stagger: 0.15,      // delay between each element animating
+    end: "bottom 10%",  // complete when element bottom hits 10%
+    scrub: 1.2,         // smooth scrubbing (removes scroll shaking)
+    once: false,        // animate in and out
+    envelope: [0.25, 0.75], // hold 100% state for the middle 50% of the scroll
   },
   y: [60, 0],
   opacity: [0, 1],
@@ -1424,145 +1358,53 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
   <div className="prox-item">With a 150ms delay</div>
   <div className="prox-item">And another 150ms delay</div>
 </Proximity>`} />
-
-          <ScrollDemo />
-
-          <DocH3>Velocity & Parallax</DocH3>
-          <DocP>
-            Add high-end Awwwards-style scrolling with <Mono>parallax</Mono>, <Mono>velocitySkew</Mono>, and <Mono>velocityScale</Mono>. 
-            The engine automatically calculates scroll velocity and transforms it into physical distortion.
-          </DocP>
-
-          <CodeBlock code={`<Proximity
-  mode="scroll"
-  preset="parallax-velocitySkew-velocityScale"
-  config={{
-    scroll: { start: 'top bottom', end: 'bottom top', scrub: true },
-    parallax: [0, 150],        // Element moves 150px against the scroll
-    velocitySkew: [-20, 20],   // Skews based on scroll speed
-    velocityScale: [0.8, 1.2]  // Squashes and stretches based on velocity
-  }}
->
-  {/* Adding data-speed multiplies the parallax effect for this specific item! */}
-  <div className="prox-item" data-speed="1.5">Faster</div>
-  <div className="prox-item" data-speed="0.8">Slower</div>
-</Proximity>`} />
-
-          <DocH3>scrub vs trigger mode</DocH3>
-          <div className="grid md:grid-cols-2 gap-4 my-6">
-            <div className="border border-[var(--border-color)] p-5 shadow-sm">
-              <div className="text-[11px] font-black uppercase tracking-wider mb-2">scrub: true (or number)</div>
-              <p className="text-[11px] opacity-80 leading-relaxed">
-                Animation is directly tied to scroll position. Scroll down = animate forward.
-                Scroll up = animate backward. Perfect for parallax and progress effects.
-                The number value adds lag (e.g. <Mono>scrub: 0.5</Mono> = 500ms delay).
-              </p>
-            </div>
-            <div className="border border-[var(--border-color)] p-5 shadow-sm">
-              <div className="text-[11px] font-black uppercase tracking-wider mb-2">scrub: false (trigger mode)</div>
-              <p className="text-[11px] opacity-80 leading-relaxed">
-                Animation plays once when the scroll position hits the trigger point.
-                Uses <Mono>duration</Mono> and <Mono>ease</Mono> for the tween.
-                Combine with <Mono>once: true</Mono> to prevent re-triggering.
-              </p>
-            </div>
           </div>
-        </section>
+          <div className="prox-item">
+            <ScrollDemo />
+          </div>
+        </Proximity>
 
-        <section id="custom-physics">
-          <DocH2>🔬 Custom Physics</DocH2>
-          <DocP>
-            When no preset combination achieves what you need, <Mono>onCalculate</Mono> gives you
-            raw access to the engine's internals every single animation frame.
-          </DocP>
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="custom-physics"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>🔬 Custom Physics</DocH2>
+            <DocP>
+              When no preset combination achieves what you need, <Mono>onCalculate</Mono> gives you
+              raw access to the engine's internals every single animation frame.
+            </DocP>
+          </div>
+          <div className="prox-item">
+            <CodeBlock code={`<Proximity\n  reach={2}\n  onCalculate={(intensity, distance, dx, dy, isNearest) => {\n    return {\n      scaleX: 1 + intensity * 0.4,\n      scaleY: 1 - intensity * 0.1,   // squash effect\n      filter: \`hue-rotate(\${intensity * 180}deg)\`,\n      y: isNearest ? -20 : 0,\n      rotation: dy * 0.05,\n    };\n  }}\n  onReset={() => ({\n    scaleX: 1, scaleY: 1,\n    filter: 'hue-rotate(0deg)',\n    y: 0, rotation: 0,\n  })}\n>\n  <div className="prox-item">Custom physics</div>\n</Proximity>`} />
+          </div>
+          <div className="prox-item">
+            <LiveEditor
+              preset=""
+              initialConfig={`{\n  reach: 1.8,\n  onCalculate: (intensity, dist, dx, dy) => ({\n    scaleX: 1 + intensity * 0.6,\n    scaleY: 1 - intensity * 0.15,\n    filter: \`hue-rotate(\${intensity * 200}deg) brightness(\${1 + intensity * 0.4})\`,\n    rotation: dy * 0.03,\n  }),\n  onReset: () => ({\n    scaleX: 1, scaleY: 1,\n    filter: "hue-rotate(0deg) brightness(1)",\n    rotation: 0,\n  })\n}`}
+              label="Custom physics — try editing onCalculate"
+            />
+          </div>
+        </Proximity>
 
-          <CodeBlock code={`<Proximity
-  reach={2}
-  onCalculate={(intensity, distance, dx, dy, isNearest) => {
-    // intensity: 0–1, how strong the effect is
-    // distance:  pixels from cursor to element center
-    // dx, dy:    direction vector from element to cursor
-    // isNearest: true if this is the element closest to cursor
-
-    return {
-      // Return any valid GSAP properties
-      scaleX: 1 + intensity * 0.4,
-      scaleY: 1 - intensity * 0.1,   // squash effect
-      filter: \`hue-rotate(\${intensity * 180}deg)\`,
-      y: isNearest ? -20 : 0,         // nearest item pops up
-      rotation: dy * 0.05,            // tilt based on cursor direction
-    };
-  }}
-  onReset={() => ({
-    // Called when cursor leaves — return the "rest" state
-    scaleX: 1, scaleY: 1,
-    filter: 'hue-rotate(0deg)',
-    y: 0, rotation: 0,
-  })}
->
-  <div className="prox-item">Custom physics</div>
-</Proximity>`} />
-
-          <LiveEditor
-            preset=""
-            initialConfig={`{
-  reach: 1.8,
-  onCalculate: (intensity, dist, dx, dy) => ({
-    scaleX: 1 + intensity * 0.6,
-    scaleY: 1 - intensity * 0.15,
-    filter: \`hue-rotate(\${intensity * 200}deg) brightness(\${1 + intensity * 0.4})\`,
-    rotation: dy * 0.03,
-  }),
-  onReset: () => ({
-    scaleX: 1, scaleY: 1,
-    filter: "hue-rotate(0deg) brightness(1)",
-    rotation: 0,
-  })
-}`}
-            label="Custom physics — try editing onCalculate"
-          />
-
-          <DocH3>Per-element config with targets</DocH3>
-          <DocP>
-            Give different elements completely different physics using the <Mono>targets</Mono> prop.
-            Each target override can have its own preset, duration, ease — everything.
-          </DocP>
-          <CodeBlock code={`<Proximity
-  preset="opacity"    // default for everyone
-  opacity={[0.3, 1]}
-  targets={[
-    {
-      selector: ".card-primary",
-      preset: "scale-magnetic",
-      scale: [1, 1.4],
-      magnetic: [0, 0.6],
-      duration: 0.2,
-      ease: "bouncy",
-    },
-    {
-      selector: ".card-secondary",
-      preset: "blur-y",
-      blur: [0, 8],
-      y: [0, -10],
-      duration: 0.5,
-      ease: "fluid",
-    },
-  ]}
->
-  <div className="card-primary prox-item">Primary — snappy and magnetic</div>
-  <div className="card-secondary prox-item">Secondary — slow blur rise</div>
-  <div className="prox-item">Fallback — just opacity</div>
-</Proximity>`} />
-        </section>
-
-        <section id="performance">
-          <DocH2>🚀 Performance</DocH2>
-          <DocP>
-            ZProximity is built from the ground up for 120fps. Here's what happens under the hood
-            so you understand why it stays fast — and what can make it slow.
-          </DocP>
-
-          <div className="grid md:grid-cols-2 gap-4 my-8">
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="performance"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>🚀 Performance</DocH2>
+            <DocP>
+              ZProximity is built from the ground up for 120fps. Here's what happens under the hood
+              so you understand why it stays fast — and what can make it slow.
+            </DocP>
+          </div>
+          <div className="prox-item grid md:grid-cols-2 gap-4 my-8">
             {[
               {
                 title: '🏎 GSAP Ticker (not React)',
@@ -1580,49 +1422,27 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
                 title: '👁 IntersectionObserver',
                 desc: 'Off-screen elements are automatically suspended. No CPU wasted on elements you can\'t see.',
               },
-              {
-                title: '🎯 Precision guard',
-                desc: 'If intensity changes less than 0.002 between frames, no animation is fired. Keeps idle cost at near-zero.',
-              },
-              {
-                title: '🧹 will-change management',
-                desc: 'will-change: transform is applied only when an element enters the influence zone, and removed when it returns to rest. Prevents GPU memory bloat.',
-              },
             ].map(s => (
-              <div key={s.title} className="border border-[var(--border-color)] p-4 shadow-sm">
+              <div key={s.title} className="border border-[var(--border-color)] p-4 shadow-sm bg-black/5 dark:bg-white/5">
                 <div className="text-[11px] font-black uppercase tracking-wider mb-2">{s.title}</div>
                 <div className="text-[11px] opacity-80 leading-relaxed">{s.desc}</div>
               </div>
             ))}
           </div>
+        </Proximity>
 
-          <DocH3>Things that WILL hurt performance</DocH3>
-
-          <Callout type="danger" icon={<AlertTriangle size={14} />}>
-            <ul className="space-y-2 text-[12px]">
-              <li><strong>Animating layout properties:</strong> Never animate <Mono>width</Mono>, <Mono>height</Mono>, <Mono>top</Mono>, <Mono>left</Mono>, <Mono>padding</Mono>, or <Mono>margin</Mono> in <Mono>onCalculate</Mono>. Use <Mono>scaleX/Y</Mono> instead of width/height, and <Mono>x/y</Mono> instead of top/left.</li>
-              <li><strong>100+ elements with complex filter presets:</strong> Each <Mono>blur</Mono>, <Mono>brightness</Mono>, or <Mono>glow</Mono> triggers a compositing layer per element. Cap at ~50 for filter effects.</li>
-              <li><strong>CSS transitions on .prox-item:</strong> They fight GSAP every frame. Remove them entirely.</li>
-              <li><strong>Very low precision values:</strong> <Mono>precision={`{0.00001}`}</Mono> means every sub-pixel mouse movement fires animation. Keep it above 0.001.</li>
-            </ul>
-          </Callout>
-
-          <DocH3>Mobile strategy</DocH3>
-          <CodeBlock code={`// Disable everything on touch devices
-<Proximity preset="scale-blur-tilt" disableOnMobile={true} />
-
-// Disable only heavy presets, keep lightweight ones
-<Proximity
-  preset="scale-blur-tilt"
-  disableOnMobile={["blur", "tilt"]}  // scale still works on mobile
-/>`} />
-        </section>
-
-        <section id="api-reference">
-          <DocH2>📖 API Reference</DocH2>
-          <DocP>Complete reference for all props on the <Mono>Proximity</Mono> component.</DocP>
-
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
+        <Proximity
+          mode="scroll"
+          preset="reveal-y-opacity"
+          config={groupRevealConfig}
+          id="api-reference"
+          className="scroll-mt-24 mb-20 flex flex-col"
+        >
+          <div className="prox-item">
+            <DocH2>📖 API Reference</DocH2>
+            <DocP>Complete reference for all props on the <Mono>Proximity</Mono> component.</DocP>
+          </div>
+          <div className="prox-item overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
             <table className="w-full text-left text-[11px] border-collapse">
               <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)]">
                 <tr>
@@ -1644,145 +1464,7 @@ preset="scale-blur-rotate-tilt-opacity-color-borderRadius"`} />
               </tbody>
             </table>
           </div>
-
-          <DocH3>Preset bounds reference</DocH3>
-          <DocP>Every preset accepts a <Mono>[from, to]</Mono> tuple to override its range.</DocP>
-
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
-            <table className="w-full text-left text-[11px] border-collapse">
-              <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)]">
-                <tr>
-                  <th className="p-3 font-black text-[10px] uppercase tracking-widest">Preset</th>
-                  <th className="p-3 font-black text-[10px] uppercase tracking-widest">Default [from, to]</th>
-                  <th className="p-3 font-black text-[10px] uppercase tracking-widest">What changes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                {[
-                  ['scale',         '[1, 1.5]',           'transform: scale()'],
-                  ['flexScale',     '[1, 1.5]',           'transform: scale() + margin offset'],
-                  ['x',             '[0, 30]',            'transform: translateX() in px'],
-                  ['y',             '[0, -30]',           'transform: translateY() in px'],
-                  ['rotate',        '[0, 90]',            'transform: rotate() in degrees'],
-                  ['skew',          '[0, 20]',            'transform: skewX() in degrees'],
-                  ['opacity',       '[0.2, 1]',           'opacity'],
-                  ['blur',          '[8, 0]',             'filter: blur() in px'],
-                  ['reveal',        '[110, 0]',           'clip-path inset + translateY in %'],
-                  ['scroll',        '[0, 100]',           'scroll-driven offset travel'],
-                  ['magnetic',      '[0, 0.1]',           'pull strength multiplier'],
-                  ['repel',         '[0, 0.4]',           'push strength multiplier'],
-                  ['tilt',          '[0, 30]',            'rotationX/Y in degrees'],
-                  ['tiltCard',      '[0, 15]',            'perspective rotationX/Y'],
-                  ['weight',        '[100, 900]',         'font-variation-settings wght axis'],
-                  ['cipher',        '[0, 1]',             'scramble intensity 0=clear 1=full'],
-                  ['glow',          '[0, 20]',            'filter: drop-shadow() spread in px'],
-                  ['brightness',    '[0.6, 1.2]',         'filter: brightness()'],
-                  ['contrast',      '[0.8, 1.4]',         'filter: contrast()'],
-                  ['borderRadius',  '[0, 50]',            'border-radius in %'],
-                  ['letterSpacing', '[-0.05, 0.2]',       'letter-spacing in em'],
-                  ['grayScale',     '[1, 0]',             'filter: grayscale()'],
-                  ['color',         '["#888", "#fff"]',   'text color interpolation'],
-                  ['background',    '["transparent","rgba(255,255,255,0.1)"]', 'background-color interpolation'],
-                  ['parallax',      '[0, 100]',           'scroll-driven parallax vertical travel'],
-                  ['velocitySkew',  '[-15, 15]',          'scroll-velocity based skewing'],
-                  ['velocityScale', '[0.95, 1.05]',       'scroll-velocity based squash & stretch'],
-                ].map(([p, d, w]) => (
-                  <tr key={p} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                    <td className="p-3 font-mono font-bold">{p}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-70">{d}</td>
-                    <td className="p-3 text-[11px] opacity-90">{w}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <DocH3>Built-in ease names</DocH3>
-          <div className="flex flex-wrap gap-2 p-5 border border-[var(--border-color)] my-6 shadow-sm">
-            {[
-              'smooth','heavy','sharp','fluid','bouncy','elastic','jello','bounce',
-              'swing','vibrate','robot','ghost','expo','circus','glitch','slowmo',
-              'spring','heavySpring','anticipate','launch','drift','whiplash',
-            ].map(e => (
-              <span key={e} className="text-[10px] font-mono bg-[var(--text-color)] text-[var(--bg-color)] px-2 py-0.5">{e}</span>
-            ))}
-          </div>
-          <p className="text-[11px] opacity-90 leading-relaxed">
-            These are shorthand aliases for GSAP eases, tuned specifically for UI physics response.
-            You can also pass any raw GSAP ease string like <Mono>"back.out(2.5)"</Mono> or <Mono>"elastic.out(1, 0.3)"</Mono>.
-          </p>
-
-          <DocH3>ProximityText additional props</DocH3>
-          <div className="overflow-x-auto border border-[var(--border-color)] my-6 shadow-sm">
-            <table className="w-full text-left text-[11px] border-collapse">
-              <thead className="bg-black/5 dark:bg-white/5 border-b border-[var(--border-color)]">
-                <tr>
-                  <th className="p-3 font-black text-[10px] uppercase tracking-widest">Prop</th>
-                  <th className="p-3 font-black text-[10px] uppercase tracking-widest">Type</th>
-                  <th className="p-3 font-black text-[10px] uppercase tracking-widest">Default</th>
-                  <th className="p-3 font-black text-[10px] uppercase tracking-widest">Description</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/5 dark:divide-white/5">
-                {[
-                  ['text',           'string',                    '—',        'The text content to split and animate.'],
-                  ['splitBy',        '"letter"|"word"|"line"',    '"letter"', 'How to divide the text into reactive units.'],
-                  ['textClassName',  'string',                    '""',       'Class applied to every split span element.'],
-                  ['fontFamily',     'string',                    '(global)', 'Override font family for this text.'],
-                  ['lineHeight',     'number',                    '1.2',      'Line height of the text container.'],
-                  ['letterSpacing',  'number',                    '0',        'Letter spacing in em units.'],
-                  ['wordSpacing',    'number',                    '0.5',      'Gap between words in em units.'],
-                  ['clipFix',        'string',                    '"0.2em"',  'Padding added to prevent clip during scale/bounce.'],
-                  ['ignoreText',     '(string|RegExp)[]',         '—',        'Characters or patterns to skip from animation.'],
-                  ['dir',            '"ltr"|"rtl"|"auto"',        '"auto"',   'Directionality. Automatically supports Arabic parsing.'],
-                ].map(([prop, type, def, desc]) => (
-                  <tr key={prop} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                    <td className="p-3 font-mono font-bold text-[11px]">{prop}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-70">{type}</td>
-                    <td className="p-3 font-mono text-[10px] opacity-80">{def}</td>
-                    <td className="p-3 text-[11px] opacity-90 leading-relaxed">{desc}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-16 p-10 border border-[var(--border-color)] mono-grid relative overflow-hidden shadow-2xl">
-            <div className="text-[10px] uppercase font-bold tracking-widest opacity-60 mb-6 text-center">
-              You've read the whole thing. You deserve a reward.
-            </div>
-            <div className="flex items-center justify-center">
-              <Proximity
-                onCalculate={(intensity, dist, dx, dy) => ({
-                  scaleX: 1 + intensity * 0.4,
-                  scaleY: 1 - intensity * 0.08,
-                  filter: `hue-rotate(${intensity * 240}deg) brightness(${1 + intensity * 0.3}) drop-shadow(0 0 ${intensity * 20}px var(--text-color))`,
-                  rotation: (dx / Math.max(Math.abs(dx), 1)) * intensity * 8,
-                  y: -intensity * 12,
-                })}
-                onReset={() => ({
-                  scaleX: 1, scaleY: 1,
-                  filter: 'hue-rotate(0deg) brightness(1) drop-shadow(0 0 0px transparent)',
-                  rotation: 0, y: 0,
-                })}
-                reach={2.5}
-              >
-                <ProximityText
-                  preset='reveal'
-                  text="NOW GO BUILD SOMETHING WILD"
-                  mode="scroll"
-                  splitBy="word"
-                  textClassName="text-xl md:text-3xl font-black tracking-tighter text-center"
-                  wordSpacing={0.5}
-                  selector=".prox-part"
-                  config={{
-                      scroll: { once: false }
-                    }}
-                />
-              </Proximity>
-            </div>
-          </div>
-        </section>
+        </Proximity>
 
       </main>
     </div>

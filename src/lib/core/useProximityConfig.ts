@@ -12,7 +12,9 @@ export function useProximityConfig(props: ProximityProps) {
     waitForAnimationEnd, waitForEnterAnimationEnd, waitForLeaveAnimationEnd, scale, flexScale, y, x, opacity, blur, rotate, weight, skew,
     magnetic, tilt, tiltCard, repel, cipher, reveal, scroll, color, background, glow, brightness, contrast,
     borderRadius, letterSpacing, grayScale, parallax, velocitySkew, velocityScale, timeline, delay, resetDelay, scrub, resetScrub,
-    start, end, stagger, resetStagger, targets, ignoreSelectors = [], excludeElements, className = "", style = {}, ...restProps
+    start, end, stagger, resetStagger, targets, ignoreSelectors = [], excludeElements, className = "", style = {},
+    horizontal, lensCenter, lensRadius, triggerMode, onScrollDown, onScrollUp, velocityMap,
+    ...restProps
   } = props;
 
   const activeMode = config.mode ?? mode;
@@ -64,7 +66,18 @@ export function useProximityConfig(props: ProximityProps) {
   });
 
   const activeTimeline = useDeepMemo(config.timeline ?? timeline ?? {});
-  const activeScrollConfig = useDeepMemo(safeScrollConfig ?? safeScrollProp ?? {});
+  
+  const activeScrollConfig = useDeepMemo({
+    horizontal: config.horizontal ?? horizontal,
+    lensCenter: config.lensCenter ?? lensCenter,
+    lensRadius: config.lensRadius ?? lensRadius,
+    triggerMode: config.triggerMode ?? triggerMode,
+    onScrollDown: config.onScrollDown ?? onScrollDown,
+    onScrollUp: config.onScrollUp ?? onScrollUp,
+    velocityMap: config.velocityMap ?? velocityMap,
+    ...safeScrollConfig ?? safeScrollProp ?? {}
+  });
+
   const activeStartStyles = useDeepMemo(config.start ?? start ?? {});
   const activeEndStyles = useDeepMemo(config.end ?? end ?? {});
   const parsedMaxTravel = useDeepMemo(activeMaxTravel);
@@ -76,8 +89,11 @@ export function useProximityConfig(props: ProximityProps) {
   const allPresetsStr = useMemo(() => {
     const base = [activePreset, activeNearestPreset, activeNeighborPreset].filter(Boolean).flatMap((p) => p.split("-"));
     const tgt = parsedTargets.flatMap((t) => [t.preset, t.nearestPreset, t.neighborPreset]).filter(Boolean).flatMap((p) => (p as string).split("-"));
-    return Array.from(new Set([...base, ...tgt])).join("-");
-  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets]);
+    const sd = (config.onScrollDown?.preset ?? safeScrollConfig?.onScrollDown?.preset ?? "").split("-");
+    const su = (config.onScrollUp?.preset ?? safeScrollConfig?.onScrollUp?.preset ?? "").split("-");
+    
+    return Array.from(new Set([...base, ...tgt, ...sd, ...su])).filter(Boolean).join("-");
+  }, [activePreset, activeNearestPreset, activeNeighborPreset, parsedTargets, config.onScrollDown, config.onScrollUp, safeScrollConfig]);
 
   const activePresetKeys = useMemo(() => {
     const keys = new Set<string>();
