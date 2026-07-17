@@ -1,4 +1,22 @@
 <div align="center">
+
+## ⚠️ Notice: Project Temporarily Pended & Unstable
+
+</div>
+
+Thank you for checking out **Z-Proximity-Engine**! 
+
+Please note that this project is **currently on hold and is not in a stable state** (specifically the scroll-related features in the latest `v2` commits). 
+
+I am currently focusing my time on learning computer science fundamentals and low-level software engineering. Because of this, this repository will not be actively maintained or updated for a short while. 
+
+* You are still free to explore, fork, or use the stable parts of the engine.
+* I plan to return to this project and perform a complete refactor once I've completed my current learning phase.
+
+Thank you so much for your understanding, your stars, and the amazing support! 🚀
+
+
+<div align="center">
   <img src="public/og-image.jpg" alt="ZProximity Engine" width="100%" style="border-radius: 8px; margin-bottom: 20px;" />
 
   # 🚀 ZProximity Engine
